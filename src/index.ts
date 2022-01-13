@@ -1,6 +1,7 @@
 import express from "express"
 import mysql from "mysql"
 import dotenv from "dotenv"
+import path from "path"
 
 dotenv.config()
 
@@ -19,17 +20,20 @@ dbConnection.query(
             "name VARCHAR(64) NOT NULL," +
             "count INT NOT NULL DEFAULT 0)")
 
-app.get("/", (req, res) => {
-    dbConnection.query("INSERT INTO inventory (name, count) VALUES (\"Tea\", 100)")
-    res.send("Hello, world!")
+app.get("/inventory", (req, res) => {
+    dbConnection.query("SELECT * FROM inventory", (error, results, fields) => {
+        res.send(results)
+    })
 })
 
-app.post("/", (req, res) => {
+app.post("/inventory", (req, res) => {
     res.send("post")
 })
 
-app.delete("/", (req, res) => {
+app.delete("/inventory", (req, res) => {
     res.send("delete")
 })
+
+app.use(express.static(path.resolve(__dirname, "..", "public")))
 
 app.listen(8000)
