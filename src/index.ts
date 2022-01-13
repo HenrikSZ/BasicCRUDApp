@@ -8,12 +8,19 @@ const app = express()
 const dbConnection = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASS
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME
 })
 
 dbConnection.connect()
+dbConnection.query(
+            "CREATE TABLE IF NOT EXISTS inventory" +
+            "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+            "name VARCHAR(64) NOT NULL," +
+            "count INT NOT NULL DEFAULT 0)")
 
 app.get("/", (req, res) => {
+    dbConnection.query("INSERT INTO inventory (name, count) VALUES (\"Tea\", 100)")
     res.send("Hello, world!")
 })
 
