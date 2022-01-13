@@ -1,4 +1,5 @@
 #data-wrapper table tr td {
     padding: 5;
     border: 1pt solid black;
+    margin: 0;
 }

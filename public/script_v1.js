@@ -19,14 +19,26 @@ function populate(obj) {
     wrapper.innerHTML = ""
 
     let table = document.createElement("table");
+    let tableHeader = document.createElement("tr");
+    
+    let nameColHeader = document.createElement("th");
+    let countColHeader = document.createElement("th");
+
+    nameColHeader.innerText = "Item Name"
+    countColHeader.innerText = "Item Count"
+
+    tableHeader.appendChild(nameColHeader)
+    tableHeader.appendChild(countColHeader)
+
+    table.appendChild(tableHeader)
 
     for (let line of obj) {
         let row = document.createElement("tr");
         let name = document.createElement("td");
         let count = document.createElement("td");
 
-        name.innerHTML = line.name;
-        count.innerHTML = line.count;
+        name.innerText = line.name;
+        count.innerText = line.count;
 
         row.appendChild(name);
         row.appendChild(count);
@@ -36,3 +48,5 @@ function populate(obj) {
 
     wrapper.appendChild(table);
 }
+
+document.addEventListener("DOMContentLoaded", getData)
