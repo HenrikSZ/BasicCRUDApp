@@ -15,37 +15,14 @@ function getData() {
 
 
 function populate(obj) {
-    let wrapper = document.getElementById("data-wrapper");
-    wrapper.innerHTML = "";
-
-    let table = document.createElement("table");
-    let tableHeader = document.createElement("tr");
+    let table = document.getElementById("table-data");
     
-    let nameColHeader = document.createElement("th");
-    let countColHeader = document.createElement("th");
-    let emptyColHeader = document.createElement("th");
-    let reloadColHeader = document.createElement("th");
-
-    let reloadBtn = document.createElement("button");
-    reloadBtn.innerText = "Reload";
-    reloadBtn.addEventListener("click", getData);
-    reloadColHeader.appendChild(reloadBtn);
-
-    nameColHeader.innerText = "Item Name";
-    countColHeader.innerText = "Item Count";
-
-    tableHeader.appendChild(nameColHeader);
-    tableHeader.appendChild(countColHeader);
-    tableHeader.appendChild(emptyColHeader);
-    tableHeader.appendChild(reloadColHeader);
-
-    table.appendChild(tableHeader);
+    let tbody = table.getElementsByTagName("tbody")[0];
+    tbody.innerHTML = "";
 
     for (let line of obj) {
-        table.appendChild(createEntry(line))
+        tbody.appendChild(createEntry(line));
     }
-
-    wrapper.appendChild(table);
 }
 
 
@@ -94,14 +71,15 @@ function saveNew() {
         if (request.readyState == request.DONE) {
             // TODO: Error handling
             
-            let table = document.getElementById("data-wrapper").childNodes[0]
-            let data = {}
+            let table = document.getElementById("table-data");
+            let tbody = table.getElementsByTagName("tbody")[0];
+            let data = {};
             if (this.responseType == "json") {
                 data = this.response;
             } else {
                 data = JSON.parse(this.responseText);
             }
-            table.appendChild(createEntry(data));
+            tbody.appendChild(createEntry(data));
         }
     }
 
