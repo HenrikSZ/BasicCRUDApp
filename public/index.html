@@ -7,10 +7,30 @@
         <script src="script_v1.js"></script>
         <link rel="stylesheet" href="styles_v1.css">
     </head>
-    <button onclick="getData()">
-        Reload
-    </button>
+    
+    <table id="new-entry">
+        <tr>
+            <th>
+                New Name
+            </th>
+            <th>
+                New Count
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <input type="name" id="new-name">
+            </td>
+            <td>
+                <input type="number" id="new-count">
+            </td>
+            <td>
+                <button onlick="add">
+                    Add
+                </button>
+            </td>
+        </tr>
+    </table>
     <div id="data-wrapper">
-
     </div>
 </html>

@@ -23,14 +23,23 @@ function populate(obj) {
     
     let nameColHeader = document.createElement("th");
     let countColHeader = document.createElement("th");
+    let emptyColHeader = document.createElement("th");
+    let reloadColHeader = document.createElement("th");
 
-    nameColHeader.innerText = "Item Name"
-    countColHeader.innerText = "Item Count"
+    let reloadBtn = document.createElement("button");
+    reloadBtn.innerText = "Reload";
+    reloadBtn.addEventListener("click", getData);
+    reloadColHeader.appendChild(reloadBtn);
 
-    tableHeader.appendChild(nameColHeader)
-    tableHeader.appendChild(countColHeader)
+    nameColHeader.innerText = "Item Name";
+    countColHeader.innerText = "Item Count";
 
-    table.appendChild(tableHeader)
+    tableHeader.appendChild(nameColHeader);
+    tableHeader.appendChild(countColHeader);
+    tableHeader.appendChild(emptyColHeader);
+    tableHeader.appendChild(reloadColHeader);
+
+    table.appendChild(tableHeader);
 
     for (let line of obj) {
         let row = document.createElement("tr");

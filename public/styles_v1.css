@@ -3,3 +3,9 @@
     border: 1pt solid black;
     margin: 0;
 }
+
+#data-wrapper table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin: 10pt;
+}
