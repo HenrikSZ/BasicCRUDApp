@@ -56,7 +56,10 @@ app.use(bodyParser.json())
 app.get("/inventory", (req, res) => {
     dbConnection.query("SELECT * FROM inventory", (error, results, fields) => {
         // TODO error handling
-        res.send(results)
+
+        if (!error) {
+            res.send(results)
+        }
     })
 })
 
@@ -68,8 +71,9 @@ app.put("/inventory", (req, res) => {
         if (updateStmt) {
             dbConnection.query(updateStmt, (error, results, fields) => {
                 // TODO error handling
-
-                res.status(200).send()
+                if (!error) {
+                    res.send()
+                }
             })
         } else {
             // TODO handle no fields to update
@@ -96,8 +100,19 @@ app.put("/inventory", (req, res) => {
     }
 })
 
-app.delete("/inventory", (req, res) => {
-    res.send("delete")
+app.delete("/inventory/:id", (req, res) => {
+    if (req.params.hasOwnProperty("id")) {
+        dbConnection.query(`DELETE FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
+        (error, results, fields) => {
+            // TODO error handling
+
+            if (!error) {
+                res.send()
+            }
+        })
+    } else {
+        // TODO handle id missing
+    }
 })
 
 app.use(express.static(path.resolve(__dirname, "..", "public")))
