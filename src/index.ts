@@ -100,7 +100,7 @@ app.put("/inventory/:id", (req, res) => {
             // TODO error handling
 
             if (!error) {
-                res.send()
+                res.status(204).send()
             }
         })
     } else {
@@ -114,7 +114,7 @@ app.delete("/inventory/:id", (req, res) => {
         // TODO error handling
 
         if (!error) {
-            res.send()
+            res.status(204).send()
         }
     })
 })

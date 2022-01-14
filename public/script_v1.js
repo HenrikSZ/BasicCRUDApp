@@ -38,7 +38,7 @@ function generateEditRow() {
 
 function getData() {
     let request = new XMLHttpRequest();
-    request.open("GET", "/inventory", true);
+    request.open("GET", "/inventory");
 
     request.onload = function() {
         if (this.responseType == "json") {
@@ -47,6 +47,7 @@ function getData() {
             populate(JSON.parse(this.responseText));
         }
     }
+    // TODO error handling
 
     request.send();
 }
@@ -102,13 +103,11 @@ function saveNew() {
     data.count = document.getElementById("new-count").value;
     
     let request = new XMLHttpRequest()
-    request.open("PUT", "/inventory", true);
+    request.open("PUT", "/inventory");
     request.setRequestHeader("Content-Type", "application/json");
 
-    request.onreadystatechange = function() {
-        if (request.readyState == request.DONE) {
-            // TODO: Error handling
-            
+    request.onload = function() {
+        if (request.status == 201) {
             let table = document.getElementById("table-data");
             let tbody = table.getElementsByTagName("tbody")[0];
             let data = {};
@@ -120,6 +119,7 @@ function saveNew() {
             tbody.appendChild(createEntry(data));
         }
     }
+    // TODO: Error handling
 
     request.send(JSON.stringify(data));
 }
@@ -135,6 +135,7 @@ function deleteEntry(evt) {
     request.onload = function() {
         row.parentNode.removeChild(row)
     }
+    // TODO error handling
 
     request.send()
 }
@@ -169,17 +170,15 @@ function saveEdits() {
 
     if (changed) {
         let request = new XMLHttpRequest();
-        request.open("PUT", `/inventory/${id}`, true);
+        request.open("PUT", `/inventory/${id}`);
         request.setRequestHeader("Content-Type", "application/json");
     
-        request.onreadystatechange = function() {
-            if (request.readyState == request.DONE) {
-                // TODO: Error handling
-                oldRow.childNodes[0].innerText = newName;
-                oldRow.childNodes[1].innerText = newCount;
-                exitEditMode();
-            }
+        request.onload = function() {
+            oldRow.childNodes[0].innerText = newName;
+            oldRow.childNodes[1].innerText = newCount;
+            exitEditMode();
         }
+        // TODO: Error handling
 
         request.send(JSON.stringify(data));
     } else {
