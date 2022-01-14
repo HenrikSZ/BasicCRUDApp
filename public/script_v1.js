@@ -36,18 +36,48 @@ function generateEditRow() {
 }
 
 
+function handleError(request) {
+    let response = {};
+
+    if (this.responseType == "json") {
+        response = request.response;
+    } else {
+        response = JSON.parse(request.responseText);
+    }
+
+    let errorBoxDiv = document.getElementById("error-box");
+    let nameSpan = document.getElementById("error-name");
+    nameSpan.innerText = response.name;
+
+    if (response.hasOwnProperty("message")) {
+        let messageSpan = document.getElementById("error-message");
+        messageSpan.innerText = response.message;
+    }
+
+    errorBoxDiv.style.display = "block";
+}
+
+
+function hideErrorBox() {
+    document.getElementById("error-box").style.display = "None";
+}
+
+
 function getData() {
     let request = new XMLHttpRequest();
     request.open("GET", "/inventory");
 
-    request.onload = function() {
-        if (this.responseType == "json") {
-            populate(this.response);
+    request.onloadend = function() {
+        if (request.status == 200) {
+            if (this.responseType == "json") {
+                populate(this.response);
+            } else {
+                populate(JSON.parse(this.responseText));
+            }
         } else {
-            populate(JSON.parse(this.responseText));
+            handleError(request);
         }
     }
-    // TODO error handling
 
     request.send();
 }
@@ -106,7 +136,7 @@ function saveNew() {
     request.open("PUT", "/inventory");
     request.setRequestHeader("Content-Type", "application/json");
 
-    request.onload = function() {
+    request.onloadend = function() {
         if (request.status == 201) {
             let table = document.getElementById("table-data");
             let tbody = table.getElementsByTagName("tbody")[0];
@@ -117,9 +147,10 @@ function saveNew() {
                 data = JSON.parse(this.responseText);
             }
             tbody.appendChild(createEntry(data));
+        } else {
+            handleError(request)
         }
     }
-    // TODO: Error handling
 
     request.send(JSON.stringify(data));
 }
@@ -132,10 +163,13 @@ function deleteEntry(evt) {
     let request = new XMLHttpRequest();
     request.open("DELETE", `/inventory/${id}`);
 
-    request.onload = function() {
-        row.parentNode.removeChild(row)
+    request.onloadend = function() {
+        if (request.status == 200) {
+            row.parentNode.removeChild(row)
+        } else {
+            handleError(request);
+        }
     }
-    // TODO error handling
 
     request.send()
 }
@@ -173,12 +207,15 @@ function saveEdits() {
         request.open("PUT", `/inventory/${id}`);
         request.setRequestHeader("Content-Type", "application/json");
     
-        request.onload = function() {
-            oldRow.childNodes[0].innerText = newName;
-            oldRow.childNodes[1].innerText = newCount;
-            exitEditMode();
+        request.onloadend = function() {
+            if (request.status == 200) {
+                oldRow.childNodes[0].innerText = newName;
+                oldRow.childNodes[1].innerText = newCount;
+                exitEditMode();
+            } else {
+                handleError(request);
+            }
         }
-        // TODO: Error handling
 
         request.send(JSON.stringify(data));
     } else {

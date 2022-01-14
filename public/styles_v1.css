@@ -18,3 +18,12 @@ th {
 th:last-child {
     padding: 2pt 2pt 2pt 2pt;
 }
+
+#error-name {
+    font-weight: bold;
+    color: red;
+}
+
+#error-box {
+    display: none;
+}
