@@ -63,6 +63,17 @@ app.get("/inventory", (req, res) => {
     })
 })
 
+app.get("/inventory/:id", (req, res) => {
+    dbConnection.query(`SELECT * FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
+    (error, results, fields) => {
+        // TODO error handling
+
+        if (!error) {
+            res.send(results[0])
+        }
+    })
+})
+
 app.put("/inventory", (req, res) => {
     if (req.body.hasOwnProperty("name") && req.body.hasOwnProperty("count")) {
         const name = mysql.escape(req.body.name)
@@ -87,7 +98,7 @@ app.put("/inventory/:id", (req, res) => {
     if (updateStmt) {
         dbConnection.query(updateStmt, (error, results, fields) => {
             // TODO error handling
-            
+
             if (!error) {
                 res.send()
             }
