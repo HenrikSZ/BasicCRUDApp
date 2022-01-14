@@ -1,0 +1,21 @@
+version: '3.9'
+
+services:
+  web:
+    build: .
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      - "DB_NAME=${DB_NAME}"
+      - "DB_HOST=db"
+      - "DB_USER=${DB_USER}"
+      - "DB_PASS=${DB_PASS}"
+      - "PORT=${PORT}"
+
+  db:
+    image: mariadb
+    environment:
+      - "MARIADB_USER=${DB_USER}"
+      - "MARIADB_PASSWORD=${DB_PASS}"
+      - "MARIADB_RANDOM_ROOT_PASSWORD=yes"
+      - "MARIADB_DATABASE=${DB_NAME}"
