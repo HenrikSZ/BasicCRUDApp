@@ -42,35 +42,69 @@ function populate(obj) {
     table.appendChild(tableHeader);
 
     for (let line of obj) {
-        let row = document.createElement("tr");
-        let name = document.createElement("td");
-        let count = document.createElement("td");
-        let editCell = document.createElement("td");
-        let deleteCell = document.createElement("td");
-        let editBtn = document.createElement("button");
-        let deleteBtn = document.createElement("button");
-
-        editBtn.addEventListener("click", enterEditMode)
-
-        name.innerText = line.name;
-        count.innerText = line.count;
-        editCell.appendChild(editBtn);
-        deleteCell.appendChild(deleteBtn);
-
-        editBtn.innerText = "edit";
-        deleteBtn.innerText = "delete";
-
-        row.id = "data-id-" + line.id
-
-        row.appendChild(name);
-        row.appendChild(count);
-        row.appendChild(editCell);
-        row.appendChild(deleteCell);
-
-        table.appendChild(row);
+        table.appendChild(createEntry(line))
     }
 
     wrapper.appendChild(table);
+}
+
+
+function createEntry(entry) {
+    let row = document.createElement("tr");
+    let name = document.createElement("td");
+    let count = document.createElement("td");
+    let editCell = document.createElement("td");
+    let deleteCell = document.createElement("td");
+    let editBtn = document.createElement("button");
+    let deleteBtn = document.createElement("button");
+
+    editBtn.addEventListener("click", enterEditMode)
+
+    name.innerText = entry.name;
+    count.innerText = entry.count;
+    editCell.appendChild(editBtn);
+    deleteCell.appendChild(deleteBtn);
+
+    editBtn.innerText = "edit";
+    deleteBtn.innerText = "delete";
+
+    row.id = "data-id-" + entry.id
+
+    row.appendChild(name);
+    row.appendChild(count);
+    row.appendChild(editCell);
+    row.appendChild(deleteCell);
+
+    return row;
+}
+
+
+function saveNew() {
+    let data = {}
+
+    data.name = document.getElementById("new-name").value
+    data.count = document.getElementById("new-count").value
+    
+    let request = new XMLHttpRequest()
+    request.open("PUT", "/inventory", true);
+    request.setRequestHeader("Content-Type", "application/json");
+
+    request.onreadystatechange = function() {
+        if (request.readyState == request.DONE) {
+            // TODO: Error handling
+            
+            let table = document.getElementById("data-wrapper").childNodes[0]
+            let data = {}
+            if (this.responseType == "json") {
+                data = this.response;
+            } else {
+                data = JSON.parse(this.responseText);
+            }
+            table.appendChild(createEntry(data));
+        }
+    }
+
+    request.send(JSON.stringify(data));
 }
 
 

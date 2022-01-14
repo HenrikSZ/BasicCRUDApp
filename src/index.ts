@@ -76,6 +76,23 @@ app.put("/inventory", (req, res) => {
         }
     } else {
         // It is a creation request
+
+        if (req.body.hasOwnProperty("name") && req.body.hasOwnProperty("count")) {
+            const name = mysql.escape(req.body.name)
+            const count = mysql.escape(req.body.count)
+            dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
+                (error, results, fields) => {
+                // TODO error handling
+
+                if (!error) {
+                    res.status(201).send({
+                        name: req.body.name,
+                        count: req.body.count,
+                        id: results.insertId
+                    })
+                }
+            })
+        }
     }
 })
 
