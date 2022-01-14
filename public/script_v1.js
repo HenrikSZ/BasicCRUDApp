@@ -12,20 +12,20 @@ function generateEditRow() {
     let saveCell = document.createElement("td");
     let discardCell = document.createElement("td");
 
-    let nameEdit = document.createElement("input");
-    let countEdit = document.createElement("input");
+    editName = document.createElement("input");
+    editCount = document.createElement("input");
     let saveBtn = document.createElement("button");
     let discardBtn = document.createElement("button");
 
-    countEdit.type = "number";
+    editCount.type = "number";
     saveBtn.innerText = "save";
     discardBtn.innerText = "discard";
 
     saveBtn.addEventListener("click", saveEdits);
     discardBtn.addEventListener("click", discardEdits);
 
-    nameCell.appendChild(nameEdit);
-    countCell.appendChild(countEdit);
+    nameCell.appendChild(editName);
+    countCell.appendChild(editCount);
     saveCell.appendChild(saveBtn);
     discardCell.appendChild(discardBtn);
 
@@ -190,13 +190,13 @@ function saveEdits() {
 
 function enterEditMode(evt) {
     if (oldRow) {
-        discardEdits()
+        exitEditMode()
     }
 
     let row = evt.target.parentNode.parentNode;
     
-    editRow.childNodes[0].childNodes[0].value = row.childNodes[0].textContent;
-    editRow.childNodes[1].childNodes[0].value = row.childNodes[1].textContent;
+    editName.value = row.childNodes[0].textContent;
+    editCount.value = row.childNodes[1].textContent;
 
     oldRow = row;
 
@@ -212,6 +212,8 @@ function exitEditMode() {
 
 
 let editRow = null;
+let editName = null;
+let editCount = null;
 let oldRow = null;
 
 document.addEventListener("DOMContentLoaded", init);
