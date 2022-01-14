@@ -9,3 +9,12 @@
     border-collapse: collapse;
     margin: 10pt;
 }
+
+th {
+    text-align: left;
+    padding: 2pt 20pt 2pt 2pt;
+}
+
+th:last-child {
+    padding: 2pt 2pt 2pt 2pt;
+}
