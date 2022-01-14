@@ -65,12 +65,12 @@ function populate(obj) {
 }
 
 
-function discard() {
+function discardEdits() {
     exitEditMode()
 }
 
 
-function save() {
+function saveEdits() {
     let id = oldRow.id.slice("data-id-".length)
 
     let oldName = oldRow.childNodes[0].innerText
@@ -117,7 +117,7 @@ function save() {
 
 function enterEditMode(evt) {
     if (editRow) {
-        discard()
+        discardEdits()
     }
 
     let row = evt.target.parentNode.parentNode
@@ -139,8 +139,8 @@ function enterEditMode(evt) {
     saveBtn.innerText = "save"
     discardBtn.innerText = "discard"
 
-    saveBtn.addEventListener("click", save)
-    discardBtn.addEventListener("click", discard)
+    saveBtn.addEventListener("click", saveEdits)
+    discardBtn.addEventListener("click", discardEdits)
 
     nameCell.appendChild(nameEdit)
     countCell.appendChild(countEdit)
