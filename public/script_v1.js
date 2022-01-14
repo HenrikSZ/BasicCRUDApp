@@ -66,9 +66,52 @@ function populate(obj) {
 
 
 function discard() {
-    editRow.parentNode.replaceChild(rowNotShown, editRow)
+    exitEditMode()
+}
 
-    editRow = rowNotShown = null
+
+function save() {
+    let id = oldRow.id.slice("data-id-".length)
+
+    let oldName = oldRow.childNodes[0].innerText
+    let newName = editRow.childNodes[0].childNodes[0].value
+
+    let oldCount = oldRow.childNodes[1].innerText
+    let newCount = editRow.childNodes[1].childNodes[0].value
+
+    let changed = false
+
+    let data = {
+        id: id
+    }
+
+    if (oldName != newName) {
+        data.name = newName
+        changed = true
+    }
+    if (oldCount != newCount) {
+        data.count = newCount
+        changed = true
+    }
+
+    if (changed) {
+        let request = new XMLHttpRequest()
+        request.open("PUT", "/inventory", true);
+        request.setRequestHeader("Content-Type", "application/json");
+    
+        request.onreadystatechange = function() {
+            if (request.readyState == request.DONE) {
+                // TODO: Error handling
+                oldRow.childNodes[0].innerText = newName;
+                oldRow.childNodes[1].innerText = newCount;
+                exitEditMode();
+            }
+        }
+
+        request.send(JSON.stringify(data));
+    } else {
+        exitEditMode();
+    }
 }
 
 
@@ -96,6 +139,7 @@ function enterEditMode(evt) {
     saveBtn.innerText = "save"
     discardBtn.innerText = "discard"
 
+    saveBtn.addEventListener("click", save)
     discardBtn.addEventListener("click", discard)
 
     nameCell.appendChild(nameEdit)
@@ -108,14 +152,21 @@ function enterEditMode(evt) {
     newRow.appendChild(saveCell)
     newRow.appendChild(discardCell)
 
-    rowNotShown = row
+    oldRow = row
     editRow = newRow
 
     row.parentNode.replaceChild(newRow, row)
 }
 
 
+function exitEditMode() {
+    editRow.parentNode.replaceChild(oldRow, editRow)
+
+    editRow = oldRow = null
+}
+
+
 let editRow = null
-let rowNotShown = null
+let oldRow = null
 
 document.addEventListener("DOMContentLoaded", getData)
