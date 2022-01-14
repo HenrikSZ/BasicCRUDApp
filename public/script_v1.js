@@ -1,3 +1,41 @@
+function init() {
+    generateEditRow();
+    getData();
+}
+
+
+function generateEditRow() {
+    editRow = document.createElement("tr");
+
+    let nameCell = document.createElement("td");
+    let countCell = document.createElement("td");
+    let saveCell = document.createElement("td");
+    let discardCell = document.createElement("td");
+
+    let nameEdit = document.createElement("input");
+    let countEdit = document.createElement("input");
+    let saveBtn = document.createElement("button");
+    let discardBtn = document.createElement("button");
+
+    countEdit.type = "number";
+    saveBtn.innerText = "save";
+    discardBtn.innerText = "discard";
+
+    saveBtn.addEventListener("click", saveEdits);
+    discardBtn.addEventListener("click", discardEdits);
+
+    nameCell.appendChild(nameEdit);
+    countCell.appendChild(countEdit);
+    saveCell.appendChild(saveBtn);
+    discardCell.appendChild(discardBtn);
+
+    editRow.appendChild(nameCell);
+    editRow.appendChild(countCell);
+    editRow.appendChild(saveCell);
+    editRow.appendChild(discardCell);
+}
+
+
 function getData() {
     let request = new XMLHttpRequest();
     request.open("GET", "/inventory", true);
@@ -151,57 +189,29 @@ function saveEdits() {
 
 
 function enterEditMode(evt) {
-    if (editRow) {
+    if (oldRow) {
         discardEdits()
     }
 
     let row = evt.target.parentNode.parentNode;
-    let newRow = document.createElement("tr");
-
-    let nameCell = document.createElement("td");
-    let countCell = document.createElement("td");
-    let saveCell = document.createElement("td");
-    let discardCell = document.createElement("td");
-
-    let nameEdit = document.createElement("input");
-    let countEdit = document.createElement("input");
-    let saveBtn = document.createElement("button");
-    let discardBtn = document.createElement("button");
-
-    nameEdit.value = row.childNodes[0].textContent;
-    countEdit.value = row.childNodes[1].textContent;
-    countEdit.type = "number";
-    saveBtn.innerText = "save";
-    discardBtn.innerText = "discard";
-
-    saveBtn.addEventListener("click", saveEdits);
-    discardBtn.addEventListener("click", discardEdits);
-
-    nameCell.appendChild(nameEdit);
-    countCell.appendChild(countEdit);
-    saveCell.appendChild(saveBtn);
-    discardCell.appendChild(discardBtn);
-
-    newRow.appendChild(nameCell);
-    newRow.appendChild(countCell);
-    newRow.appendChild(saveCell);
-    newRow.appendChild(discardCell);
+    
+    editRow.childNodes[0].childNodes[0].value = row.childNodes[0].textContent;
+    editRow.childNodes[1].childNodes[0].value = row.childNodes[1].textContent;
 
     oldRow = row;
-    editRow = newRow;
 
-    row.parentNode.replaceChild(newRow, row);
+    row.parentNode.replaceChild(editRow, row);
 }
 
 
 function exitEditMode() {
     editRow.parentNode.replaceChild(oldRow, editRow);
 
-    editRow = oldRow = null;
+    oldRow = null;
 }
 
 
 let editRow = null;
 let oldRow = null;
 
-document.addEventListener("DOMContentLoaded", getData);
+document.addEventListener("DOMContentLoaded", init);
