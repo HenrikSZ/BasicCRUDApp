@@ -64,55 +64,48 @@ app.get("/inventory", (req, res) => {
 })
 
 app.put("/inventory", (req, res) => {
-    if (req.body.hasOwnProperty("id")) {
-        // It is an update request
+    if (req.body.hasOwnProperty("name") && req.body.hasOwnProperty("count")) {
+        const name = mysql.escape(req.body.name)
+        const count = mysql.escape(req.body.count)
+        dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
+            (error, results, fields) => {
+            // TODO error handling
 
-        const updateStmt = prepareUpdateStatement(req.body)
-        if (updateStmt) {
-            dbConnection.query(updateStmt, (error, results, fields) => {
-                // TODO error handling
-                if (!error) {
-                    res.send()
-                }
-            })
-        } else {
-            // TODO handle no fields to update
-        }
-    } else {
-        // It is a creation request
-
-        if (req.body.hasOwnProperty("name") && req.body.hasOwnProperty("count")) {
-            const name = mysql.escape(req.body.name)
-            const count = mysql.escape(req.body.count)
-            dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
-                (error, results, fields) => {
-                // TODO error handling
-
-                if (!error) {
-                    res.status(201).send({
-                        name: req.body.name,
-                        count: req.body.count,
-                        id: results.insertId
-                    })
-                }
-            })
-        }
+            if (!error) {
+                res.status(201).send({
+                    name: req.body.name,
+                    count: req.body.count,
+                    id: results.insertId
+                })
+            }
+        })
     }
 })
 
-app.delete("/inventory/:id", (req, res) => {
-    if (req.params.hasOwnProperty("id")) {
-        dbConnection.query(`DELETE FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
-        (error, results, fields) => {
+app.put("/inventory/:id", (req, res) => {
+    const updateStmt = prepareUpdateStatement(req.body)
+    if (updateStmt) {
+        dbConnection.query(updateStmt, (error, results, fields) => {
             // TODO error handling
-
+            
             if (!error) {
                 res.send()
             }
         })
     } else {
-        // TODO handle id missing
+        // TODO handle missing parameters
     }
+})
+
+app.delete("/inventory/:id", (req, res) => {
+    dbConnection.query(`DELETE FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
+    (error, results, fields) => {
+        // TODO error handling
+
+        if (!error) {
+            res.send()
+        }
+    })
 })
 
 app.use(express.static(path.resolve(__dirname, "..", "public")))

@@ -140,9 +140,7 @@ function saveEdits() {
 
     let changed = false;
 
-    let data = {
-        id: id
-    }
+    let data = {};
 
     if (oldName != newName) {
         data.name = newName;
@@ -155,7 +153,7 @@ function saveEdits() {
 
     if (changed) {
         let request = new XMLHttpRequest();
-        request.open("PUT", "/inventory", true);
+        request.open("PUT", `/inventory/${id}`, true);
         request.setRequestHeader("Content-Type", "application/json");
     
         request.onreadystatechange = function() {
