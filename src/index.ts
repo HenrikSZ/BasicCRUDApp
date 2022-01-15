@@ -137,25 +137,20 @@ app.get("/inventory/item/:id", (req, res) => {
 app.put("/inventory", (req, res) => {
     if (req.body.hasOwnProperty("name") && req.body.hasOwnProperty("count")
         && req.body.name.length !== 0 && isInteger(req.body.count) && req.body.count >= 0) {
-        const name = mysql2.escape(req.body.name)
-        const count = mysql2.escape(req.body.count)
+        const stmt = "INSERT INTO inventory SET ?"
 
-        dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
-            (error, results: OkPacket, fields) => {
-            if (!error) {
-                logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
+        dbPromise.query(stmt, req.body)
+        .then(([results, fields]) => {
+            results = results as OkPacket
+            logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
 
-                res.status(201).send({
-                    name: req.body.name,
-                    count: req.body.count,
-                    id: results.insertId
-                })
-            } else {
-                logDbError(error, req.hostname)
-
-                const body: ErrorResponse = { name: Error.DB }
-                res.status(500).send(body)
-            }
+            res.status(201).send({
+                name: req.body.name,
+                count: req.body.count,
+                id: results.insertId
+            })
+        }, (error) => {
+            return handleMixedError(error, req, res)
         })
     } else {
         logger.info(`Received malformed/missing creation parameters from ${req.hostname}`)
