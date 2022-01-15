@@ -159,7 +159,7 @@ app.put("/inventory", (req, res) => {
         const name = mysql.escape(req.body.name)
         const count = mysql.escape(req.body.count)
 
-        dbConnection.query(`INSERT INTO inventory (created_at, updated_at, name, count) VALUES (NULL, NULL, ${name}, ${count})`,
+        dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
             (error, results, fields) => {
             if (!error) {
                 logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
