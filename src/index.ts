@@ -137,6 +137,24 @@ app.get("/inventory", (req, res) => {
     })
 })
 
+app.get("/inventory/deleted", (req, res) => {
+    dbConnection.query("SELECT inventory.id, inventory.name, inventory.count, "
+    + "deletions.comment FROM inventory INNER JOIN deletions "
+    + "ON inventory.deletion_id=deletions.id WHERE deletion_id IS NOT NULL ",
+    (error, results, fields) => {
+        if (!error) {
+            logger.info(`${req.hostname} requested all deleted entries`)
+
+            res.send(results)
+        } else {
+            logDbError(error, req.hostname)
+
+            const body: ErrorResponse = { name: Error.DB }
+            res.status(500).send(body)
+        }
+    })
+})
+
 app.get("/inventory/item/:id", (req, res) => {
     dbConnection.query(`SELECT * FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
     (error, results, fields) => {
@@ -204,6 +222,8 @@ app.put("/inventory/item/:id", (req, res) => {
     const id = Number.parseInt(req.params.id, 10)
     const updateStmt = prepareUpdateStatement(req.body, id)
     if (updateStmt) {
+        // Request to update
+
         dbConnection.query(updateStmt, (error, results, fields) => {
             if (!error) {
                 if (results.affectedRows > 0) {
@@ -222,14 +242,45 @@ app.put("/inventory/item/:id", (req, res) => {
             }
         })
     } else {
-        logger.info(`${req.hostname} sent no fields to update for entry ${req.params.id} in inventory`)
+        // Request to restore
 
-        const body: ErrorResponse = {
-            name: Error.FIELD,
-            message: "There has to be at least one field to be updated"
-        }
+        dbConnection.query(`SELECT deletion_id FROM inventory `
+            + `WHERE id = ${mysql.escape(id)} AND deletion_id IS NOT NULL`,
+            (error, results, fields) => {
+                if (!error) {
+                    if (results.length === 1) {
+                        const deletionId = results[0].deletion_id
 
-        res.status(400).send(body)
+                        dbConnection.query(`UPDATE inventory SET deletion_id = NULL `
+                        + `WHERE id = ${mysql.escape(id)}`,
+                        (error2, results2, fields2) => {
+                            if (!error2) {
+                                dbConnection.query(`DELETE FROM deletions WHERE id = ${mysql.escape(deletionId)}`,
+                                (error3, results3, fields3) => {
+                                    if (!error3) {
+                                        res.send()
+                                    } else {
+                                        logDbError(error3, req.hostname)
+
+                                        const body: ErrorResponse = { name: Error.DB }
+                                        res.status(500).send(body)
+                                    }
+                                })
+                            } else {
+                                logDbError(error2, req.hostname)
+
+                                const body: ErrorResponse = { name: Error.DB }
+                                res.status(500).send(body)
+                            }
+                        })
+                    }
+                } else {
+                    logDbError(error, req.hostname)
+
+                    const body: ErrorResponse = { name: Error.DB }
+                    res.status(500).send(body)
+                }
+            })
     }
 })
 

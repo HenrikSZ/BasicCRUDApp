@@ -2,6 +2,7 @@ function init() {
     generateEditRow();
     generateDeleteRow();
     getData();
+    getDeletedData();
 }
 
 
@@ -95,6 +96,25 @@ function hideErrorBox() {
 }
 
 
+function switchEntryTables(evt) {
+    let normalTable = document.getElementById("table-data");
+    let deletedTable = document.getElementById("table-data-deleted");
+    let switchBtn = document.getElementById("btn-switch-tables");
+
+    if (normalTable.style.display == "none") {
+        getData();
+        deletedTable.style.display = "none";
+        normalTable.style.display = "block";
+        switchBtn.innerText = "switch to deleted"
+    } else {
+        getDeletedData();
+        normalTable.style.display = "none";
+        deletedTable.style.display = "block";
+        switchBtn.innerText = "switch to normal"
+    }
+}
+
+
 function getData() {
     let request = new XMLHttpRequest();
     request.open("GET", "/inventory");
@@ -115,6 +135,26 @@ function getData() {
 }
 
 
+function getDeletedData() {
+    let request = new XMLHttpRequest();
+    request.open("GET", "/inventory/deleted");
+
+    request.onloadend = function() {
+        if (request.status == 200) {
+            if (this.responseType == "json") {
+                populateDeleted(this.response);
+            } else {
+                populateDeleted(JSON.parse(this.responseText));
+            }
+        } else {
+            handleError(request);
+        }
+    }
+
+    request.send()
+}
+
+
 function populate(obj) {
     let table = document.getElementById("table-data");
     
@@ -123,6 +163,18 @@ function populate(obj) {
 
     for (let line of obj) {
         tbody.appendChild(createEntry(line));
+    }
+}
+
+
+function populateDeleted(obj) {
+    let table = document.getElementById("table-data-deleted");
+
+    let tbody = table.getElementsByTagName("tbody")[0];
+    tbody.innerHTML = "";
+
+    for (let line of obj) {
+        tbody.appendChild(createDeletedEntry(line));
     }
 }
 
@@ -137,7 +189,7 @@ function createEntry(entry) {
     let deleteBtn = document.createElement("button");
 
     editBtn.addEventListener("click", enterEditMode);
-    deleteBtn.addEventListener("click", enterDeleteMode)
+    deleteBtn.addEventListener("click", enterDeleteMode);
 
     name.innerText = entry.name;
     count.innerText = entry.count;
@@ -153,6 +205,34 @@ function createEntry(entry) {
     row.appendChild(count);
     row.appendChild(editCell);
     row.appendChild(deleteCell);
+
+    return row;
+}
+
+
+function createDeletedEntry(entry) {
+    let row = document.createElement("tr");
+    let name = document.createElement("td");
+    let count = document.createElement("td");
+    let comment = document.createElement("td");
+    let restoreCell = document.createElement("td");
+    let restoreBtn = document.createElement("button");
+
+    restoreBtn.addEventListener("click", restore);
+
+    name.innerText = entry.name;
+    count.innerText = entry.count;
+    comment.innerText = entry.comment;
+    restoreCell.appendChild(restoreBtn);
+
+    restoreBtn.innerText = "restore";
+
+    row.id = "data-deleted-id-" + entry.id;
+
+    row.appendChild(name);
+    row.appendChild(count);
+    row.appendChild(comment);
+    row.appendChild(restoreCell);
 
     return row;
 }
@@ -279,6 +359,25 @@ function saveDelete() {
     }
 
     request.send(JSON.stringify(data))
+}
+
+
+function restore(evt) {
+    let row = evt.target.parentNode.parentNode;
+    let id = row.id.slice("data-deleted-id-".length);
+
+    let request = new XMLHttpRequest();
+    request.open("PUT", "/inventory/item/" + id);
+
+    request.onloadend = function() {
+        if (request.status == 200) {
+            row.parentNode.removeChild(row);
+        } else {
+            handleError(request);
+        }
+    }
+
+    request.send()
 }
 
 

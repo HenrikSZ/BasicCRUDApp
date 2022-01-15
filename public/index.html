@@ -39,7 +39,10 @@
             </td>
         </tr>
     </table>
-    <table id="table-data">
+    <button id="btn-switch-tables" onclick="switchEntryTables()">
+        switch to deleted
+    </button>
+    <table id="table-data" style="display:block;">
         <thead>
             <tr>
                 <th>Item Name</th>
@@ -47,6 +50,23 @@
                 <th></th>
                 <th>
                     <button onclick="getData()">
+                        reload
+                    </button>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+    <table id="table-data-deleted" style="display:none;">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Item Count</th>
+                <th>Deletion Comment</th>
+                <th>
+                    <button onclick="getDeletedData()">
                         reload
                     </button>
                 </th>
