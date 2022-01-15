@@ -1,5 +1,6 @@
 function init() {
     generateEditRow();
+    generateDeleteRow();
     getData();
 }
 
@@ -22,7 +23,7 @@ function generateEditRow() {
     discardBtn.innerText = "discard";
 
     saveBtn.addEventListener("click", saveEdits);
-    discardBtn.addEventListener("click", discardEdits);
+    discardBtn.addEventListener("click", discardChanges);
 
     nameCell.appendChild(editName);
     countCell.appendChild(editCount);
@@ -33,6 +34,37 @@ function generateEditRow() {
     editRow.appendChild(countCell);
     editRow.appendChild(saveCell);
     editRow.appendChild(discardCell);
+}
+
+
+function generateDeleteRow() {
+    deleteRow = document.createElement("tr");
+
+    let description = document.createElement("td");
+    let commentCell = document.createElement("td");
+    let deleteCell = document.createElement("td");
+    let discardCell = document.createElement("td");
+
+    deleteComment = document.createElement("input");
+    let deleteBtn = document.createElement("button");
+    let discardBtn = document.createElement("button");
+
+    deleteBtn.innerText = "delete";
+    discardBtn.innerText = "discard";
+
+    deleteBtn.addEventListener("click", saveDelete);
+    discardBtn.addEventListener("click", discardChanges);
+
+    description.innerText = "Deletion comment:";
+    description.style.fontWeight = "bold";
+    commentCell.appendChild(deleteComment);
+    deleteCell.appendChild(deleteBtn);
+    discardCell.appendChild(discardBtn);
+
+    deleteRow.appendChild(description);
+    deleteRow.appendChild(commentCell);
+    deleteRow.appendChild(deleteCell);
+    deleteRow.appendChild(discardCell);
 }
 
 
@@ -105,7 +137,7 @@ function createEntry(entry) {
     let deleteBtn = document.createElement("button");
 
     editBtn.addEventListener("click", enterEditMode);
-    deleteBtn.addEventListener("click", deleteEntry)
+    deleteBtn.addEventListener("click", enterDeleteMode)
 
     name.innerText = entry.name;
     count.innerText = entry.count;
@@ -175,8 +207,8 @@ function deleteEntry(evt) {
 }
 
 
-function discardEdits() {
-    exitEditMode()
+function discardChanges() {
+    exitChangeMode()
 }
 
 
@@ -211,7 +243,7 @@ function saveEdits() {
             if (request.status == 200) {
                 oldRow.childNodes[0].innerText = newName;
                 oldRow.childNodes[1].innerText = newCount;
-                exitEditMode();
+                exitChangeMode();
             } else {
                 handleError(request);
             }
@@ -219,14 +251,40 @@ function saveEdits() {
 
         request.send(JSON.stringify(data));
     } else {
-        exitEditMode();
+        exitChangeMode();
     }
+}
+
+
+function saveDelete() {
+    let id = oldRow.id.slice("data-id-".length);
+
+    let comment = deleteRow.childNodes[1].childNodes[0].value;
+
+    let data = {
+        comment: comment
+    };
+
+    let request = new XMLHttpRequest();
+    request.open("DELETE", `/inventory/item/${id}`);
+    request.setRequestHeader("Content-Type", "application/json");
+
+    request.onloadend = function() {
+        if (request.status == 200) {
+            oldRow = null;
+            deleteRow.parentNode.removeChild(deleteRow);
+        } else {
+            handleError(request);
+        }
+    }
+
+    request.send(JSON.stringify(data))
 }
 
 
 function enterEditMode(evt) {
     if (oldRow) {
-        exitEditMode()
+        exitChangeMode();
     }
 
     let row = evt.target.parentNode.parentNode;
@@ -240,8 +298,24 @@ function enterEditMode(evt) {
 }
 
 
-function exitEditMode() {
-    editRow.parentNode.replaceChild(oldRow, editRow);
+function enterDeleteMode(evt) {
+    if (oldRow) {
+        exitChangeMode();
+    }
+
+    oldRow = evt.target.parentNode.parentNode;
+
+    oldRow.parentNode.replaceChild(deleteRow, oldRow);
+}
+
+
+function exitChangeMode() {
+    if (editRow.parentNode) {
+        editRow.parentNode.replaceChild(oldRow, editRow);
+    }
+    if (deleteRow.parentNode) {
+        deleteRow.parentNode.replaceChild(oldRow, deleteRow);
+    }
 
     oldRow = null;
 }
@@ -251,5 +325,8 @@ let editRow = null;
 let editName = null;
 let editCount = null;
 let oldRow = null;
+
+let deleteRow = null;
+let deleteComment = null;
 
 document.addEventListener("DOMContentLoaded", init);
