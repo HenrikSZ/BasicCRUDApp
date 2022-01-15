@@ -3,8 +3,8 @@ import bodyParser from "body-parser"
 import mysql from "mysql"
 import dotenv from "dotenv"
 import path from "path"
+import winston from "winston"
 
-dotenv.config()
 
 enum Error {
     DB = "Database Error",
@@ -47,33 +47,74 @@ function prepareUpdateStatement(body: any): string | null {
 }
 
 
+function logDbError(error: mysql.MysqlError, hostname?: string) {
+    if (hostname) {
+        logger.error(`${hostname} caused database error ${error.code}: ${error.message}`)
+    } else {
+        logger.error(`Database error ${error.code}: ${error.message}`)
+    }
+}
+
+
 function isInteger(n: string): boolean {
     return /^-?\d+$/.test(n)
 }
 
+dotenv.config()
 
-const app = express()
-const dbConnection = mysql.createConnection({
+const logger = winston.createLogger({
+    level: process.env.LOG_LEVEL,
+    format: winston.format.json(),
+    transports: [
+        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'combined.log' }),
+    ]
+})
+
+const dbConnConfig: mysql.ConnectionConfig  = {
     host: process.env.DB_HOST,
+    port: Number.parseInt(process.env.DB_PORT, 10),
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME
+}
+
+const dbConnection = mysql.createConnection(dbConnConfig)
+
+dbConnection.connect((err, args) => {
+    if (!err) {
+        logger.info(`Connected to database ${dbConnConfig.database} `
+        + `on ${dbConnConfig.host}:${dbConnConfig.port} `
+        + `as user ${dbConnConfig.user}`)
+    } else {
+        logDbError(err)
+    }
 })
 
-dbConnection.connect()
 dbConnection.query(
-            "CREATE TABLE IF NOT EXISTS inventory" +
-            "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
-            "name VARCHAR(64) NOT NULL," +
-            "count INT NOT NULL DEFAULT 0)")
+            "CREATE TABLE IF NOT EXISTS inventory "
+            + "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+            + "name VARCHAR(64) NOT NULL, "
+            + "count INT NOT NULL DEFAULT 0)",
+            (error, results, fields) => {
+                if (error) {
+                    logDbError(error)
+                }
+            })
 
+
+const app = express()
 app.use(bodyParser.json())
 
 app.get("/inventory", (req, res) => {
     dbConnection.query("SELECT * FROM inventory", (error, results, fields) => {
         if (!error) {
+            logger.info(`${req.hostname} requested all entries`)
+
             res.send(results)
         } else {
+            logDbError(error, req.hostname)
+
             const body: ErrorResponse = { name: Error.DB }
             res.status(500).send(body)
         }
@@ -84,8 +125,12 @@ app.get("/inventory/:id", (req, res) => {
     dbConnection.query(`SELECT * FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
     (error, results, fields) => {
         if (!error) {
+            logger.info(`${req.hostname} requested entry with id ${req.params.id}`)
+
             res.send(results[0])
         } else {
+            logDbError(error, req.hostname)
+
             const body: ErrorResponse = { name: Error.DB }
             res.status(500).send(body)
         }
@@ -101,17 +146,23 @@ app.put("/inventory", (req, res) => {
         dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
             (error, results, fields) => {
             if (!error) {
+                logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
+
                 res.status(201).send({
                     name: req.body.name,
                     count: req.body.count,
                     id: results.insertId
                 })
             } else {
+                logDbError(error, req.hostname)
+
                 const body: ErrorResponse = { name: Error.DB }
                 res.status(500).send(body)
             }
         })
     } else {
+        logger.info(`Received malformed/missing creation parameters from ${req.hostname}`)
+
         const body: ErrorResponse = {
             name: Error.FIELD,
             message: "Missing or malformed json fields"
@@ -126,13 +177,19 @@ app.put("/inventory/:id", (req, res) => {
     if (updateStmt) {
         dbConnection.query(updateStmt, (error, results, fields) => {
             if (!error) {
+                logger.info(`${req.hostname} updated entry with id ${req.params.id}`)
+
                 res.send()
             } else {
+                logDbError(error, req.hostname)
+
                 const body: ErrorResponse = { name: Error.DB }
                 res.status(500).send(body)
             }
         })
     } else {
+        logger.info(`${req.hostname} sent no fields to update for entry ${req.params.id} in inventory`)
+
         const body: ErrorResponse = {
             name: Error.FIELD,
             message: "There has to be at least one field to be updated"
@@ -146,8 +203,18 @@ app.delete("/inventory/:id", (req, res) => {
     dbConnection.query(`DELETE FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
     (error, results, fields) => {
         if (!error) {
+            if (results.affectedRows > 0) {
+                logger.info(`${req.hostname} deleted entry `
+                + `with id ${req.params.id} from inventory`)
+            } else {
+                logger.info(`${req.hostname} tried to delete non-existent entry `
+                + `with id ${req.params.id} from inventory`)
+            }
+
             res.send()
         } else {
+            logDbError(error, req.hostname)
+
             const body: ErrorResponse = { name: Error.DB }
             res.status(500).send(body)
         }
@@ -156,4 +223,7 @@ app.delete("/inventory/:id", (req, res) => {
 
 app.use(express.static(path.resolve(__dirname, "..", "public")))
 
-app.listen(process.env.PORT)
+const port = process.env.PORT
+app.listen(port, () => {
+    logger.info(`Started web server listening on port ${port}`)
+})
