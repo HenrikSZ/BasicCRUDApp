@@ -85,52 +85,46 @@ const app = express()
 app.use(bodyParser.json())
 
 app.get("/inventory", (req, res) => {
-    dbConnection.query("SELECT * FROM inventory WHERE deletion_id IS NULL",
-    (error, results, fields) => {
-        if (!error) {
-            logger.info(`${req.hostname} requested all entries`)
+    const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
 
-            res.send(results)
-        } else {
-            logDbError(error, req.hostname)
+    dbPromise.query(stmt)
+    .then(([results, fields]) => {
+        logger.info(`${req.hostname} requested all entries`)
 
-            const body: ErrorResponse = { name: Error.DB }
-            res.status(500).send(body)
-        }
+        res.send(results)
+    }, (error) => {
+        handleMixedError(error, req, res)
     })
 })
 
 app.get("/inventory/deleted", (req, res) => {
-    dbConnection.query("SELECT inventory.id, inventory.name, inventory.count, "
+    const stmt = "SELECT inventory.id, inventory.name, inventory.count, "
     + "deletions.comment FROM inventory INNER JOIN deletions "
-    + "ON inventory.deletion_id=deletions.id WHERE deletion_id IS NOT NULL ",
-    (error, results, fields) => {
-        if (!error) {
-            logger.info(`${req.hostname} requested all deleted entries`)
+    + "ON inventory.deletion_id=deletions.id WHERE deletion_id IS NOT NULL"
 
-            res.send(results)
-        } else {
-            logDbError(error, req.hostname)
+    dbPromise.query(stmt)
+    .then(([results, fields]) => {
+        logger.info(`${req.hostname} requested all deleted entries`)
 
-            const body: ErrorResponse = { name: Error.DB }
-            res.status(500).send(body)
-        }
+        res.send(results)
+    }, (error) => {
+        handleMixedError(error, req, res)
     })
 })
 
 app.get("/inventory/item/:id", (req, res) => {
-    dbConnection.query(`SELECT * FROM inventory WHERE id = ${mysql2.escape(req.params.id)}`,
-    (error, results: RowDataPacket, fields) => {
-        if (!error) {
-            logger.info(`${req.hostname} requested entry with id ${req.params.id}`)
+    hasValidId(req, res, "retrieve")
+    .then(() => {
+        const stmt = "SELECT * FROM inventory WHERE id = ?"
+        return dbPromise.query(stmt, req.params.id)
+    })
+    .then(([results, fields]) => {
+        results = results as RowDataPacket[]
+        logger.info(`${req.hostname} requested entry with id ${req.params.id}`)
 
-            res.send(results[0])
-        } else {
-            logDbError(error, req.hostname)
-
-            const body: ErrorResponse = { name: Error.DB }
-            res.status(500).send(body)
-        }
+        res.send(results[0])
+    }, (error) => {
+        handleMixedError(error, req, res)
     })
 })
 
