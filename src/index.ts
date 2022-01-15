@@ -4,7 +4,6 @@ import mysql2, { OkPacket, QueryError, RowDataPacket } from "mysql2"
 import dotenv from "dotenv"
 import path from "path"
 import winston from "winston"
-import { MysqlError } from "mysql"
 
 
 enum Error {
@@ -19,7 +18,7 @@ type ErrorResponse = {
 }
 
 
-function logDbError(error: mysql2.QueryError, hostname?: string) {
+function logDbError(error: QueryError, hostname?: string) {
     if (hostname) {
         logger.error(`${hostname} caused database error ${error.code}: ${error.message}`)
     } else {
@@ -44,8 +43,8 @@ const logger = winston.createLogger({
 })
 
 
-function isMysqlError(error: ErrorResponse | mysql2.QueryError): error is mysql2.QueryError {
-    return Boolean((error as mysql2.QueryError).name)
+function isMysqlError(error: ErrorResponse | QueryError): error is QueryError {
+    return Boolean((error as QueryError).name)
 }
 
 function hasValidId(req: express.Request, res: express.Response, action: string = "make changes") {
@@ -65,6 +64,20 @@ function hasValidId(req: express.Request, res: express.Response, action: string 
             reject(body)
         }
     })
+}
+
+function handleMixedError(error: ErrorResponse | QueryError,
+    req: express.Request, res: express.Response) {
+    if (isMysqlError(error)) {
+        logDbError(error, req.hostname)
+
+        const body: ErrorResponse = { name: Error.DB }
+        res.status(500).send(body)
+    } else {
+        res.send(error)
+    }
+
+    return 0
 }
 
 
@@ -107,7 +120,7 @@ app.get("/inventory/deleted", (req, res) => {
 
 app.get("/inventory/item/:id", (req, res) => {
     dbConnection.query(`SELECT * FROM inventory WHERE id = ${mysql2.escape(req.params.id)}`,
-    (error, results: mysql2.RowDataPacket, fields) => {
+    (error, results: RowDataPacket, fields) => {
         if (!error) {
             logger.info(`${req.hostname} requested entry with id ${req.params.id}`)
 
@@ -128,7 +141,7 @@ app.put("/inventory", (req, res) => {
         const count = mysql2.escape(req.body.count)
 
         dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
-            (error, results: mysql2.OkPacket, fields) => {
+            (error, results: OkPacket, fields) => {
             if (!error) {
                 logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
 
@@ -156,81 +169,67 @@ app.put("/inventory", (req, res) => {
     }
 })
 
-app.put("/inventory/item/:id", (req, res) => {    
-    if (!isInteger(req.params.id)) {
-        logger.info(`${req.hostname} tried to update without a valid entry id (${req.params.id})`)
+app.put("/inventory/item/:id", (req, res) => {
+    const update = req.body.hasOwnProperty("name") || req.body.hasOwnProperty("count")
+    let id = 0
 
-        const body: ErrorResponse = {
-            name: Error.FIELD,
-            message: "The id has to be specified as number in the url path"
-        }
+    if (update) {
+        hasValidId(req, res, "update")
+        .then(() => {
+            id = Number.parseInt(req.params.id, 10)
+            const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(id)}`
 
-        res.status(400).send(body)
-        return
-    }
+            return dbPromise.query(stmt, req.body)
+        })
+        .then(([results, fields]) => {
+            results = results as OkPacket
 
-    const id = Number.parseInt(req.params.id, 10)
-    if (req.body.hasOwnProperty("name") || req.body.hasOwnProperty("count")) {
-        // Request to update
+            if (results.affectedRows > 0) {
+                logger.info(`${req.hostname} updated entry with id ${id}`)
+            } else {
+                logger.info(`${req.hostname} tried to update non-existent entry `
+                + `with id ${id} from inventory`)
+            }
 
-        dbConnection.query(`UPDATE inventory SET ? WHERE id = ${mysql2.escape(id)}`,
-        req.body, (error, results: mysql2.OkPacket, fields) => {
-            if (!error) {
-                if (results.affectedRows > 0) {
-                    logger.info(`${req.hostname} updated entry with id ${id}`)
-                } else {
-                    logger.info(`${req.hostname} tried to update non-existent entry `
-                    + `with id ${id} from inventory`)
+            return Promise.resolve(0)
+        })
+        .then(() => {
+            res.send()
+        }, (error) => {
+            return handleMixedError(error, req, res)
+        })
+     } else {
+         hasValidId(req, res, "undelete")
+         .then(() => {
+            id = Number.parseInt(req.params.id, 10)
+            const stmt = "SELECT deletion_id FROM inventory "
+            + "WHERE id = ? AND deletion_id IS NOT NULL"
+
+            return dbPromise.query(stmt, id)
+        })
+        .then(([results, fields]) => {
+            results = results as RowDataPacket[]
+
+            if (results.length === 1) {
+                const deletionId = results[0].deletion_id
+                const stmt = "DELETE FROM deletions WHERE id = ?"
+
+                return dbPromise.query(stmt, deletionId)
+            } else {
+                const body: ErrorResponse = {
+                    name: Error.FIELD,
+                    message: "The entry with the specified id is not in "
+                    + "the deleted entries"
                 }
 
-                res.send()
-            } else {
-                logDbError(error, req.hostname)
-
-                const body: ErrorResponse = { name: Error.DB }
-                res.status(500).send(body)
+                return Promise.reject(body)
             }
         })
-    } else {
-        // Request to restore
-
-        dbConnection.query(`SELECT deletion_id FROM inventory `
-            + `WHERE id = ${mysql2.escape(id)} AND deletion_id IS NOT NULL`,
-            (error, results: mysql2.RowDataPacket, fields) => {
-                if (!error) {
-                    if (results.length === 1) {
-                        const deletionId = results[0].deletion_id
-
-                        dbConnection.query(`UPDATE inventory SET deletion_id = NULL `
-                        + `WHERE id = ${mysql2.escape(id)}`,
-                        (error2, results2, fields2) => {
-                            if (!error2) {
-                                dbConnection.query(`DELETE FROM deletions WHERE id = ${mysql2.escape(deletionId)}`,
-                                (error3, results3, fields3) => {
-                                    if (!error3) {
-                                        res.send()
-                                    } else {
-                                        logDbError(error3, req.hostname)
-
-                                        const body: ErrorResponse = { name: Error.DB }
-                                        res.status(500).send(body)
-                                    }
-                                })
-                            } else {
-                                logDbError(error2, req.hostname)
-
-                                const body: ErrorResponse = { name: Error.DB }
-                                res.status(500).send(body)
-                            }
-                        })
-                    }
-                } else {
-                    logDbError(error, req.hostname)
-
-                    const body: ErrorResponse = { name: Error.DB }
-                    res.status(500).send(body)
-                }
-            })
+        .then(() => {
+            res.send()
+        }, (error) => {
+            return handleMixedError(error, req, res)
+        })
     }
 })
 
@@ -239,7 +238,7 @@ app.delete("/inventory/item/:id", (req, res) => {
     .then(() => {
         return new Promise((resolve, reject) => {
             if (req.body.hasOwnProperty("comment")) {
-                resolve(mysql2.escape(req.body.comment))
+                resolve(req.body.comment)
             } else {
                 logger.info(`${req.hostname} requested to delete entry in `
                 + `inventory without a deletion comment`)
@@ -255,8 +254,8 @@ app.delete("/inventory/item/:id", (req, res) => {
         })
     })
     .then((comment) => {
-        const stmt = `INSERT INTO deletions (comment) VALUES (${comment})`
-        return dbPromise.query(stmt)
+        const stmt = "INSERT INTO deletions (comment) VALUES (?)"
+        return dbPromise.query(stmt, comment)
     })
     .then(([results, fields]) => {
         logger.info(`${req.hostname} added a deletion comment for entry with `
@@ -276,14 +275,7 @@ app.delete("/inventory/item/:id", (req, res) => {
 
         res.send()
     }, (error) => {
-        if (isMysqlError(error)) {
-            logDbError(error, req.hostname)
-
-            const body: ErrorResponse = { name: Error.DB }
-            res.status(500).send(body)
-        } else {
-            return res.send(error)
-        }
+        return handleMixedError(error, req, res)
     })
 })
 
@@ -325,7 +317,7 @@ dbPromise.query(
         + "updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(), "
         + "name VARCHAR(64) NOT NULL, "
         + "count INT NOT NULL DEFAULT 0, "
-        + "FOREIGN KEY (deletion_id) REFERENCES deletions (id))")
+        + "FOREIGN KEY (deletion_id) REFERENCES deletions (id) ON DELETE SET NULL)")
     })
     .then(() => {
         return new Promise((resolve, reject) => {
