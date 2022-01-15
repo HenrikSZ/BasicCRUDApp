@@ -1,10 +1,10 @@
-#table-data td {
+.table-data-any td {
     padding: 5;
     border: 1pt solid black;
     margin: 0;
 }
 
-#table-data {
+.table-data-any {
     border-spacing: 0;
     border-collapse: collapse;
     margin: 10pt;
