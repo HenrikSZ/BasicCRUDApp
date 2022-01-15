@@ -234,29 +234,58 @@ app.put("/inventory/item/:id", (req, res) => {
 })
 
 app.delete("/inventory/item/:id", (req, res) => {
-    dbConnection.query(`DELETE FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
-    (error, results, fields) => {
-        if (!error) {
-            if (results.affectedRows > 0) {
-                logger.info(`${req.hostname} deleted entry `
-                + `with id ${req.params.id} from inventory`)
-            } else {
-                logger.info(`${req.hostname} tried to delete non-existent entry `
-                + `with id ${req.params.id} from inventory`)
-            }
+    if (!isInteger(req.params.id)) {
+        logger.info(`${req.hostname} tried to delete without a valid entry id (${req.params.id})`)
 
-            res.send()
-        } else {
-            logDbError(error, req.hostname)
-
-            const body: ErrorResponse = { name: Error.DB }
-            res.status(500).send(body)
+        const body: ErrorResponse = {
+            name: Error.FIELD,
+            message: "The id has to be specified as number in the url path"
         }
-    })
+
+        res.status(400).send(body)
+        return
+    }
+
+    if (req.body.hasOwnProperty("comment")) {
+        // TODO: Handle if entry already marked for deletion.
+        const comment = mysql.escape(req.body.comment)
+
+        const stmt = `INSERT INTO deletions (comment) VALUES (${comment})`
+
+        dbConnection.query(stmt,
+        (error, results, fields) => {
+            if (!error) {
+                const deletionId = mysql.escape(results.insertId)
+                const id = Number.parseInt(req.params.id, 10)
+
+                logger.info(`${req.hostname} added a deletion comment for entry with id ${id} in inventory`)
+
+                const updateStmt = prepareUpdateStatement({ deletion_id: deletionId }, id)
+                dbConnection.query(updateStmt, (error2, results2, fields2) => {
+                    if (!error2) {
+                        logger.info(`${req.hostname} marked entry with id ${id} in inventory as deleted`)
+
+                        res.send()
+                    } else {
+                        logDbError(error2, req.hostname)
+
+                        const body: ErrorResponse = { name: Error.DB }
+                        res.status(500).send(body)
+                    }
+                })
+            } else {
+                logDbError(error, req.hostname)
+
+                const body: ErrorResponse = { name: Error.DB }
+                res.status(500).send(body)
+            }
+        })
+    }
 })
 
 app.use(express.static(path.resolve(__dirname, "..", "public")))
 
+// TODO only start web server when database connection is established
 const port = process.env.PORT
 app.listen(port, () => {
     logger.info(`Started web server listening on port ${port}`)
