@@ -161,7 +161,7 @@ function deleteEntry(evt) {
     let id = row.id.slice("data-id-".length);
 
     let request = new XMLHttpRequest();
-    request.open("DELETE", `/inventory/${id}`);
+    request.open("DELETE", `/inventory/item/${id}`);
 
     request.onloadend = function() {
         if (request.status == 200) {
@@ -204,7 +204,7 @@ function saveEdits() {
 
     if (changed) {
         let request = new XMLHttpRequest();
-        request.open("PUT", `/inventory/${id}`);
+        request.open("PUT", `/inventory/item/${id}`);
         request.setRequestHeader("Content-Type", "application/json");
     
         request.onloadend = function() {

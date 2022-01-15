@@ -18,9 +18,7 @@ type ErrorResponse = {
 }
 
 
-function prepareUpdateStatement(body: any): string | null {
-    const id = mysql.escape(body.id)
-
+function prepareUpdateStatement(body: any, id: number): string | null {
     let firstValue = true
     let updatePairs = ""
     for (const key in body) {
@@ -40,7 +38,7 @@ function prepareUpdateStatement(body: any): string | null {
     if (!firstValue) {
         // There has been at least one value to update
 
-        return `UPDATE inventory SET ${updatePairs} WHERE id = ${id}`
+        return `UPDATE inventory SET ${updatePairs} WHERE id = ${mysql.escape(id)}`
     }
 
     return null
@@ -91,23 +89,41 @@ dbConnection.connect((err, args) => {
     }
 })
 
+
 dbConnection.query(
-            "CREATE TABLE IF NOT EXISTS inventory "
-            + "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
-            + "name VARCHAR(64) NOT NULL, "
-            + "count INT NOT NULL DEFAULT 0)",
-            (error, results, fields) => {
-                if (error) {
-                    logDbError(error)
-                }
-            })
+    "CREATE TABLE IF NOT EXISTS deletions "
+    + "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+    + "created_at TIMESTAMP NOT NULL DEFAULT NOW(), "
+    + "update_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(), "
+    + "comment VARCHAR(255) NOT NULL)",
+    (error, results, fields) => {
+        if (error) {
+            logDbError(error)
+        }
+    })
+
+dbConnection.query(
+    "CREATE TABLE IF NOT EXISTS inventory "
+    + "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+    + "deletion_id BIGINT, "
+    + "created_at TIMESTAMP NOT NULL DEFAULT NOW(), "
+    + "updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(), "
+    + "name VARCHAR(64) NOT NULL, "
+    + "count INT NOT NULL DEFAULT 0, "
+    + "FOREIGN KEY (deletion_id) REFERENCES deletions (id))",
+    (error, results, fields) => {
+        if (error) {
+            logDbError(error)
+        }
+    })
 
 
 const app = express()
 app.use(bodyParser.json())
 
 app.get("/inventory", (req, res) => {
-    dbConnection.query("SELECT * FROM inventory", (error, results, fields) => {
+    dbConnection.query("SELECT * FROM inventory WHERE deletion_id IS NULL",
+    (error, results, fields) => {
         if (!error) {
             logger.info(`${req.hostname} requested all entries`)
 
@@ -121,7 +137,7 @@ app.get("/inventory", (req, res) => {
     })
 })
 
-app.get("/inventory/:id", (req, res) => {
+app.get("/inventory/item/:id", (req, res) => {
     dbConnection.query(`SELECT * FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
     (error, results, fields) => {
         if (!error) {
@@ -143,7 +159,7 @@ app.put("/inventory", (req, res) => {
         const name = mysql.escape(req.body.name)
         const count = mysql.escape(req.body.count)
 
-        dbConnection.query(`INSERT INTO inventory (name, count) VALUES (${name}, ${count})`,
+        dbConnection.query(`INSERT INTO inventory (created_at, updated_at, name, count) VALUES (NULL, NULL, ${name}, ${count})`,
             (error, results, fields) => {
             if (!error) {
                 logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
@@ -172,12 +188,30 @@ app.put("/inventory", (req, res) => {
     }
 })
 
-app.put("/inventory/:id", (req, res) => {
-    const updateStmt = prepareUpdateStatement(req.body)
+app.put("/inventory/item/:id", (req, res) => {
+    if (!isInteger(req.params.id)) {
+        logger.info(`${req.hostname} tried to update without a valid entry id (${req.params.id})`)
+
+        const body: ErrorResponse = {
+            name: Error.FIELD,
+            message: "The id has to be specified as number in the url path"
+        }
+
+        res.status(400).send(body)
+        return
+    }
+
+    const id = Number.parseInt(req.params.id, 10)
+    const updateStmt = prepareUpdateStatement(req.body, id)
     if (updateStmt) {
         dbConnection.query(updateStmt, (error, results, fields) => {
             if (!error) {
-                logger.info(`${req.hostname} updated entry with id ${req.params.id}`)
+                if (results.affectedRows > 0) {
+                    logger.info(`${req.hostname} updated entry with id ${id}`)
+                } else {
+                    logger.info(`${req.hostname} tried to update non-existent entry `
+                    + `with id ${id} from inventory`)
+                }
 
                 res.send()
             } else {
@@ -199,7 +233,7 @@ app.put("/inventory/:id", (req, res) => {
     }
 })
 
-app.delete("/inventory/:id", (req, res) => {
+app.delete("/inventory/item/:id", (req, res) => {
     dbConnection.query(`DELETE FROM inventory WHERE id = ${mysql.escape(req.params.id)}`,
     (error, results, fields) => {
         if (!error) {
