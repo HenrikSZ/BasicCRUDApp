@@ -17,6 +17,16 @@ type ErrorResponse = {
     message?: string
 }
 
+declare global {
+    namespace Express {
+         export interface Request {
+                custom: {
+                    inventoryEntryId?: number
+                }
+         }
+    }
+}
+
 
 function logDbError(error: QueryError, hostname?: string) {
     if (hostname) {
@@ -47,25 +57,6 @@ function isMysqlError(error: ErrorResponse | QueryError): error is QueryError {
     return Boolean((error as QueryError).name)
 }
 
-function hasValidId(req: express.Request, res: express.Response, action: string = "make changes") {
-    return new Promise((resolve, reject) => {
-        if (isInteger(req.params.id)) {
-            resolve(0)
-        } else {
-            logger.info(`${req.hostname} tried to ${action} without a valid entry `
-            + `id (${req.params.id})`)
-
-            const body: ErrorResponse = {
-                name: Error.FIELD,
-                message: "The id has to be specified as number in the url path"
-            }
-
-            res.status(400)
-            reject(body)
-        }
-    })
-}
-
 function handleMixedError(error: ErrorResponse | QueryError,
     req: express.Request, res: express.Response) {
     if (isMysqlError(error)) {
@@ -83,6 +74,28 @@ function handleMixedError(error: ErrorResponse | QueryError,
 
 const app = express()
 app.use(bodyParser.json())
+
+app.use((req, res, next) => {
+    req.custom = {}
+    next()
+})
+
+app.use("/inventory/item/:id", (req, res, next) => {
+    if (isInteger(req.params.id)) {
+        req.custom.inventoryEntryId = Number.parseInt(req.params.id, 10)
+        next()
+    } else {
+        logger.info(`${req.hostname} tried to access inventory without a valid`
+        + `entry id (${req.custom.inventoryEntryId})`)
+
+        const body: ErrorResponse = {
+            name: Error.FIELD,
+            message: "The id has to be specified as number in the url path"
+        }
+
+        res.status(400).send()
+    }
+})
 
 app.get("/inventory", (req, res) => {
     const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
@@ -113,14 +126,12 @@ app.get("/inventory/deleted", (req, res) => {
 })
 
 app.get("/inventory/item/:id", (req, res) => {
-    hasValidId(req, res, "retrieve")
-    .then(() => {
-        const stmt = "SELECT * FROM inventory WHERE id = ?"
-        return dbPromise.query(stmt, req.params.id)
-    })
+    const stmt = "SELECT * FROM inventory WHERE id = ?"
+
+    dbPromise.query(stmt, req.custom.inventoryEntryId)
     .then(([results, fields]) => {
         results = results as RowDataPacket[]
-        logger.info(`${req.hostname} requested entry with id ${req.params.id}`)
+        logger.info(`${req.hostname} requested entry with id ${req.custom.inventoryEntryId}`)
 
         res.send(results[0])
     }, (error) => {
@@ -160,24 +171,19 @@ app.put("/inventory", (req, res) => {
 
 app.put("/inventory/item/:id", (req, res) => {
     const update = req.body.hasOwnProperty("name") || req.body.hasOwnProperty("count")
-    let id = 0
 
     if (update) {
-        hasValidId(req, res, "update")
-        .then(() => {
-            id = Number.parseInt(req.params.id, 10)
-            const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(id)}`
+        const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.custom.inventoryEntryId)}`
 
-            return dbPromise.query(stmt, req.body)
-        })
+        dbPromise.query(stmt, req.body)
         .then(([results, fields]) => {
             results = results as OkPacket
 
             if (results.affectedRows > 0) {
-                logger.info(`${req.hostname} updated entry with id ${id}`)
+                logger.info(`${req.hostname} updated entry with id ${req.custom.inventoryEntryId}`)
             } else {
                 logger.info(`${req.hostname} tried to update non-existent entry `
-                + `with id ${id} from inventory`)
+                + `with id ${req.custom.inventoryEntryId} from inventory`)
             }
 
             return Promise.resolve(0)
@@ -188,13 +194,12 @@ app.put("/inventory/item/:id", (req, res) => {
             return handleMixedError(error, req, res)
         })
      } else {
-         hasValidId(req, res, "undelete")
-         .then(() => {
-            id = Number.parseInt(req.params.id, 10)
+        Promise.resolve()
+        .then(() => {
             const stmt = "SELECT deletion_id FROM inventory "
             + "WHERE id = ? AND deletion_id IS NOT NULL"
 
-            return dbPromise.query(stmt, id)
+            return dbPromise.query(stmt, req.custom.inventoryEntryId)
         })
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
@@ -223,24 +228,21 @@ app.put("/inventory/item/:id", (req, res) => {
 })
 
 app.delete("/inventory/item/:id", (req, res) => {
-    hasValidId(req, res, "delete")
-    .then(() => {
-        return new Promise((resolve, reject) => {
-            if (req.body.hasOwnProperty("comment")) {
-                resolve(req.body.comment)
-            } else {
-                logger.info(`${req.hostname} requested to delete entry in `
-                + `inventory without a deletion comment`)
+    new Promise((resolve, reject) => {
+        if (req.body.hasOwnProperty("comment")) {
+            resolve(req.body.comment)
+        } else {
+            logger.info(`${req.hostname} requested to delete entry in `
+            + `inventory without a deletion comment`)
 
-                const body: ErrorResponse = {
-                    name: Error.FIELD,
-                    message: "There has to be a deletion comment for a deletion"
-                }
-
-                res.status(400)
-                reject(body)
+            const body: ErrorResponse = {
+                name: Error.FIELD,
+                message: "There has to be a deletion comment for a deletion"
             }
-        })
+
+            res.status(400)
+            reject(body)
+        }
     })
     .then((comment) => {
         const stmt = "INSERT INTO deletions (comment) VALUES (?)"
@@ -248,18 +250,17 @@ app.delete("/inventory/item/:id", (req, res) => {
     })
     .then(([results, fields]) => {
         logger.info(`${req.hostname} added a deletion comment for entry with `
-        + `id ${req.params.id} in inventory`)
+        + `id ${req.custom.inventoryEntryId} in inventory`)
 
         results = results as OkPacket
         const deletionId = mysql2.escape(results.insertId)
-        const id = Number.parseInt(req.params.id, 10)
 
-        const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(id)}`
+        const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.custom.inventoryEntryId)}`
 
         return dbPromise.query(stmt, { deletion_id: deletionId })
     })
     .then(() => {
-        logger.info(`${req.hostname} marked entry with id ${req.params.id} in `
+        logger.info(`${req.hostname} marked entry with id ${req.custom.inventoryEntryId} in `
         + `inventory as deleted`)
 
         res.send()
