@@ -245,7 +245,7 @@ function saveNew() {
     data.count = document.getElementById("new-count").value;
     
     let request = new XMLHttpRequest()
-    request.open("PUT", "/inventory");
+    request.open("PUT", "/inventory/item/new");
     request.setRequestHeader("Content-Type", "application/json");
 
     request.onloadend = function() {
@@ -273,7 +273,7 @@ function deleteEntry(evt) {
     let id = row.id.slice("data-id-".length);
 
     let request = new XMLHttpRequest();
-    request.open("DELETE", `/inventory/item/${id}`);
+    request.open("DELETE", `/inventory/item/existing/${id}`);
 
     request.onloadend = function() {
         if (request.status == 200) {
@@ -316,7 +316,7 @@ function saveEdits() {
 
     if (changed) {
         let request = new XMLHttpRequest();
-        request.open("PUT", `/inventory/item/${id}`);
+        request.open("PUT", `/inventory/item/existing/${id}`);
         request.setRequestHeader("Content-Type", "application/json");
     
         request.onloadend = function() {
@@ -346,7 +346,7 @@ function saveDelete() {
     };
 
     let request = new XMLHttpRequest();
-    request.open("DELETE", `/inventory/item/${id}`);
+    request.open("DELETE", `/inventory/item/existing/${id}`);
     request.setRequestHeader("Content-Type", "application/json");
 
     request.onloadend = function() {
@@ -367,7 +367,7 @@ function restore(evt) {
     let id = row.id.slice("data-deleted-id-".length);
 
     let request = new XMLHttpRequest();
-    request.open("PUT", "/inventory/item/" + id);
+    request.open("PUT", "/inventory/item/existing/" + id);
 
     request.onloadend = function() {
         if (request.status == 200) {

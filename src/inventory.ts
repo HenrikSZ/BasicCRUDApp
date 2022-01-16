@@ -20,15 +20,16 @@ export default class InventoryController {
     constructor() {
         this.router = express.Router()
 
-        this.router.get("/", this.getInventory)
-        this.router.get("/deleted", this.getDeletedInvetory)
-        this.router.put("/item", this.putNewInventoryItem)
+        this.router.get("/", this.getInventory.bind(this))
+        this.router.get("/deleted", this.getDeletedInvetory.bind(this))
 
-        this.router.use("/item/:id", this.entryIdMiddleware)
+        this.router.use("/item/new", this.newInventoryItemMiddleware.bind(this))
+        this.router.put("/item/new", this.putNewInventoryItem.bind(this))
 
-        this.router.get("/item/:id", this.getInventoryItem)
-        this.router.put("/item/:id", this.putExistingInventoryItem)
-        this.router.delete("/item/:id", this.deleteInventoryItem)
+        this.router.use("/item/existing/:id", this.entryIdMiddleware.bind(this))
+        this.router.get("/item/existing/:id", this.getInventoryItem.bind(this))
+        this.router.put("/item/existing/:id", this.putExistingInventoryItem.bind(this))
+        this.router.delete("/item/existing/:id", this.deleteInventoryItem.bind(this))
     }
 
     entryIdMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -46,6 +47,27 @@ export default class InventoryController {
 
             res.status(400).send()
         }
+    }
+
+    newInventoryItemMiddleware(req: express.Request, res: express.Response,
+        next: express.NextFunction) {
+        if (this.isValidNewEntry(req.body)) {
+            next()
+        } else {
+            logger.info(`Received malformed/missing creation parameters from ${req.hostname}`)
+
+            const body: ErrorResponse = {
+                name: Error.FIELD,
+                message: "Missing or malformed json fields"
+            }
+
+            res.status(400).send(body)
+        }
+    }
+
+    isValidNewEntry(entry: any) {
+        return (entry.hasOwnProperty("name") && entry.hasOwnProperty("count")
+            && entry.name.length !== 0 && isInteger(entry.count) && entry.count >= 0)
     }
 
     getInventory(req: express.Request, res: express.Response) {
@@ -91,33 +113,21 @@ export default class InventoryController {
     }
 
     putNewInventoryItem(req: express.Request, res: express.Response) {
-        if (req.body.hasOwnProperty("name") && req.body.hasOwnProperty("count")
-            && req.body.name.length !== 0 && isInteger(req.body.count) && req.body.count >= 0) {
-            const stmt = "INSERT INTO inventory SET ?"
+        const stmt = "INSERT INTO inventory SET ?"
 
-            dbPromise.query(stmt, req.body)
-            .then(([results, fields]) => {
-                results = results as OkPacket
-                logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
+        dbPromise.query(stmt, req.body)
+        .then(([results, fields]) => {
+            results = results as OkPacket
+            logger.info(`${req.hostname} created entry with id ${results.insertId} in inventory`)
 
-                res.status(201).send({
-                    name: req.body.name,
-                    count: req.body.count,
-                    id: results.insertId
-                })
-            }, (error) => {
-                return handleMixedError(error, req, res)
+            res.status(201).send({
+                name: req.body.name,
+                count: req.body.count,
+                id: results.insertId
             })
-        } else {
-            logger.info(`Received malformed/missing creation parameters from ${req.hostname}`)
-
-            const body: ErrorResponse = {
-                name: Error.FIELD,
-                message: "Missing or malformed json fields"
-            }
-
-            res.status(400).send(body)
-        }
+        }, (error) => {
+            return handleMixedError(error, req, res)
+        })
     }
 
     updateInventoryItem(req: express.Request, res: express.Response) {
@@ -153,7 +163,7 @@ export default class InventoryController {
 
             if (results.length === 1) {
                 const deletionId = results[0].deletion_id
-                const stmt = "DELETE FROM deletions WHERE id = ?"
+                stmt = "DELETE FROM deletions WHERE id = ?"
 
                 return dbPromise.query(stmt, deletionId)
             } else {
