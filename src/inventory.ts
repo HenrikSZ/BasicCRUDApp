@@ -20,7 +20,8 @@ export default class InventoryController {
         this.router.use("/item/existing/:id", this.entryIdMiddleware.bind(this))
         this.router.get("/item/existing/:id", this.getInventoryItem.bind(this))
         this.router.put("/item/existing/:id", this.putExistingInventoryItem.bind(this))
-        this.router.delete("/item/existing/:id", this.deleteInventoryItem.bind(this))
+        this.router.delete("/item/existing/:id", this.deleteCommentMiddleware.bind(this),
+            this.deleteInventoryItem.bind(this))
     }
 
     entryIdMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -52,6 +53,23 @@ export default class InventoryController {
             }
 
             res.status(400).send(body)
+        }
+    }
+
+    deleteCommentMiddleware(req: express.Request, res: express.Response,
+        next: express.NextFunction) {
+        if (req.body.hasOwnProperty("comment")) {
+            next()
+        } else {
+            logger.info(`${req.hostname} requested to delete entry in `
+            + `inventory without a deletion comment`)
+
+            const body: ErrorResponse = {
+                name: Error.FIELD,
+                message: "There has to be a deletion comment for a deletion"
+            }
+
+            res.status(400).send()
         }
     }
 
@@ -184,26 +202,9 @@ export default class InventoryController {
     }
 
     deleteInventoryItem(req: express.Request, res: express.Response) {
-        new Promise((resolve, reject) => {
-            if (req.body.hasOwnProperty("comment")) {
-                resolve(req.body.comment)
-            } else {
-                logger.info(`${req.hostname} requested to delete entry in `
-                + `inventory without a deletion comment`)
+        let stmt = "INSERT INTO deletions (comment) VALUES (?)"
 
-                const body: ErrorResponse = {
-                    name: Error.FIELD,
-                    message: "There has to be a deletion comment for a deletion"
-                }
-
-                res.status(400)
-                reject(body)
-            }
-        })
-        .then((comment) => {
-            const stmt = "INSERT INTO deletions (comment) VALUES (?)"
-            return dbPromise.query(stmt, comment)
-        })
+        dbPromise.query(stmt, req.body.comment)
         .then(([results, fields]) => {
             logger.info(`${req.hostname} added a deletion comment for entry with `
             + `id ${req.params.id} in inventory`)
@@ -211,7 +212,7 @@ export default class InventoryController {
             results = results as OkPacket
             const deletionId = mysql2.escape(results.insertId)
 
-            const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.params.id)}`
+            stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.params.id)}`
 
             return dbPromise.query(stmt, { deletion_id: deletionId })
         })
