@@ -5,15 +5,6 @@ import logger from "./logger"
 import { Error, ErrorResponse, handleMixedError, isInteger } from "./util"
 
 
-declare global {
-    namespace Express {
-        export interface Request {
-            inventoryEntryId?: number
-        }
-    }
-}
-
-
 export default class InventoryController {
     router: express.Router
 
@@ -34,11 +25,10 @@ export default class InventoryController {
 
     entryIdMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
         if (isInteger(req.params.id)) {
-            req.inventoryEntryId = Number.parseInt(req.params.id, 10)
             next()
         } else {
             logger.info(`${req.hostname} tried to access inventory without a valid`
-            + `entry id (${req.inventoryEntryId})`)
+            + `entry id (${req.params.id})`)
 
             const body: ErrorResponse = {
                 name: Error.FIELD,
@@ -86,10 +76,10 @@ export default class InventoryController {
     getInventoryItem(req: express.Request, res: express.Response) {
         const stmt = "SELECT * FROM inventory WHERE id = ?"
 
-        dbPromise.query(stmt, req.inventoryEntryId)
+        dbPromise.query(stmt, req.params.id)
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
-            logger.info(`${req.hostname} requested entry with id ${req.inventoryEntryId}`)
+            logger.info(`${req.hostname} requested entry with id ${req.params.id}`)
 
             res.send(results[0])
         }, (error) => {
@@ -131,17 +121,17 @@ export default class InventoryController {
     }
 
     updateInventoryItem(req: express.Request, res: express.Response) {
-        const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.inventoryEntryId)}`
+        const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.params.id)}`
 
         dbPromise.query(stmt, req.body)
         .then(([results, fields]) => {
             results = results as OkPacket
 
             if (results.affectedRows > 0) {
-                logger.info(`${req.hostname} updated entry with id ${req.inventoryEntryId}`)
+                logger.info(`${req.hostname} updated entry with id ${req.params.id}`)
             } else {
                 logger.info(`${req.hostname} tried to update non-existent entry `
-                + `with id ${req.inventoryEntryId} from inventory`)
+                + `with id ${req.params.id} from inventory`)
             }
 
             return Promise.resolve(0)
@@ -157,7 +147,7 @@ export default class InventoryController {
         let stmt = "SELECT deletion_id FROM inventory "
             + "WHERE id = ? AND deletion_id IS NOT NULL"
 
-        dbPromise.query(stmt, req.inventoryEntryId)
+        dbPromise.query(stmt, req.params.id)
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
 
@@ -216,17 +206,17 @@ export default class InventoryController {
         })
         .then(([results, fields]) => {
             logger.info(`${req.hostname} added a deletion comment for entry with `
-            + `id ${req.inventoryEntryId} in inventory`)
+            + `id ${req.params.id} in inventory`)
 
             results = results as OkPacket
             const deletionId = mysql2.escape(results.insertId)
 
-            const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.inventoryEntryId)}`
+            const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.params.id)}`
 
             return dbPromise.query(stmt, { deletion_id: deletionId })
         })
         .then(() => {
-            logger.info(`${req.hostname} marked entry with id ${req.inventoryEntryId} in `
+            logger.info(`${req.hostname} marked entry with id ${req.params.id} in `
             + `inventory as deleted`)
 
             res.send()
