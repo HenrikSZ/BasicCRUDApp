@@ -1,5 +1,5 @@
 import express from  "express"
-import mysql2, { OkPacket, RowDataPacket } from "mysql2"
+import { OkPacket, RowDataPacket } from "mysql2"
 import dbPromise from "./db"
 import logger from "./logger"
 import { Error, ErrorResponse, handleMixedError, isInteger } from "./util"
