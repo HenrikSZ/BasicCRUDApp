@@ -151,10 +151,9 @@ export default class InventoryController {
     }
 
     updateInventoryItem(req: express.Request, res: express.Response) {
-        const stmt = `UPDATE inventory SET ? `
-            + `WHERE id = ${mysql2.escape(req.params.id)}`
+        const stmt = "UPDATE inventory SET ? WHERE id = ?"
 
-        dbPromise.query(stmt, req.body)
+        dbPromise.query(stmt, [req.body, req.params.id])
         .then(([results, fields]) => {
             results = results as OkPacket
 
@@ -225,12 +224,10 @@ export default class InventoryController {
                 + `with id ${req.params.id} in inventory`)
 
             results = results as OkPacket
-            const deletionId = mysql2.escape(results.insertId)
+            stmt = "UPDATE inventory SET ? WHERE id = ?"
 
-            stmt = `UPDATE inventory SET ? `
-                + `WHERE id = ${mysql2.escape(req.params.id)}`
-
-            return dbPromise.query(stmt, { deletion_id: deletionId })
+            return dbPromise.query(stmt,
+                [{ deletion_id: results.insertId }, req.params.id])
         })
         .then(() => {
             logger.info(`${req.hostname} marked entry with `
