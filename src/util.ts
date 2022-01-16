@@ -15,7 +15,8 @@ export type ErrorResponse = {
 }
 
 
-export function isMysqlError(error: ErrorResponse | QueryError): error is QueryError {
+export function isMysqlError(error: ErrorResponse | QueryError):
+    error is QueryError {
     return Boolean((error as QueryError).name)
 }
 
@@ -35,7 +36,8 @@ export function handleMixedError(error: ErrorResponse | QueryError,
 
 export function logDbError(error: QueryError, hostname?: string) {
     if (hostname) {
-        logger.error(`${hostname} caused database error ${error.code}: ${error.message}`)
+        logger.error(`${hostname} caused database error ${error.code}: `
+            + `${error.message}`)
     } else {
         logger.error(`Database error ${error.code}: ${error.message}`)
     }
