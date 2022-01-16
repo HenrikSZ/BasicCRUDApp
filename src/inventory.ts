@@ -52,13 +52,13 @@ export default class InventoryController {
         const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
 
         dbPromise.query(stmt)
-            .then(([results, fields]) => {
-                logger.info(`${req.hostname} requested all entries`)
+        .then(([results, fields]) => {
+            logger.info(`${req.hostname} requested all entries`)
 
-                res.send(results)
-            }, (error) => {
-                handleMixedError(error, req, res)
-            })
+            res.send(results)
+        }, (error) => {
+            handleMixedError(error, req, res)
+        })
     }
 
     getInventoryItem(req: express.Request, res: express.Response) {
@@ -120,61 +120,66 @@ export default class InventoryController {
         }
     }
 
+    updateInventoryItem(req: express.Request, res: express.Response) {
+        const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.inventoryEntryId)}`
+
+        dbPromise.query(stmt, req.body)
+        .then(([results, fields]) => {
+            results = results as OkPacket
+
+            if (results.affectedRows > 0) {
+                logger.info(`${req.hostname} updated entry with id ${req.inventoryEntryId}`)
+            } else {
+                logger.info(`${req.hostname} tried to update non-existent entry `
+                + `with id ${req.inventoryEntryId} from inventory`)
+            }
+
+            return Promise.resolve(0)
+        })
+        .then(() => {
+            res.send()
+        }, (error) => {
+            return handleMixedError(error, req, res)
+        })
+    }
+
+    restoreInventoryItem(req: express.Request, res: express.Response) {
+        let stmt = "SELECT deletion_id FROM inventory "
+            + "WHERE id = ? AND deletion_id IS NOT NULL"
+
+        dbPromise.query(stmt, req.inventoryEntryId)
+        .then(([results, fields]) => {
+            results = results as RowDataPacket[]
+
+            if (results.length === 1) {
+                const deletionId = results[0].deletion_id
+                const stmt = "DELETE FROM deletions WHERE id = ?"
+
+                return dbPromise.query(stmt, deletionId)
+            } else {
+                const body: ErrorResponse = {
+                    name: Error.FIELD,
+                    message: "The entry with the specified id is not in "
+                    + "the deleted entries"
+                }
+
+                return Promise.reject(body)
+            }
+        })
+        .then(() => {
+            res.send()
+        }, (error) => {
+            return handleMixedError(error, req, res)
+        })
+    }
+
     putExistingInventoryItem(req: express.Request, res: express.Response) {
         const update = req.body.hasOwnProperty("name") || req.body.hasOwnProperty("count")
 
         if (update) {
-            const stmt = `UPDATE inventory SET ? WHERE id = ${mysql2.escape(req.inventoryEntryId)}`
-
-            dbPromise.query(stmt, req.body)
-            .then(([results, fields]) => {
-                results = results as OkPacket
-
-                if (results.affectedRows > 0) {
-                    logger.info(`${req.hostname} updated entry with id ${req.inventoryEntryId}`)
-                } else {
-                    logger.info(`${req.hostname} tried to update non-existent entry `
-                    + `with id ${req.inventoryEntryId} from inventory`)
-                }
-
-                return Promise.resolve(0)
-            })
-            .then(() => {
-                res.send()
-            }, (error) => {
-                return handleMixedError(error, req, res)
-            })
+            this.updateInventoryItem(req, res)
         } else {
-            Promise.resolve()
-            .then(() => {
-                const stmt = "SELECT deletion_id FROM inventory "
-                + "WHERE id = ? AND deletion_id IS NOT NULL"
-
-                return dbPromise.query(stmt, req.inventoryEntryId)
-            })
-            .then(([results, fields]) => {
-                results = results as RowDataPacket[]
-
-                if (results.length === 1) {
-                    const deletionId = results[0].deletion_id
-                    const stmt = "DELETE FROM deletions WHERE id = ?"
-
-                    return dbPromise.query(stmt, deletionId)
-                } else {
-                    const body: ErrorResponse = {
-                        name: Error.FIELD,
-                        message: "The entry with the specified id is not in "
-                        + "the deleted entries"
-                    }
-
-                    return Promise.reject(body)
-                }
-            })
-            .then(() => {
-                res.send()
-            }, (error) => {
-                return handleMixedError(error, req, res)
-            })
+            this.restoreInventoryItem(req, res)
         }
     }
 
