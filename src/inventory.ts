@@ -12,7 +12,7 @@ export default class InventoryController {
         this.router = express.Router()
 
         this.router.get("/", this.getInventory.bind(this))
-        this.router.get("/deleted", this.getDeletedInvetory.bind(this))
+        this.router.get("/deleted", this.getDeletedInventory.bind(this))
 
         this.router.use("/item/new",
             this.newInventoryItemMiddleware.bind(this))
@@ -52,8 +52,8 @@ export default class InventoryController {
         if (this.isValidNewEntry(req.body)) {
             next()
         } else {
-            logger.info(`Received malformed/missing creation parameters `
-                + `from${req.hostname}`)
+            logger.info(`${req.hostname} sent malformed/missing creation `
+                + `parameters for inventory item`)
 
             const body: ErrorResponse = {
                 name: Error.FIELD,
@@ -88,6 +88,8 @@ export default class InventoryController {
     }
 
     getInventory(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested all inventory entries`)
+
         const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
 
         dbPromise.query(stmt)
@@ -101,13 +103,16 @@ export default class InventoryController {
     }
 
     getInventoryItem(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested inventory entry with `
+            + `id ${req.params.id}`)
+
         const stmt = "SELECT * FROM inventory WHERE id = ?"
 
         dbPromise.query(stmt, req.params.id)
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
-            logger.info(`${req.hostname} requested entry with `
-                + `id ${req.params.id}`)
+            logger.info(`Retrieved inventory entry id ${req.params.id} for `
+                + `${req.hostname}`)
 
             res.send(results[0])
         }, (error) => {
@@ -115,7 +120,9 @@ export default class InventoryController {
         })
     }
 
-    getDeletedInvetory(req: express.Request, res: express.Response) {
+    getDeletedInventory(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested all deleted inventory entries`)
+
         const stmt = "SELECT inventory.id, inventory.name, inventory.count, "
             + "deletions.comment FROM inventory INNER JOIN deletions "
             + "ON inventory.deletion_id=deletions.id "
@@ -123,7 +130,8 @@ export default class InventoryController {
 
         dbPromise.query(stmt)
         .then(([results, fields]) => {
-            logger.info(`${req.hostname} requested all deleted entries`)
+            logger.info(`Retrieved all deleted inventory entries for `
+                + `${req.hostname}`)
 
             res.send(results)
         }, (error) => {
@@ -132,6 +140,9 @@ export default class InventoryController {
     }
 
     putNewInventoryItem(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested to create entry `
+                + `in inventory`)
+
         const stmt = "INSERT INTO inventory SET ?"
 
         dbPromise.query(stmt, req.body)
@@ -151,6 +162,9 @@ export default class InventoryController {
     }
 
     updateInventoryItem(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested to update entry `
+                + `${req.params.id} in inventory`)
+
         const stmt = "UPDATE inventory SET ? WHERE id = ?"
 
         dbPromise.query(stmt, [req.body, req.params.id])
@@ -162,12 +176,9 @@ export default class InventoryController {
                     + `id ${req.params.id}`)
             } else {
                 logger.info(`${req.hostname} tried to update non-existent `
-                    + `entry with id ${req.params.id} from inventory`)
+                    + `entry with id ${req.params.id} in inventory`)
             }
 
-            return Promise.resolve(0)
-        })
-        .then(() => {
             res.send()
         }, (error) => {
             return handleMixedError(error, req, res)
@@ -175,6 +186,9 @@ export default class InventoryController {
     }
 
     restoreInventoryItem(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested to restore inventory entry `
+            + `id ${req.params.id}`)
+
         let stmt = "SELECT deletion_id FROM inventory "
             + "WHERE id = ? AND deletion_id IS NOT NULL"
 
@@ -183,11 +197,17 @@ export default class InventoryController {
             results = results as RowDataPacket[]
 
             if (results.length === 1) {
+                logger.info(`${req.hostname} started to restore entry `
+                    + `id ${req.params.id} in inventory`)
+
                 const deletionId = results[0].deletion_id
                 stmt = "DELETE FROM deletions WHERE id = ?"
 
                 return dbPromise.query(stmt, deletionId)
             } else {
+                logger.info(`${req.hostname} tried to restore entry `
+                    + `id ${req.params.id} in inventory which is not deleted`)
+
                 const body: ErrorResponse = {
                     name: Error.FIELD,
                     message: "The entry with the specified id is not in "
@@ -198,6 +218,9 @@ export default class InventoryController {
             }
         })
         .then(() => {
+            logger.info(`${req.hostname} successfully restored entry `
+                    + `id ${req.params.id} in inventory`)
+
             res.send()
         }, (error) => {
             return handleMixedError(error, req, res)
@@ -216,6 +239,9 @@ export default class InventoryController {
     }
 
     deleteInventoryItem(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested to delete inventory entry `
+            + `id ${req.params.id}`)
+
         let stmt = "INSERT INTO deletions (comment) VALUES (?)"
 
         dbPromise.query(stmt, req.body.comment)
