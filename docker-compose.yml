@@ -19,3 +19,7 @@ services:
       - "MARIADB_PASSWORD=${DB_PASS}"
       - "MARIADB_RANDOM_ROOT_PASSWORD=yes"
       - "MARIADB_DATABASE=${DB_NAME}"
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    volumes_from:
+      - web
