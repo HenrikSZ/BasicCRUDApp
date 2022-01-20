@@ -1,3 +1,7 @@
+/**
+ * Containts the InventoryController for anything related to the inventory
+ */
+
 import express from  "express"
 import { OkPacket, RowDataPacket } from "mysql2"
 import dbPromise from "./db"
@@ -5,9 +9,15 @@ import logger from "./logger"
 import { Error, ErrorResponse, handleMixedError, isInteger } from "./util"
 
 
+/**
+ * Anything about the Inventory is controlled here
+ */
 export default class InventoryController {
     router: express.Router
 
+    /**
+     * Creates a router and links all the routes to the control methods
+     */
     constructor() {
         this.router = express.Router()
 
@@ -30,6 +40,13 @@ export default class InventoryController {
             this.deleteInventoryItem.bind(this))
     }
 
+    /**
+     * Checks if there is a valid id provided in the url
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     * @param next function to the next middleware to be called
+     */
     entryIdMiddleware(req: express.Request, res: express.Response,
         next: express.NextFunction) {
         if (isInteger(req.params.id)) {
@@ -47,6 +64,14 @@ export default class InventoryController {
         }
     }
 
+    /**
+     * Checks if the request body contains all valid fields for a new
+     * inventory item
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     * @param next function to the next middleware to be called
+     */
     newInventoryItemMiddleware(req: express.Request, res: express.Response,
         next: express.NextFunction) {
         if (this.isValidNewEntry(req.body)) {
@@ -64,6 +89,13 @@ export default class InventoryController {
         }
     }
 
+    /**
+     * Checks if the request body contains a comment field
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     * @param next function to the next middleware to be called
+     */
     deleteCommentMiddleware(req: express.Request, res: express.Response,
         next: express.NextFunction) {
         if (req.body.hasOwnProperty("comment")) {
@@ -81,12 +113,25 @@ export default class InventoryController {
         }
     }
 
+    /**
+     * Checks if an object contains all properties of a new inventory item
+     *
+     * @param entry the object that should be checked
+     * @returns true if the entry is valid
+     */
     isValidNewEntry(entry: any) {
         return (entry.hasOwnProperty("name") && entry.hasOwnProperty("count")
             && entry.name.length !== 0 && isInteger(entry.count)
             && entry.count >= 0)
     }
 
+    /**
+     * Reads the complete inventory and sends all its fields as a
+     * json array
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
     getInventory(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested all inventory entries`)
 
@@ -102,6 +147,13 @@ export default class InventoryController {
         })
     }
 
+    /**
+     * Reads one item specified from the id in the request parameters (url)
+     * from the inventory and sends it as a json object
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
     getInventoryItem(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested inventory entry with `
             + `id ${req.params.id}`)
@@ -120,6 +172,13 @@ export default class InventoryController {
         })
     }
 
+    /**
+     * Reads all delete entries from the inventory and sends all their fields as a
+     * json array
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
     getDeletedInventory(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested all deleted inventory entries`)
 
@@ -139,6 +198,13 @@ export default class InventoryController {
         })
     }
 
+    /**
+     * Creates a new inventory item from the fields specified in the
+     * request body
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
     putNewInventoryItem(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested to create entry `
                 + `in inventory`)
@@ -161,6 +227,12 @@ export default class InventoryController {
         })
     }
 
+    /**
+     * Updates an inventory item according to the fields in the request body
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
     updateInventoryItem(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested to update entry `
                 + `${req.params.id} in inventory`)
@@ -185,6 +257,13 @@ export default class InventoryController {
         })
     }
 
+    /**
+     * Restores a delete inventory item that has the id specified in the request
+     * parameters (url)
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
     restoreInventoryItem(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested to restore inventory entry `
             + `id ${req.params.id}`)
@@ -227,6 +306,14 @@ export default class InventoryController {
         })
     }
 
+    /**
+     * Either updates or restores an inventory item depending on the request body
+     * Only if it is empty, it is tried to be restored
+     * Otherwise it is tried to be updated
+     *
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
     putExistingInventoryItem(req: express.Request, res: express.Response) {
         const update = req.body.hasOwnProperty("name")
             || req.body.hasOwnProperty("count")
@@ -238,6 +325,13 @@ export default class InventoryController {
         }
     }
 
+    /**
+     * Deletes an inventory item with a comment set as field in the
+     * request body
+     *
+     * @param req the request from express.js
+     * @param res the reponse from express.js
+     */
     deleteInventoryItem(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.id}`)

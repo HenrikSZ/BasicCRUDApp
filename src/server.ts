@@ -1,3 +1,10 @@
+/**
+ * Center of operations
+ *
+ * dotenv at the top so that environment variables are set when needed
+ */
+
+
 import dotenv from "dotenv"
 dotenv.config()
 

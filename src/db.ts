@@ -1,3 +1,8 @@
+/**
+ * Whenever the database is accessed, it is through this module
+ */
+
+
 import mysql2 from "mysql2"
 
 
