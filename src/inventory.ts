@@ -12,34 +12,7 @@ import { Error, ErrorResponse, handleMixedError, isInteger } from "./util"
 /**
  * Anything about the Inventory is controlled here
  */
-export default class InventoryController {
-    router: express.Router
-
-    /**
-     * Creates a router and links all the routes to the control methods
-     */
-    constructor() {
-        this.router = express.Router()
-
-        this.router.get("/", this.getInventory.bind(this))
-        this.router.get("/deleted", this.getDeletedInventory.bind(this))
-
-        this.router.use("/item/new",
-            this.newInventoryItemMiddleware.bind(this))
-        this.router.put("/item/new",
-            this.putNewInventoryItem.bind(this))
-
-        this.router.use("/item/existing/:id",
-            this.entryIdMiddleware.bind(this))
-        this.router.get("/item/existing/:id",
-            this.getInventoryItem.bind(this))
-        this.router.put("/item/existing/:id",
-            this.putExistingInventoryItem.bind(this))
-        this.router.delete("/item/existing/:id",
-            this.deleteCommentMiddleware.bind(this),
-            this.deleteInventoryItem.bind(this))
-    }
-
+class InventoryController {
     /**
      * Checks if there is a valid id provided in the url
      *
@@ -359,3 +332,28 @@ export default class InventoryController {
         })
     }
 }
+
+
+const router = express.Router()
+const invContr = new InventoryController()
+
+router.get("/", invContr.getInventory.bind(invContr))
+router.get("/deleted", invContr.getDeletedInventory.bind(invContr))
+
+router.use("/item/new",
+    invContr.newInventoryItemMiddleware.bind(invContr))
+router.put("/item/new",
+    invContr.putNewInventoryItem.bind(invContr))
+
+router.use("/item/existing/:id",
+    invContr.entryIdMiddleware.bind(invContr))
+router.get("/item/existing/:id",
+    invContr.getInventoryItem.bind(invContr))
+router.put("/item/existing/:id",
+    invContr.putExistingInventoryItem.bind(invContr))
+router.delete("/item/existing/:id",
+    invContr.deleteCommentMiddleware.bind(invContr),
+    invContr.deleteInventoryItem.bind(invContr))
+
+
+export default router
