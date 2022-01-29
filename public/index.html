@@ -1,0 +1,79 @@
+<html lang="en">
+    <head>
+        <title>
+            A Basic CRUD App
+        </title>
+
+        <script src="script_v1.js"></script>
+        <link rel="stylesheet" href="styles_v1.css">
+    </head>
+
+    <div id="error-box">
+        <button onclick="hideErrorBox()">
+            dismiss
+        </button>
+        <span id="error-name"></span>
+        <span id="error-message"></span>
+    </div>
+    
+    <table id="new-entry">
+        <tr>
+            <th>
+                New Name
+            </th>
+            <th>
+                New Count
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <input type="name" id="new-name">
+            </td>
+            <td>
+                <input type="number" id="new-count">
+            </td>
+            <td>
+                <button onclick="saveNew()">
+                    Add
+                </button>
+            </td>
+        </tr>
+    </table>
+    <button id="btn-switch-tables" onclick="switchEntryTables()">
+        switch to deleted
+    </button>
+    <table id="table-data" class="table-data-any" style="display:block;">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Item Count</th>
+                <th></th>
+                <th>
+                    <button onclick="getData()">
+                        reload
+                    </button>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+    <table id="table-data-deleted" class="table-data-any" style="display:none;">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Item Count</th>
+                <th>Deletion Comment</th>
+                <th>
+                    <button onclick="getDeletedData()">
+                        reload
+                    </button>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+</html>
