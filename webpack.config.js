@@ -3,10 +3,11 @@ const webpack = require("webpack");
 const HTMLWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-  entry: "./index.js",
+  mode: "development",
+  entry: "./src/client/index.js",
   output: {
     filename: "bundle.js",
-    path: path.resolve("dist"),
+    path: path.resolve("dist/public"),
     publicPath: "/",
   },
   module: {
@@ -20,26 +21,15 @@ module.exports = {
         test: /\.html$/,
         use: "html-loader"
       },
-      /*Choose only one of the following two: if you're using 
-      plain CSS, use the first one, and if you're using a
-      preprocessor, in this case SASS, use the second one*/
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
-      },
-      {
-        test: /\.scss$/,
-        use:[
-          "style-loader",
-          "css-loader",
-          "sass-loader"
-        ],
       },
     ], 
   },  
   plugins: [
     new HTMLWebpackPlugin({
-      template: "index.html"
+      template: "src/client/index.html"
     }),
   ]
 }

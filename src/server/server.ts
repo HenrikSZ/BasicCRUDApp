@@ -19,7 +19,7 @@ const app = express()
 
 app.use(bodyParser.json())
 app.use("/inventory", inventory)
-app.use(express.static(path.resolve(__dirname, "..", "public")))
+app.use(express.static(path.resolve(__dirname, "public")))
 
 const port = process.env.PORT
 app.listen(port, () => {
