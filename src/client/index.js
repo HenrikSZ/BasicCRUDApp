@@ -51,23 +51,132 @@ class InventoryTable extends React.Component {
         fetch("/inventory")
         .then((response) => response.json())
         .then((data) =>{
-            this.state.entries = data
-            this.forceUpdate()
+            this.setState({ entries: data })
         })
     }
 }
 
 
 class InventoryItem extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            mode: "normal",
+            data: props.data,
+            modifications: {
+                name: props.data.name,
+                count: props.data.count
+            }
+        }
+    }
+
     render() {
+        switch (this.state.mode) {
+            case "edit":
+                return this.editMode()
+            default:
+                return this.normalMode()
+        }
+    }
+
+    normalMode() {
         return (
             <tr>
-                <td>{this.props.data.name}</td>
-                <td>{this.props.data.count}</td>
-                <td><button>edit</button></td>
+                <td>{this.state.data.name}</td>
+                <td>{this.state.data.count}</td>
+                <td><button onClick={this.switchToEditMode.bind(this)}>edit</button></td>
                 <td><button>delete</button></td>
             </tr>
         )
+    }
+
+    editMode() {
+        return (
+            <tr>
+                <td>
+                    <input value={this.state.modifications.name} 
+                        onChange={this.modifyName.bind(this)}/>
+                </td>
+                <td>
+                    <input type="number" value={this.state.modifications.count} 
+                        onChange={this.modifyCount.bind(this)}/>
+                </td>
+                <td><button onClick={this.saveEdits.bind(this)}>save</button></td>
+                <td><button onClick={this.switchToNormalMode.bind(this)}>discard</button></td>
+            </tr>
+        )
+    }
+
+    modifyCount(evt) {
+        this.setState({
+            mode: this.state.mode,
+            data: this.state.data,
+            modifications: {
+                name: this.state.modifications.name,
+                count: evt.target.value
+            }
+        })
+    }
+
+    modifyName(evt) {
+        this.setState({
+            mode: this.state.mode,
+            data: this.state.data,
+            modifications: {
+                name: evt.target.value,
+                count: this.state.modifications.count
+            }
+        })
+    }
+
+    switchToNormalMode() {
+        this.setState({ mode: "normal", data: this.state.data })
+    }
+
+    switchToEditMode() {
+        this.setState({ mode: "edit", data: this.state.data })
+    }
+
+    saveEdits() {
+        let mods = {}
+        let modified = false
+
+        if (this.state.modifications.name !== this.state.data.name) {
+            mods.name = this.state.modifications.name
+            modified = true
+        }
+
+        if (this.state.modifications.count !== this.state.data.count) {
+            mods.count = Number.parseInt(this.state.modifications.count)
+            modified = true
+        }
+
+        if (modified) {
+            fetch(`/inventory/item/existing/${this.state.data.id}`,
+                { 
+                    method: "PUT",
+                    body: JSON.stringify(mods),
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            )
+            .then(() => {
+                this.setState(this.setState({
+                    mode: "normal",
+                    data: {
+                        name: this.state.modifications.name,
+                        count: this.state.modifications.count,
+                        id: this.state.data.id
+                    },
+                    modifications: {
+                        name: this.state.modifications.name,
+                        count: this.state.modifications.count
+                    }
+                }))
+            })
+        } else {
+            this.switchToNormalMode()
+        }
     }
 }
 
