@@ -5,7 +5,65 @@ import "./styles_v1.css"
 
 class App extends React.Component {
     render() {
-        return <React.StrictMode><InventoryTable /></React.StrictMode>
+        return (
+            <React.StrictMode>
+                <ItemCreator />
+                <InventoryTable />
+            </React.StrictMode>
+        )
+    }
+}
+
+
+class ItemCreator extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.newValues = {}
+    }
+
+    render() {
+        return (
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            New Name
+                        </th>
+                        <th>
+                            New Count
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input onChange={evt => this.newValues.name = evt.target.value}/>
+                        </td>
+                        <td>
+                            <input type="number" onChange={evt => this.newValues.count = evt.target.value}/>
+                        </td>
+                        <td>
+                            <button onClick={() => this.saveNew()}>
+                                Add
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        )
+    }
+
+    saveNew() {
+        if (this.newValues.name && this.newValues.count) {
+            fetch("/inventory/item/new",
+                { 
+                    method: "PUT",
+                    body: JSON.stringify(this.newValues),
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            )
+        }
     }
 }
 
@@ -50,7 +108,7 @@ class InventoryTable extends React.Component {
                     {
                         this.state.entries.map((item) => {
                             return <InventoryItem data={item} key={item.id}
-                                removeDeletedEntry={this.removeDeletedEntry.bind(this)}/>
+                                removeDeletedEntry={() => this.removeDeletedEntry()}/>
                         })
                     }
                 </tbody>
@@ -117,7 +175,7 @@ class InventoryItem extends React.Component {
                     <input type="number" defaultValue={this.state.data.count} 
                         onChange={evt => this.modifications.count = evt.target.value}/>
                 </td>
-                <td><button onClick={this.saveEdits.bind(this)}>save</button></td>
+                <td><button onClick={() => this.saveEdits()}>save</button></td>
                 <td><button onClick={() => this.switchToMode(normal)}>discard</button></td>
             </tr>
         )
@@ -132,7 +190,7 @@ class InventoryItem extends React.Component {
                 <td>
                     <input onChange={evt => this.deletion_comment = evt.target.value}/>
                 </td>
-                <td><button onClick={this.deleteItem.bind(this)}>delete</button></td>
+                <td><button onClick={() => this.deleteItem()}>delete</button></td>
                 <td><button onClick={() => this.switchToMode("normal")}>discard</button></td>
             </tr>
         )
@@ -182,11 +240,12 @@ class InventoryItem extends React.Component {
 
     deleteItem() {
         fetch(`/inventory/item/existing/${this.state.data.id}`,
-        {
-            method: "DELETE",
-            body: JSON.stringify({ comment: this.deletion_comment }),
-            headers: { "Content-Type": "application/json" }
-        })
+            {
+                method: "DELETE",
+                body: JSON.stringify({ comment: this.deletion_comment }),
+                headers: { "Content-Type": "application/json" }
+            }
+        )
         .then(() => {
             this.removeDeletedEntry(this.state.data.id)
         })
