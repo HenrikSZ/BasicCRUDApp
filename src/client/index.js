@@ -7,7 +7,7 @@ class App extends React.Component {
     render() {
         return (
             <React.StrictMode>
-                <ItemCreator />
+                <ItemCreator onItemCreation={() => this.forceUpdate()}/>
                 <InventoryTable />
             </React.StrictMode>
         )
@@ -63,6 +63,9 @@ class ItemCreator extends React.Component {
                     headers: { 'Content-Type': 'application/json' }
                 }
             )
+            .then(() => {
+                this.props.onItemCreation()
+            })
         }
     }
 }
@@ -98,7 +101,7 @@ class InventoryTable extends React.Component {
                         <th>Item Count</th>
                         <th></th>
                         <th>
-                            <button>
+                            <button onClick={() => this.loadEntries()}>
                                 reload
                             </button>
                         </th>
@@ -108,7 +111,7 @@ class InventoryTable extends React.Component {
                     {
                         this.state.entries.map((item) => {
                             return <InventoryItem data={item} key={item.id}
-                                removeDeletedEntry={() => this.removeDeletedEntry()}/>
+                                onDelete={(id) => this.removeDeletedEntry(id)}/>
                         })
                     }
                 </tbody>
@@ -118,6 +121,14 @@ class InventoryTable extends React.Component {
     }
 
     componentDidMount() {
+        this.loadEntries()
+    }
+
+    componentDidUpdate() {
+        this.loadEntries()
+    }
+
+    loadEntries() {
         fetch("/inventory")
         .then((response) => response.json())
         .then((data) =>{
@@ -247,7 +258,7 @@ class InventoryItem extends React.Component {
             }
         )
         .then(() => {
-            this.removeDeletedEntry(this.state.data.id)
+            this.props.onDelete(this.state.data.id)
         })
     }
 }
