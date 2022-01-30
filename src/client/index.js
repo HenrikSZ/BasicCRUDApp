@@ -76,12 +76,10 @@ class InventoryItem extends React.Component {
         this.state = {
             mode: "normal",
             data: props.data,
-            modifications: {
-                name: props.data.name,
-                count: props.data.count
-            },
-            deletion_comment: ""
         }
+
+        this.modifications = {}
+        this.deletion_comment = ""
 
         this.removeDeletedEntry = props.removeDeletedEntry
     }
@@ -102,8 +100,8 @@ class InventoryItem extends React.Component {
             <tr>
                 <td>{this.state.data.name}</td>
                 <td>{this.state.data.count}</td>
-                <td><button onClick={this.switchToEditMode.bind(this)}>edit</button></td>
-                <td><button onClick={this.switchToDeleteMode.bind(this)}>delete</button></td>
+                <td><button onClick={() => this.switchToMode("edit")}>edit</button></td>
+                <td><button onClick={() => this.switchToMode("delete")}>delete</button></td>
             </tr>
         )
     }
@@ -112,15 +110,15 @@ class InventoryItem extends React.Component {
         return (
             <tr>
                 <td>
-                    <input value={this.state.modifications.name} 
-                        onChange={this.modifyName.bind(this)}/>
+                    <input defaultValue={this.state.data.name} 
+                        onChange={evt => this.modifications.name = evt.target.value}/>
                 </td>
                 <td>
-                    <input type="number" value={this.state.modifications.count} 
-                        onChange={this.modifyCount.bind(this)}/>
+                    <input type="number" defaultValue={this.state.data.count} 
+                        onChange={evt => this.modifications.count = evt.target.value}/>
                 </td>
                 <td><button onClick={this.saveEdits.bind(this)}>save</button></td>
-                <td><button onClick={this.switchToNormalMode.bind(this)}>discard</button></td>
+                <td><button onClick={() => this.switchToMode(normal)}>discard</button></td>
             </tr>
         )
     }
@@ -132,53 +130,18 @@ class InventoryItem extends React.Component {
                     Deletion Comment:
                 </td>
                 <td>
-                    <input onChange={this.modifyDeletionComment.bind(this)}/>
+                    <input onChange={evt => this.deletion_comment = evt.target.value}/>
                 </td>
                 <td><button onClick={this.deleteItem.bind(this)}>delete</button></td>
-                <td><button onClick={this.switchToNormalMode.bind(this)}>discard</button></td>
+                <td><button onClick={() => this.switchToMode("normal")}>discard</button></td>
             </tr>
         )
     }
 
-    modifyCount(evt) {
+    switchToMode(mode) {
         let state = {...this.state}
-        state.modifications.count = evt.target.value
+        state.mode = mode
         
-        this.setState(state)
-    }
-
-    modifyName(evt) {
-        let state = {...this.state}
-        state.modifications.name = evt.target.value
-        
-        this.setState(state)
-    }
-
-    modifyDeletionComment(evt) {
-        let state = {...this.state}
-        state.deletion_comment = evt.target.value
-
-        this.setState(state)
-    }
-
-    switchToNormalMode() {
-        let state = {...this.state}
-        state.mode = "normal"
-        
-        this.setState(state)
-    }
-
-    switchToEditMode() {
-        let state = {...this.state}
-        state.mode = "edit"
-
-        this.setState(state)
-    }
-
-    switchToDeleteMode() {
-        let state = {...this.state}
-        state.mode = "delete"
-
         this.setState(state)
     }
 
@@ -186,13 +149,13 @@ class InventoryItem extends React.Component {
         let mods = {}
         let modified = false
 
-        if (this.state.modifications.name !== this.state.data.name) {
-            mods.name = this.state.modifications.name
+        if (this.modifications.name !== this.state.data.name) {
+            mods.name = this.modifications.name
             modified = true
         }
 
-        if (this.state.modifications.count !== this.state.data.count) {
-            mods.count = Number.parseInt(this.state.modifications.count)
+        if (this.modifications.count !== this.state.data.count) {
+            mods.count = Number.parseInt(this.modifications.count)
             modified = true
         }
 
@@ -205,21 +168,15 @@ class InventoryItem extends React.Component {
                 }
             )
             .then(() => {
-                this.setState({
-                    mode: "normal",
-                    data: {
-                        name: this.state.modifications.name,
-                        count: this.state.modifications.count,
-                        id: this.state.data.id
-                    },
-                    modifications: {
-                        name: this.state.modifications.name,
-                        count: this.state.modifications.count
-                    }
-                })
+                let state = {...this.state}
+                state.mode = "normal"
+                state.data.name = this.modifications.name ?? state.data.name
+                state.data.count = this.modifications.count ?? state.data.count
+
+                this.setState(state)
             })
         } else {
-            this.switchToNormalMode()
+            this.switchToMode("normal")
         }
     }
 
@@ -227,7 +184,7 @@ class InventoryItem extends React.Component {
         fetch(`/inventory/item/existing/${this.state.data.id}`,
         {
             method: "DELETE",
-            body: JSON.stringify({ comment: this.state.deletion_comment }),
+            body: JSON.stringify({ comment: this.deletion_comment }),
             headers: { "Content-Type": "application/json" }
         })
         .then(() => {
