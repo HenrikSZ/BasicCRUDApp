@@ -67,7 +67,8 @@ class InventoryItem extends React.Component {
             modifications: {
                 name: props.data.name,
                 count: props.data.count
-            }
+            },
+            deletion_comment: ""
         }
     }
 
@@ -109,33 +110,31 @@ class InventoryItem extends React.Component {
     }
 
     modifyCount(evt) {
-        this.setState({
-            mode: this.state.mode,
-            data: this.state.data,
-            modifications: {
-                name: this.state.modifications.name,
-                count: evt.target.value
-            }
-        })
+        let state = {...this.state}
+        state.modifications.count = evt.target.value
+        
+        this.setState(state)
     }
 
     modifyName(evt) {
-        this.setState({
-            mode: this.state.mode,
-            data: this.state.data,
-            modifications: {
-                name: evt.target.value,
-                count: this.state.modifications.count
-            }
-        })
+        let state = {...this.state}
+        state.modifications.name = evt.target.value
+        
+        this.setState(state)
     }
 
     switchToNormalMode() {
-        this.setState({ mode: "normal", data: this.state.data })
+        let state = {...this.state}
+        state.mode = "normal"
+        
+        this.setState(state)
     }
 
     switchToEditMode() {
-        this.setState({ mode: "edit", data: this.state.data })
+        let state = {...this.state}
+        state.mode = "edit"
+
+        this.setState(state)
     }
 
     saveEdits() {
@@ -161,7 +160,7 @@ class InventoryItem extends React.Component {
                 }
             )
             .then(() => {
-                this.setState(this.setState({
+                this.setState({
                     mode: "normal",
                     data: {
                         name: this.state.modifications.name,
@@ -172,7 +171,7 @@ class InventoryItem extends React.Component {
                         name: this.state.modifications.name,
                         count: this.state.modifications.count
                     }
-                }))
+                })
             })
         } else {
             this.switchToNormalMode()
