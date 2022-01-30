@@ -19,6 +19,17 @@ class InventoryTable extends React.Component {
         }
     }
 
+    removeDeletedEntry(id) {
+        let state = {...this.state}
+        let removeIndex = state.entries.findIndex((item) => {
+            return item.id == id
+        })
+
+        state.entries.splice(removeIndex, 1)
+
+        this.setState(state)
+    }
+
     render() {
         return (
             <React.StrictMode>
@@ -38,7 +49,8 @@ class InventoryTable extends React.Component {
                 <tbody>
                     {
                         this.state.entries.map((item) => {
-                            return <InventoryItem data={item} key={item.id} />
+                            return <InventoryItem data={item} key={item.id}
+                                removeDeletedEntry={this.removeDeletedEntry.bind(this)}/>
                         })
                     }
                 </tbody>
@@ -70,12 +82,16 @@ class InventoryItem extends React.Component {
             },
             deletion_comment: ""
         }
+
+        this.removeDeletedEntry = props.removeDeletedEntry
     }
 
     render() {
         switch (this.state.mode) {
             case "edit":
                 return this.editMode()
+            case "delete":
+                return this.deleteMode()
             default:
                 return this.normalMode()
         }
@@ -87,7 +103,7 @@ class InventoryItem extends React.Component {
                 <td>{this.state.data.name}</td>
                 <td>{this.state.data.count}</td>
                 <td><button onClick={this.switchToEditMode.bind(this)}>edit</button></td>
-                <td><button>delete</button></td>
+                <td><button onClick={this.switchToDeleteMode.bind(this)}>delete</button></td>
             </tr>
         )
     }
@@ -109,6 +125,21 @@ class InventoryItem extends React.Component {
         )
     }
 
+    deleteMode() {
+        return (
+            <tr>
+                <td>
+                    Deletion Comment:
+                </td>
+                <td>
+                    <input onChange={this.modifyDeletionComment.bind(this)}/>
+                </td>
+                <td><button onClick={this.deleteItem.bind(this)}>delete</button></td>
+                <td><button onClick={this.switchToNormalMode.bind(this)}>discard</button></td>
+            </tr>
+        )
+    }
+
     modifyCount(evt) {
         let state = {...this.state}
         state.modifications.count = evt.target.value
@@ -123,6 +154,13 @@ class InventoryItem extends React.Component {
         this.setState(state)
     }
 
+    modifyDeletionComment(evt) {
+        let state = {...this.state}
+        state.deletion_comment = evt.target.value
+
+        this.setState(state)
+    }
+
     switchToNormalMode() {
         let state = {...this.state}
         state.mode = "normal"
@@ -133,6 +171,13 @@ class InventoryItem extends React.Component {
     switchToEditMode() {
         let state = {...this.state}
         state.mode = "edit"
+
+        this.setState(state)
+    }
+
+    switchToDeleteMode() {
+        let state = {...this.state}
+        state.mode = "delete"
 
         this.setState(state)
     }
@@ -176,6 +221,18 @@ class InventoryItem extends React.Component {
         } else {
             this.switchToNormalMode()
         }
+    }
+
+    deleteItem() {
+        fetch(`/inventory/item/existing/${this.state.data.id}`,
+        {
+            method: "DELETE",
+            body: JSON.stringify({ comment: this.state.deletion_comment }),
+            headers: { "Content-Type": "application/json" }
+        })
+        .then(() => {
+            this.removeDeletedEntry(this.state.data.id)
+        })
     }
 }
 
