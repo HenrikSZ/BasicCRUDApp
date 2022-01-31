@@ -4,13 +4,47 @@ import "./styles_v1.css"
 
 
 class App extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            mode: "normal"
+        }
+    }
+
+    switchToMode(mode) {
+        let state = {...this.state}
+        state.mode = mode
+
+        this.setState(state)
+    }
+
     render() {
         return (
             <React.StrictMode>
                 <ItemCreator onItemCreation={() => this.forceUpdate()}/>
-                <InventoryTable />
+                {this.getSwitchButton()}
+                {this.getActiveTable()}
             </React.StrictMode>
         )
+    }
+
+    getSwitchButton() {
+        switch (this.state.mode) {
+            case "deleted":
+                return <button onClick={() => this.switchToMode("normal")}>to normal</button>
+            default:
+                return <button onClick={() => this.switchToMode("deleted")}>to deleted</button>
+        }
+    }
+
+    getActiveTable() {
+        switch (this.state.mode) {
+            case "deleted":
+                return <DeletedInventoryTable/>
+            default:
+                return <InventoryTable/>
+        }
     }
 }
 
@@ -94,7 +128,7 @@ class InventoryTable extends React.Component {
     render() {
         return (
             <React.StrictMode>
-            <table id="table-data" className="table-data-any">
+            <table className="table-data-any">
                 <thead>
                     <tr>
                         <th>Item Name</th>
@@ -121,10 +155,6 @@ class InventoryTable extends React.Component {
     }
 
     componentDidMount() {
-        this.loadEntries()
-    }
-
-    componentDidUpdate() {
         this.loadEntries()
     }
 
@@ -262,5 +292,94 @@ class InventoryItem extends React.Component {
         })
     }
 }
+
+
+class DeletedInventoryTable extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            entries: []
+        }
+    }
+
+    removeRestoredEntry(id) {
+        let state = {...this.state}
+        let removeIndex = state.entries.findIndex((item) => {
+            return item.id == id
+        })
+
+        state.entries.splice(removeIndex, 1)
+
+        this.setState(state)
+    }
+
+    render() {
+        return (
+            <React.StrictMode>
+            <table className="table-data-any">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Item Count</th>
+                        <th>Deletion comment</th>
+                        <th>
+                            <button onClick={() => this.loadEntries()}>
+                                reload
+                            </button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        this.state.entries.map((item) => {
+                            return <DeletedInventoryItem data={item} key={item.id}
+                                onDelete={id => this.removeRestoredEntry(id)}/>
+                        })
+                    }
+                </tbody>
+            </table>
+            </React.StrictMode>
+        )
+    }
+
+    componentDidMount() {
+        this.loadEntries()
+    }
+
+    loadEntries() {
+        fetch("/inventory/deleted")
+        .then((response) => response.json())
+        .then((data) =>{
+            this.setState({ entries: data })
+        })
+    }
+}
+
+
+class DeletedInventoryItem extends React.Component {
+    render() {
+        return (
+            <tr>
+                <td>{this.props.data.name}</td>
+                <td>{this.props.data.count}</td>
+                <td>{this.props.data.comment}</td>
+                <td><button onClick={() => this.restore()}>restore</button></td>
+            </tr>
+        )
+    }
+
+    restore() {
+        fetch(`/inventory/item/existing/${this.props.data.id}`,
+            {
+                method: "PUT"
+            }
+        )
+        .then(() => {
+            this.props.onDelete(this.props.data.id)
+        }) 
+    }
+}
+
 
 ReactDOM.render(<App />, document.getElementById("app"))
