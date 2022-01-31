@@ -3,16 +3,42 @@ import React from "react"
 import "./styles_v1.css"
 
 
+enum AppMode {
+    NORMAL,
+    DELETED
+}
+
+enum InventoryItemMode  {
+    NORMAL,
+    EDIT,
+    DELETE
+}
+
+interface MutableInventoryItemData {
+    name: string,
+    count: number
+}
+
+interface InventoryItemData extends MutableInventoryItemData {
+    id: number
+}
+
+interface DeletedInventoryItemData extends InventoryItemData {
+    comment: string
+}
+
 class App extends React.Component {
-    constructor(props) {
+    state: {mode: AppMode}
+
+    constructor(props: any) {
         super(props)
 
         this.state = {
-            mode: "normal"
+            mode: AppMode.NORMAL
         }
     }
 
-    switchToMode(mode) {
+    switchToMode(mode: AppMode) {
         let state = {...this.state}
         state.mode = mode
 
@@ -31,16 +57,16 @@ class App extends React.Component {
 
     getSwitchButton() {
         switch (this.state.mode) {
-            case "deleted":
-                return <button onClick={() => this.switchToMode("normal")}>to normal</button>
+            case AppMode.DELETED:
+                return <button onClick={() => this.switchToMode(AppMode.NORMAL)}>to normal</button>
             default:
-                return <button onClick={() => this.switchToMode("deleted")}>to deleted</button>
+                return <button onClick={() => this.switchToMode(AppMode.DELETED)}>to deleted</button>
         }
     }
 
     getActiveTable() {
         switch (this.state.mode) {
-            case "deleted":
+            case AppMode.DELETED:
                 return <DeletedInventoryTable/>
             default:
                 return <InventoryTable/>
@@ -48,12 +74,17 @@ class App extends React.Component {
     }
 }
 
-
 class ItemCreator extends React.Component {
-    constructor(props) {
+    newValues: MutableInventoryItemData
+    props: {onItemCreation: Function}
+
+    constructor(props: {onItemCreation: Function}) {
         super(props)
 
-        this.newValues = {}
+        this.newValues = {
+            name: "",
+            count: 0
+        }
     }
 
     render() {
@@ -75,7 +106,8 @@ class ItemCreator extends React.Component {
                             <input onChange={evt => this.newValues.name = evt.target.value}/>
                         </td>
                         <td>
-                            <input type="number" onChange={evt => this.newValues.count = evt.target.value}/>
+                            <input type="number"
+                            onChange={evt => this.newValues.count = Number.parseInt(evt.target.value)}/>
                         </td>
                         <td>
                             <button onClick={() => this.saveNew()}>
@@ -106,7 +138,9 @@ class ItemCreator extends React.Component {
 
 
 class InventoryTable extends React.Component {
-    constructor(props) {
+    state: {entries: Array<InventoryItemData>}
+
+    constructor(props: any) {
         super(props)
 
         this.state = {
@@ -114,7 +148,7 @@ class InventoryTable extends React.Component {
         }
     }
 
-    removeDeletedEntry(id) {
+    removeDeletedEntry(id: number) {
         let state = {...this.state}
         let removeIndex = state.entries.findIndex((item) => {
             return item.id == id
@@ -145,7 +179,7 @@ class InventoryTable extends React.Component {
                     {
                         this.state.entries.map((item) => {
                             return <InventoryItem data={item} key={item.id}
-                                onDelete={(id) => this.removeDeletedEntry(id)}/>
+                                onDelete={(id: number) => this.removeDeletedEntry(id)}/>
                         })
                     }
                 </tbody>
@@ -169,25 +203,32 @@ class InventoryTable extends React.Component {
 
 
 class InventoryItem extends React.Component {
-    constructor(props) {
+    modifications: MutableInventoryItemData
+    deletion_comment: string
+    state: {mode: InventoryItemMode, data: InventoryItemData}
+    props:  { data: InventoryItemData, onDelete: Function }
+
+
+    constructor(props:  { data: InventoryItemData, onDelete: Function }) {
         super(props)
 
         this.state = {
-            mode: "normal",
+            mode: InventoryItemMode.NORMAL,
             data: props.data,
         }
 
-        this.modifications = {}
+        this.modifications = {
+            name: "",
+            count: 0
+        }
         this.deletion_comment = ""
-
-        this.removeDeletedEntry = props.removeDeletedEntry
     }
 
     render() {
         switch (this.state.mode) {
-            case "edit":
+            case InventoryItemMode.EDIT:
                 return this.editMode()
-            case "delete":
+            case InventoryItemMode.DELETE:
                 return this.deleteMode()
             default:
                 return this.normalMode()
@@ -199,8 +240,8 @@ class InventoryItem extends React.Component {
             <tr>
                 <td>{this.state.data.name}</td>
                 <td>{this.state.data.count}</td>
-                <td><button onClick={() => this.switchToMode("edit")}>edit</button></td>
-                <td><button onClick={() => this.switchToMode("delete")}>delete</button></td>
+                <td><button onClick={() => this.switchToMode(InventoryItemMode.EDIT)}>edit</button></td>
+                <td><button onClick={() => this.switchToMode(InventoryItemMode.DELETE)}>delete</button></td>
             </tr>
         )
     }
@@ -214,10 +255,10 @@ class InventoryItem extends React.Component {
                 </td>
                 <td>
                     <input type="number" defaultValue={this.state.data.count} 
-                        onChange={evt => this.modifications.count = evt.target.value}/>
+                        onChange={evt => this.modifications.count = Number.parseInt(evt.target.value)}/>
                 </td>
                 <td><button onClick={() => this.saveEdits()}>save</button></td>
-                <td><button onClick={() => this.switchToMode(normal)}>discard</button></td>
+                <td><button onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>discard</button></td>
             </tr>
         )
     }
@@ -232,12 +273,12 @@ class InventoryItem extends React.Component {
                     <input onChange={evt => this.deletion_comment = evt.target.value}/>
                 </td>
                 <td><button onClick={() => this.deleteItem()}>delete</button></td>
-                <td><button onClick={() => this.switchToMode("normal")}>discard</button></td>
+                <td><button onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>discard</button></td>
             </tr>
         )
     }
 
-    switchToMode(mode) {
+    switchToMode(mode: InventoryItemMode) {
         let state = {...this.state}
         state.mode = mode
         
@@ -245,7 +286,10 @@ class InventoryItem extends React.Component {
     }
 
     saveEdits() {
-        let mods = {}
+        let mods: MutableInventoryItemData = {
+            name: "",
+            count: 0
+        }
         let modified = false
 
         if (this.modifications.name !== this.state.data.name) {
@@ -254,7 +298,7 @@ class InventoryItem extends React.Component {
         }
 
         if (this.modifications.count !== this.state.data.count) {
-            mods.count = Number.parseInt(this.modifications.count)
+            mods.count = this.modifications.count
             modified = true
         }
 
@@ -268,14 +312,14 @@ class InventoryItem extends React.Component {
             )
             .then(() => {
                 let state = {...this.state}
-                state.mode = "normal"
+                state.mode = InventoryItemMode.NORMAL
                 state.data.name = this.modifications.name ?? state.data.name
                 state.data.count = this.modifications.count ?? state.data.count
 
                 this.setState(state)
             })
         } else {
-            this.switchToMode("normal")
+            this.switchToMode(InventoryItemMode.NORMAL)
         }
     }
 
@@ -295,7 +339,9 @@ class InventoryItem extends React.Component {
 
 
 class DeletedInventoryTable extends React.Component {
-    constructor(props) {
+    state: {entries: Array<DeletedInventoryItemData>}
+
+    constructor(props: any) {
         super(props)
 
         this.state = {
@@ -303,7 +349,7 @@ class DeletedInventoryTable extends React.Component {
         }
     }
 
-    removeRestoredEntry(id) {
+    removeRestoredEntry(id: number) {
         let state = {...this.state}
         let removeIndex = state.entries.findIndex((item) => {
             return item.id == id
@@ -334,7 +380,7 @@ class DeletedInventoryTable extends React.Component {
                     {
                         this.state.entries.map((item) => {
                             return <DeletedInventoryItem data={item} key={item.id}
-                                onDelete={id => this.removeRestoredEntry(id)}/>
+                                onDelete={(id: number) => this.removeRestoredEntry(id)}/>
                         })
                     }
                 </tbody>
@@ -356,8 +402,9 @@ class DeletedInventoryTable extends React.Component {
     }
 }
 
-
 class DeletedInventoryItem extends React.Component {
+    props: {data: DeletedInventoryItemData, onDelete: Function}
+
     render() {
         return (
             <tr>
