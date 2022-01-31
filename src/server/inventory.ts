@@ -178,7 +178,7 @@ class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    putNewInventoryItem(req: express.Request, res: express.Response) {
+    postNewInventoryItem(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested to create entry `
                 + `in inventory`)
 
@@ -342,8 +342,8 @@ router.get("/deleted", invContr.getDeletedInventory.bind(invContr))
 
 router.use("/item/new",
     invContr.newInventoryItemMiddleware.bind(invContr))
-router.put("/item/new",
-    invContr.putNewInventoryItem.bind(invContr))
+router.post("/item/new",
+    invContr.postNewInventoryItem.bind(invContr))
 
 router.use("/item/existing/:id",
     invContr.entryIdMiddleware.bind(invContr))

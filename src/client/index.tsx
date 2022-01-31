@@ -124,7 +124,7 @@ class ItemCreator extends React.Component {
         if (this.newValues.name && this.newValues.count) {
             fetch("/inventory/item/new",
                 { 
-                    method: "PUT",
+                    method: "POST",
                     body: JSON.stringify(this.newValues),
                     headers: { 'Content-Type': 'application/json' }
                 }
