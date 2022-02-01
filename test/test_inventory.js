@@ -43,11 +43,10 @@ describe("InventoryController", () => {
 
     describe("#newInventoryItemMiddleware", () => {
         it("should call next() without sending anything when entries are valid", () => {
-            let model = new InventoryModel()
-            model.isValidNewEntry = sinon.stub().returns(true)
             let invController = new InventoryController(
-                model, new DeletionModel()
+                new InventoryController(), new DeletionModel()
             )
+            invController.isValidNewEntry = sinon.stub().returns(true)
             let req = mockReq({
                 body: {
                     name: "test",
@@ -64,11 +63,10 @@ describe("InventoryController", () => {
         })
 
         it("should fail with error 400 when entries are invalid", () => {
-            let model = new InventoryModel()
-            model.isValidNewEntry = sinon.stub().returns(true)
             let invController = new InventoryController(
-                model, new DeletionModel()
+                new InventoryModel(), new DeletionModel()
             )
+            invController.isValidNewEntry = sinon.stub().returns(false)
             let req = mockReq({
                 body: {
                     name: "test",
