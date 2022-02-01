@@ -48,7 +48,7 @@
     "start": "node .",
     "start:dev": "set NODE_ENV='development' && node .",
     "pretest": "npm run build",
-    "test": "node ./node_modules/mocha/bin/mocha",
+    "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
     "start:client": "webpack serve --config webpack.config.js"
   },
   "author": "Henrik Zimmermann",

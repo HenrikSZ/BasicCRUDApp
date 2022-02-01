@@ -2,8 +2,9 @@ import chai from "chai"
 import sinon from "sinon"
 import sinon_chai from "sinon-chai"
 import { mockReq, mockRes } from "sinon-express-mock"
-import { mockInventoryModel } from "./mocks/inventory.js"
-import { InventoryController, InventoryModel, DeletionModel } from "../dist/inventory.js"
+import InventoryController from "../../dist/controllers/InventoryController.js"
+import mockDeletionModel from "../mocks/models/DeletionModel.js"
+import mockInventoryModel from "../mocks/models/InventoryModel.js"
 chai.use(sinon_chai)
 
 const expect = chai.expect
@@ -12,7 +13,7 @@ describe("InventoryController", () => {
     describe("#entryIdMiddleware", () => {
         it ("should call next() without sending anything when with valid id", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel())
             let req = mockReq({ 
                 params: {
                     id: 10
@@ -28,7 +29,7 @@ describe("InventoryController", () => {
         })
         it ("should fail with error 400 when no id is provided", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel())
             let req = mockReq()
             let res = mockRes()
             let next = sinon.spy()
@@ -45,7 +46,7 @@ describe("InventoryController", () => {
     describe("#newInventoryItemMiddleware", () => {
         it("should call next() without sending anything when entries are valid", () => {
             let invController = new InventoryController(
-                new InventoryController(), new DeletionModel()
+                mockInventoryModel(), mockDeletionModel()
             )
             invController.isValidNewEntry = sinon.stub().returns(true)
             let req = mockReq({
@@ -65,7 +66,7 @@ describe("InventoryController", () => {
 
         it("should fail with error 400 when entries are invalid", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel()
+                mockInventoryModel(), mockDeletionModel()
             )
             invController.isValidNewEntry = sinon.stub().returns(false)
             let req = mockReq({
@@ -89,7 +90,7 @@ describe("InventoryController", () => {
     describe("#deleteCommentMiddleware", () => {
         it("should call next() without sending anything when comment is valid", () => {
             let invController = new InventoryController(
-                new InventoryController(), new DeletionModel()
+                mockInventoryModel(), mockDeletionModel()
             )
             let req = mockReq({
                 body: {
@@ -107,7 +108,7 @@ describe("InventoryController", () => {
 
         it("should fail with error 400 when entries are invalid", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel()
+                mockInventoryModel(), mockDeletionModel()
             )
             let req = mockReq()
             let res = mockRes()
@@ -138,7 +139,7 @@ describe("InventoryController", () => {
                 allItems: allItems
             })
             let invController = new InventoryController(
-                mockModel, new DeletionModel()
+                mockModel, mockDeletionModel()
             )
 
             let req = mockReq()
@@ -159,44 +160,51 @@ describe("InventoryController", () => {
     describe("#isValidNewEntry", () => {
         it("should return true with a normal entry", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel()
+            )
             let validEntry = { name: "Walter", count: 1 }
             expect(invController.isValidNewEntry(validEntry)).to.equal(true)
         })
         it("should return true with a count of 0", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel()
+            )
             let validEntry = { name: "Alfred", count: 0 }
             expect(invController.isValidNewEntry(validEntry)).to.equal(true)
         })
         it("should return true with a name with one character", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel()
+            )
             let validEntry = { name: "A", count: 1 }
             expect(invController.isValidNewEntry(validEntry)).to.equal(true)
         })
 
         it("should return false with no fields", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel()
+            )
             let invalidEntry = {}
             expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
         })
         it("should return false with an invalid name", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel()
+            )
             let invalidEntry = { name: "", count: 1}
             expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
         })
         it("should return false with an invalid count", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel()
+            )
             let invalidEntry = { name: "A", count: -1 }
             expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
         })
         it("should return false with an invalid option", () => {
             let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
+                mockInventoryModel(), mockDeletionModel()
+            )
             let invalidEntry = { name: "B", count: 0, tester: "no" }
             expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
         })
