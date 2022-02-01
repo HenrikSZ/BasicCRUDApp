@@ -147,14 +147,18 @@ class InventoryController {
 
     /**
      * Checks if an object contains all properties of a new inventory item
+     * TODO: pull out in separate method
      *
      * @param entry the object that should be checked
      * @returns true if the entry is valid
      */
     isValidNewEntry(entry: any) {
-        return (entry.hasOwnProperty("name") && entry.hasOwnProperty("count")
+        return (
+            Object.keys(entry).length == 2
+            && entry.hasOwnProperty("name") && entry.hasOwnProperty("count")
             && entry.name.length !== 0 && isInteger(entry.count)
-            && entry.count >= 0)
+            && entry.count >= 0
+        )
     }
 
     /**
