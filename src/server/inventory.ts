@@ -1,5 +1,5 @@
 /**
- * Containts the InventoryController for anything related to the inventory
+ * Contains the InventoryController for anything related to the inventory
  */
 
 import express from  "express"
@@ -9,10 +9,69 @@ import logger from "./logger"
 import { Error, ErrorResponse, handleMixedError, isInteger } from "./util"
 
 
+
+class DeletionModel {
+    insertDeletion(comment: string) {
+        const stmt = "INSERT INTO deletions (comment) VALUES (?)"
+        return dbPromise.query(stmt, comment)
+    }
+    
+    deleteDeletion(id: string) {
+        const stmt = "DELETE FROM deletions WHERE id = ?"
+        return dbPromise.query(stmt, id)
+    }
+}
+
+class InventoryModel {
+    getAllItems() {
+        const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
+        return dbPromise.query(stmt)
+    }
+
+    getAllDeletedItems() {
+        const stmt = "SELECT inventory.id, inventory.name, inventory.count, "
+            + "deletions.comment FROM inventory INNER JOIN deletions "
+            + "ON inventory.deletion_id=deletions.id "
+            + "WHERE deletion_id IS NOT NULL"
+        return dbPromise.query(stmt)
+    }
+
+    getItem(id: string) {
+        const stmt = "SELECT * FROM inventory WHERE id = ?"
+        return dbPromise.query(stmt, id)
+    }
+
+    getDeletionId(id: string) {
+        const stmt = "SELECT deletion_id FROM inventory "
+            + "WHERE id = ? AND deletion_id IS NOT NULL"
+        return dbPromise.query(stmt, id)
+    }
+
+    insertItem(values: any) {
+        const stmt = "INSERT INTO inventory SET ?"
+        return dbPromise.query(stmt, values)
+    }
+
+    updateItem(values: any, id: string) {
+        const stmt = "UPDATE inventory SET ? WHERE id = ?"
+        return dbPromise.query(stmt, [values, id])
+    }
+}
+
+
 /**
  * Anything about the Inventory is controlled here
  */
 class InventoryController {
+    invModel: InventoryModel
+    deletionModel: DeletionModel
+
+
+    constructor() {
+        this.invModel = new InventoryModel()
+        this.deletionModel = new DeletionModel()
+    }
+
     /**
      * Checks if there is a valid id provided in the url
      *
@@ -108,9 +167,7 @@ class InventoryController {
     getInventory(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested all inventory entries`)
 
-        const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
-
-        dbPromise.query(stmt)
+        this.invModel.getAllItems()
         .then(([results, fields]) => {
             logger.info(`${req.hostname} requested all entries`)
 
@@ -131,9 +188,7 @@ class InventoryController {
         logger.info(`${req.hostname} requested inventory entry with `
             + `id ${req.params.id}`)
 
-        const stmt = "SELECT * FROM inventory WHERE id = ?"
-
-        dbPromise.query(stmt, req.params.id)
+        this.invModel.getItem(req.params.id)
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
             logger.info(`Retrieved inventory entry id ${req.params.id} for `
@@ -155,12 +210,7 @@ class InventoryController {
     getDeletedInventory(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested all deleted inventory entries`)
 
-        const stmt = "SELECT inventory.id, inventory.name, inventory.count, "
-            + "deletions.comment FROM inventory INNER JOIN deletions "
-            + "ON inventory.deletion_id=deletions.id "
-            + "WHERE deletion_id IS NOT NULL"
-
-        dbPromise.query(stmt)
+        this.invModel.getAllDeletedItems()
         .then(([results, fields]) => {
             logger.info(`Retrieved all deleted inventory entries for `
                 + `${req.hostname}`)
@@ -182,9 +232,7 @@ class InventoryController {
         logger.info(`${req.hostname} requested to create entry `
                 + `in inventory`)
 
-        const stmt = "INSERT INTO inventory SET ?"
-
-        dbPromise.query(stmt, req.body)
+        this.invModel.insertItem(req.body)
         .then(([results, fields]) => {
             results = results as OkPacket
             logger.info(`${req.hostname} created entry with `
@@ -210,9 +258,7 @@ class InventoryController {
         logger.info(`${req.hostname} requested to update entry `
                 + `${req.params.id} in inventory`)
 
-        const stmt = "UPDATE inventory SET ? WHERE id = ?"
-
-        dbPromise.query(stmt, [req.body, req.params.id])
+        this.invModel.updateItem(req.body, req.params.id)
         .then(([results, fields]) => {
             results = results as OkPacket
 
@@ -241,10 +287,7 @@ class InventoryController {
         logger.info(`${req.hostname} requested to restore inventory entry `
             + `id ${req.params.id}`)
 
-        let stmt = "SELECT deletion_id FROM inventory "
-            + "WHERE id = ? AND deletion_id IS NOT NULL"
-
-        dbPromise.query(stmt, req.params.id)
+        this.invModel.getDeletionId(req.params.id)
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
 
@@ -253,9 +296,7 @@ class InventoryController {
                     + `id ${req.params.id} in inventory`)
 
                 const deletionId = results[0].deletion_id
-                stmt = "DELETE FROM deletions WHERE id = ?"
-
-                return dbPromise.query(stmt, deletionId)
+                return this.deletionModel.deleteDeletion(deletionId)
             } else {
                 logger.info(`${req.hostname} tried to restore entry `
                     + `id ${req.params.id} in inventory which is not deleted`)
@@ -309,18 +350,14 @@ class InventoryController {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.id}`)
 
-        let stmt = "INSERT INTO deletions (comment) VALUES (?)"
-
-        dbPromise.query(stmt, req.body.comment)
+        this.deletionModel.insertDeletion(req.body.comment)
         .then(([results, fields]) => {
             logger.info(`${req.hostname} added a deletion comment for entry `
                 + `with id ${req.params.id} in inventory`)
 
             results = results as OkPacket
-            stmt = "UPDATE inventory SET ? WHERE id = ?"
-
-            return dbPromise.query(stmt,
-                [{ deletion_id: results.insertId }, req.params.id])
+            return this.invModel.updateItem({ deletion_id: results.insertId},
+                req.params.id)
         })
         .then(() => {
             logger.info(`${req.hostname} marked entry with `
