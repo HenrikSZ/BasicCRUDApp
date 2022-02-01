@@ -67,9 +67,9 @@ class InventoryController {
     deletionModel: DeletionModel
 
 
-    constructor() {
-        this.invModel = new InventoryModel()
-        this.deletionModel = new DeletionModel()
+    constructor(model: InventoryModel, deletionModel: DeletionModel) {
+        this.invModel = model
+        this.deletionModel = deletionModel
     }
 
     /**
@@ -92,7 +92,7 @@ class InventoryController {
                 message: "The id has to be specified as number in the url path"
             }
 
-            res.status(400).send()
+            res.status(400).send(body)
         }
     }
 
@@ -376,7 +376,9 @@ class InventoryController {
 
 
 const router = express.Router()
-const invContr = new InventoryController()
+const model = new InventoryModel()
+const deletionModel = new DeletionModel()
+const invContr = new InventoryController(model, deletionModel)
 
 router.get("/", invContr.getInventory.bind(invContr))
 router.get("/deleted", invContr.getDeletedInventory.bind(invContr))
