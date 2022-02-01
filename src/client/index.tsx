@@ -28,13 +28,19 @@ interface DeletedInventoryItemData extends InventoryItemData {
 }
 
 class App extends React.Component {
-    state: {mode: AppMode}
+    state: {
+        mode: AppMode,
+        entries: Array<InventoryItemData>,
+        deletedEntries: Array<DeletedInventoryItemData>
+    }
 
     constructor(props: any) {
         super(props)
 
         this.state = {
-            mode: AppMode.NORMAL
+            mode: AppMode.NORMAL,
+            entries: [],
+            deletedEntries: []
         }
     }
 
@@ -48,7 +54,7 @@ class App extends React.Component {
     render() {
         return (
             <React.StrictMode>
-                <ItemCreator onItemCreation={() => this.forceUpdate()}/>
+                <ItemCreator onItemCreation={() => this.loadEntries()}/>
                 {this.getSwitchButton()}
                 {this.getActiveTable()}
             </React.StrictMode>
@@ -67,10 +73,78 @@ class App extends React.Component {
     getActiveTable() {
         switch (this.state.mode) {
             case AppMode.DELETED:
-                return <DeletedInventoryTable/>
+                return <DeletedInventoryTable entries={this.state.deletedEntries}
+                    onReloadRequest={() => this.loadDeletedEntries()}
+                    onItemRestore={(id: number) => this.removeLocalDeletedEntry(id)}/>
             default:
-                return <InventoryTable/>
+                return <InventoryTable entries={this.state.entries}
+                onItemDelete={(id: number) => this.removeLocalEntry(id)}
+                onReloadRequest={() => this.loadEntries()}/>
         }
+    }
+
+    componentDidMount() {
+        this.loadEntries()
+        .then(() => {
+             return this.loadDeletedEntries()
+        })
+    }
+
+    componentDidUpdate(prevProps: Readonly<{}>,
+        prevState: Readonly<{
+        mode: AppMode,
+        entries: Array<InventoryItemData>,
+        deletedEntries: Array<DeletedInventoryItemData>
+    }>) {
+        if (prevState.mode != this.state.mode) {
+            switch (this.state.mode) {
+                case AppMode.DELETED:
+                    this.loadDeletedEntries()
+                    break
+                default:
+                    this.loadEntries()
+            }
+        }
+    }
+
+    loadDeletedEntries() {
+        return fetch("/inventory/deleted")
+        .then((response) => response.json())
+        .then((data) =>{
+            let state= {...this.state}
+            state.deletedEntries = data
+
+            this.setState(state)
+        })
+    }
+
+    loadEntries() {
+        return fetch("/inventory")
+        .then((response) => response.json())
+        .then((data) => {
+            let state= {...this.state}
+            state.entries = data
+
+            this.setState(state)
+        })
+    }
+
+    removeLocalEntry(id: number) {
+        let state = {...this.state}
+        state.entries = state.entries.filter((item) => {
+            return item.id != id
+        })
+
+        this.setState(state)
+    }
+
+    removeLocalDeletedEntry(id: number) {
+        let state = {...this.state}
+        state.deletedEntries = state.deletedEntries.filter((item) => {
+            return item.id != id
+        })
+
+        this.setState(state)
     }
 }
 
@@ -138,25 +212,14 @@ class ItemCreator extends React.Component {
 
 
 class InventoryTable extends React.Component {
-    state: {entries: Array<InventoryItemData>}
-
-    constructor(props: any) {
-        super(props)
-
-        this.state = {
-            entries: []
-        }
+    props: {
+        entries: Array<InventoryItemData>,
+        onReloadRequest: Function,
+        onItemDelete: Function
     }
 
-    removeDeletedEntry(id: number) {
-        let state = {...this.state}
-        let removeIndex = state.entries.findIndex((item) => {
-            return item.id == id
-        })
-
-        state.entries.splice(removeIndex, 1)
-
-        this.setState(state)
+    constructor(props: { entries: Array<InventoryItemData> }) {
+        super(props)
     }
 
     render() {
@@ -169,7 +232,7 @@ class InventoryTable extends React.Component {
                         <th>Item Count</th>
                         <th></th>
                         <th>
-                            <button onClick={() => this.loadEntries()}>
+                            <button onClick={() => this.props.onReloadRequest()}>
                                 reload
                             </button>
                         </th>
@@ -177,9 +240,9 @@ class InventoryTable extends React.Component {
                 </thead>
                 <tbody>
                     {
-                        this.state.entries.map((item) => {
+                        this.props.entries.map((item) => {
                             return <InventoryItem data={item} key={item.id}
-                                onDelete={(id: number) => this.removeDeletedEntry(id)}/>
+                                onDelete={(id: number) => this.props.onItemDelete(id)}/>
                         })
                     }
                 </tbody>
@@ -187,25 +250,13 @@ class InventoryTable extends React.Component {
             </React.StrictMode>
         )
     }
-
-    componentDidMount() {
-        this.loadEntries()
-    }
-
-    loadEntries() {
-        fetch("/inventory")
-        .then((response) => response.json())
-        .then((data) =>{
-            this.setState({ entries: data })
-        })
-    }
 }
 
 
 class InventoryItem extends React.Component {
     modifications: MutableInventoryItemData
     deletion_comment: string
-    state: {mode: InventoryItemMode, data: InventoryItemData}
+    state: { mode: InventoryItemMode, data: InventoryItemData }
     props:  { data: InventoryItemData, onDelete: Function }
 
 
@@ -339,25 +390,18 @@ class InventoryItem extends React.Component {
 
 
 class DeletedInventoryTable extends React.Component {
-    state: {entries: Array<DeletedInventoryItemData>}
-
-    constructor(props: any) {
-        super(props)
-
-        this.state = {
-            entries: []
-        }
+    props: {
+        entries: Array<DeletedInventoryItemData>,
+        onReloadRequest: Function,
+        onItemRestore: Function
     }
 
-    removeRestoredEntry(id: number) {
-        let state = {...this.state}
-        let removeIndex = state.entries.findIndex((item) => {
-            return item.id == id
-        })
-
-        state.entries.splice(removeIndex, 1)
-
-        this.setState(state)
+    constructor(props: {
+        entries: Array<DeletedInventoryItemData>,
+        onReloadRequest: Function,
+        onItemRestore: Function
+    }) {
+        super(props)
     }
 
     render() {
@@ -370,7 +414,7 @@ class DeletedInventoryTable extends React.Component {
                         <th>Item Count</th>
                         <th>Deletion comment</th>
                         <th>
-                            <button onClick={() => this.loadEntries()}>
+                            <button onClick={() => this.props.onReloadRequest()}>
                                 reload
                             </button>
                         </th>
@@ -378,27 +422,15 @@ class DeletedInventoryTable extends React.Component {
                 </thead>
                 <tbody>
                     {
-                        this.state.entries.map((item) => {
+                        this.props.entries.map((item) => {
                             return <DeletedInventoryItem data={item} key={item.id}
-                                onDelete={(id: number) => this.removeRestoredEntry(id)}/>
+                                onDelete={(id: number) => this.props.onItemRestore(id)}/>
                         })
                     }
                 </tbody>
             </table>
             </React.StrictMode>
         )
-    }
-
-    componentDidMount() {
-        this.loadEntries()
-    }
-
-    loadEntries() {
-        fetch("/inventory/deleted")
-        .then((response) => response.json())
-        .then((data) =>{
-            this.setState({ entries: data })
-        })
     }
 }
 
