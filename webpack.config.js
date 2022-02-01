@@ -1,8 +1,8 @@
-const path = require("path");
-const webpack = require("webpack");
-const HTMLWebpackPlugin = require("html-webpack-plugin");
+import path from "path"
+import webpack from "webpack"
+import HTMLWebpackPlugin from "html-webpack-plugin"
 
-module.exports = {
+export default {
   mode: "development",
   entry: "./src/client/index.tsx",
   output: {

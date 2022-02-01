@@ -4,9 +4,9 @@
 
 import express from  "express"
 import { OkPacket, RowDataPacket } from "mysql2"
-import dbPromise from "./db"
-import logger from "./logger"
-import { Error, ErrorResponse, handleMixedError, isInteger } from "./util"
+import dbPromise from "./db.js"
+import logger from "./logger.js"
+import { Error, ErrorResponse, handleMixedError, isInteger } from "./util.js"
 
 
 
@@ -392,5 +392,5 @@ router.delete("/item/existing/:id",
     invContr.deleteCommentMiddleware.bind(invContr),
     invContr.deleteInventoryItem.bind(invContr))
 
-
+export { InventoryController, InventoryModel, DeletionModel }
 export default router

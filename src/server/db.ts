@@ -4,7 +4,8 @@
 
 
 import mysql2 from "mysql2"
-
+import dotenv from "dotenv"
+dotenv.config()
 
 const dbConnConfig: mysql2.ConnectionOptions = {
     host: process.env.DB_HOST ?? "localhost",

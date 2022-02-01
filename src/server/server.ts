@@ -4,15 +4,20 @@
  * dotenv at the top so that environment variables are set when needed
  */
 
+import path from "path"
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 import dotenv from "dotenv"
 dotenv.config()
 
 import express from "express"
 import bodyParser from "body-parser"
-import path from "path"
-import inventory from "./inventory"
-import logger from "./logger"
+
+import inventory from "./inventory.js"
+import logger from "./logger.js"
 
 
 const app = express()

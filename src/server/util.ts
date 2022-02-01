@@ -5,7 +5,7 @@
 
 import express from "express"
 import { QueryError } from "mysql2"
-import logger from "./logger"
+import logger from "./logger.js"
 
 
 /**
