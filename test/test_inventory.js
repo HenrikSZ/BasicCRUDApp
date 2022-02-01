@@ -2,6 +2,7 @@ import chai from "chai"
 import sinon from "sinon"
 import sinon_chai from "sinon-chai"
 import { mockReq, mockRes } from "sinon-express-mock"
+import { mockInventoryModel } from "./mocks/inventory.js"
 import { InventoryController, InventoryModel, DeletionModel } from "../dist/inventory.js"
 chai.use(sinon_chai)
 
@@ -9,7 +10,7 @@ const expect = chai.expect
 
 describe("InventoryController", () => {
     describe("#entryIdMiddleware", () => {
-        it ("should call next() without sending anything when called with valid integer", () => {
+        it ("should call next() without sending anything when with valid id", () => {
             let invController = new InventoryController(
                 new InventoryModel(), new DeletionModel())
             let req = mockReq({ 
@@ -118,6 +119,40 @@ describe("InventoryController", () => {
             expect(res.status).to.have.been.calledWith(400)
             expect(res.status).to.have.been.calledBefore(res.send)
             expect(res.send).to.have.been.called
+        })
+    })
+
+    describe("#getInventory", () => {
+        it("should send a result containing the whole inventory", (done) => {
+            let allItems = [
+                {
+                    name: "Chair",
+                    count: 5
+                },
+                {
+                    name: "Desk",
+                    count: 10
+                }
+            ]
+            let mockModel = mockInventoryModel({
+                allItems: allItems
+            })
+            let invController = new InventoryController(
+                mockModel, new DeletionModel()
+            )
+
+            let req = mockReq()
+            let res = mockRes()
+            
+            invController.getInventory(req, res)
+            .then(() => {
+                try {
+                    expect(res.send).to.be.calledWith(allItems)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            })
         })
     })
 

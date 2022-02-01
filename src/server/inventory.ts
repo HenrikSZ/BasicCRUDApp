@@ -171,7 +171,7 @@ class InventoryController {
     getInventory(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested all inventory entries`)
 
-        this.invModel.getAllItems()
+        return this.invModel.getAllItems()
         .then(([results, fields]) => {
             logger.info(`${req.hostname} requested all entries`)
 
