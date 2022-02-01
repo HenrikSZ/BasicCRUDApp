@@ -9,7 +9,7 @@ const expect = chai.expect
 
 describe("InventoryController", () => {
     describe("#entryIdMiddleware", () => {
-        it ("should call next() if called with valid integer", () => {
+        it ("should call next() without sending anything when called with valid integer", () => {
             let invController = new InventoryController(
                 new InventoryModel(), new DeletionModel())
             let req = mockReq({ 
@@ -23,32 +23,67 @@ describe("InventoryController", () => {
             invController.entryIdMiddleware(req, res, next)
     
             expect(next).to.have.been.calledOnce
-        })
-        it ("should not call status() if called with valid integer", () => {
-            let invController = new InventoryController(
-                new InventoryModel(), new DeletionModel())
-            let req = mockReq({ 
-                params: {
-                    id: 10
-                }
-            })
-            let res = mockRes()
-            let next = sinon.spy()
-    
-            invController.entryIdMiddleware(req, res, next)
-    
-            expect(res.status).to.have.callCount(0)
+            expect(res.send).to.not.have.been.called
         })
         it ("should fail with error 400 when no id is provided", () => {
             let invController = new InventoryController(
                 new InventoryModel(), new DeletionModel())
             let req = mockReq()
             let res = mockRes()
-            let next = () => {}
+            let next = sinon.spy()
     
             invController.entryIdMiddleware(req, res, next)
     
+            expect(next).to.not.have.been.called
             expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.called
+        })
+    })
+
+    describe("#newInventoryItemMiddleware", () => {
+        it("should call next() without sending anything when entries are valid", () => {
+            let model = new InventoryModel()
+            model.isValidNewEntry = sinon.stub().returns(true)
+            let invController = new InventoryController(
+                model, new DeletionModel()
+            )
+            let req = mockReq({
+                body: {
+                    name: "test",
+                    count: 5
+                }
+            })
+            let res = mockRes()
+            let next = sinon.spy()
+
+            invController.newInventoryItemMiddleware(req, res, next)
+
+            expect(res.send).to.not.have.been.called
+            expect(next).to.have.been.calledOnce
+        })
+
+        it("should fail with error 400 when entries are invalid", () => {
+            let model = new InventoryModel()
+            model.isValidNewEntry = sinon.stub().returns(true)
+            let invController = new InventoryController(
+                model, new DeletionModel()
+            )
+            let req = mockReq({
+                body: {
+                    name: "test",
+                    count: -1
+                }
+            })
+            let res = mockRes()
+            let next = sinon.spy()
+
+            invController.newInventoryItemMiddleware(req, res, next)
+
+            expect(next).to.have.not.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.called
         })
     })
 
