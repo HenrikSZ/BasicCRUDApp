@@ -16,7 +16,7 @@ dotenv.config()
 import express from "express"
 import bodyParser from "body-parser"
 
-import inventory from "./inventory.js"
+import inventory from "./routes/inventory.js"
 import logger from "./logger.js"
 
 

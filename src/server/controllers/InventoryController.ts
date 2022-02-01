@@ -3,98 +3,16 @@
  */
 
 import express from  "express"
-import { OkPacket, RowDataPacket } from "mysql2"
-import dbPromise from "./db.js"
-import logger from "./logger.js"
-import { Error, ErrorResponse, handleMixedError, isInteger } from "./util.js"
-
-
-class DeletionModel {
-    insertDeletion(comment: string) {
-        const stmt = "INSERT INTO deletions (comment) VALUES (?)"
-        return dbPromise.query(stmt, comment)
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            return results.insertId
-        })
-    }
-    
-    deleteDeletion(id: string) {
-        const stmt = "DELETE FROM deletions WHERE id = ?"
-        return dbPromise.query(stmt, id)
-        .then(([results, fields]) => {
-            return results as OkPacket
-        })
-    }
-}
-
-class InventoryModel {
-    getAllItems() {
-        const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
-        return dbPromise.query(stmt)
-        .then(([results, fields]) => {
-            return results
-        })
-    }
-
-    getAllDeletedItems() {
-        const stmt = "SELECT inventory.id, inventory.name, inventory.count, "
-            + "deletions.comment FROM inventory INNER JOIN deletions "
-            + "ON inventory.deletion_id=deletions.id "
-            + "WHERE deletion_id IS NOT NULL"
-        return dbPromise.query(stmt)
-        .then(([results, fields]) => {
-            return results
-        })
-    }
-
-    getItem(id: string) {
-        const stmt = "SELECT * FROM inventory WHERE id = ?"
-        return dbPromise.query(stmt, id)
-        .then(([results, fields]) => {
-            results = results as RowDataPacket[]
-            return results[0]
-        })
-    }
-
-    getDeletionId(id: string) {
-        const stmt = "SELECT deletion_id FROM inventory "
-            + "WHERE id = ? AND deletion_id IS NOT NULL"
-        return dbPromise.query(stmt, id)
-        .then(([results, fields]) => {
-            results = results as RowDataPacket[]
-            if (results.length === 0) {
-                return -1
-            } else {
-                return results[0].deletion_id
-            }
-        })
-    }
-
-    insertItem(values: any) {
-        const stmt = "INSERT INTO inventory SET ?"
-        return dbPromise.query(stmt, values)
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            return results.insertId
-        })
-    }
-
-    updateItem(values: any, id: string) {
-        const stmt = "UPDATE inventory SET ? WHERE id = ?"
-        return dbPromise.query(stmt, [values, id])
-        .then(([results, fiels]) => {
-            results = results as OkPacket
-            return results
-        })
-    }
-}
+import logger from "../logger.js"
+import { Error, ErrorResponse, handleMixedError, isInteger } from "../util.js"
+import DeletionModel from "../models/DeletionModel.js"
+import InventoryModel from "../models/InventoryModel.js"
 
 
 /**
  * Anything about the Inventory is controlled here
  */
-class InventoryController {
+export default class InventoryController {
     invModel: InventoryModel
     deletionModel: DeletionModel
 
@@ -325,7 +243,7 @@ class InventoryController {
                 logger.info(`${req.hostname} started to restore entry `
                     + `id ${req.params.id} in inventory`)
 
-                return this.deletionModel.deleteDeletion(deletionId)
+                return this.deletionModel.delete(deletionId)
             } else {
                 logger.info(`${req.hostname} tried to restore entry `
                     + `id ${req.params.id} in inventory which is not deleted`)
@@ -379,7 +297,7 @@ class InventoryController {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.id}`)
 
-        this.deletionModel.insertDeletion(req.body.comment)
+        this.deletionModel.insert(req.body.comment)
         .then(insertId => {
             logger.info(`${req.hostname} added a deletion comment for entry `
                 + `with id ${req.params.id} in inventory`)
@@ -397,30 +315,3 @@ class InventoryController {
         })
     }
 }
-
-
-const router = express.Router()
-const model = new InventoryModel()
-const deletionModel = new DeletionModel()
-const invContr = new InventoryController(model, deletionModel)
-
-router.get("/", invContr.getInventory.bind(invContr))
-router.get("/deleted", invContr.getDeletedInventory.bind(invContr))
-
-router.use("/item/new",
-    invContr.newInventoryItemMiddleware.bind(invContr))
-router.post("/item/new",
-    invContr.postNewInventoryItem.bind(invContr))
-
-router.use("/item/existing/:id",
-    invContr.entryIdMiddleware.bind(invContr))
-router.get("/item/existing/:id",
-    invContr.getInventoryItem.bind(invContr))
-router.put("/item/existing/:id",
-    invContr.putExistingInventoryItem.bind(invContr))
-router.delete("/item/existing/:id",
-    invContr.deleteCommentMiddleware.bind(invContr),
-    invContr.deleteInventoryItem.bind(invContr))
-
-export { InventoryController, InventoryModel, DeletionModel }
-export default router
