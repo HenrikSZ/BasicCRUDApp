@@ -85,6 +85,42 @@ describe("InventoryController", () => {
         })
     })
 
+    describe("#deleteCommentMiddleware", () => {
+        it("should call next() without sending anything when comment is valid", () => {
+            let invController = new InventoryController(
+                new InventoryController(), new DeletionModel()
+            )
+            let req = mockReq({
+                body: {
+                    comment: "Uno dos tres"
+                }
+            })
+            let res = mockRes()
+            let next = sinon.spy()
+
+            invController.deleteCommentMiddleware(req, res, next)
+
+            expect(res.send).to.not.have.been.called
+            expect(next).to.have.been.calledOnce
+        })
+
+        it("should fail with error 400 when entries are invalid", () => {
+            let invController = new InventoryController(
+                new InventoryModel(), new DeletionModel()
+            )
+            let req = mockReq()
+            let res = mockRes()
+            let next = sinon.spy()
+
+            invController.deleteCommentMiddleware(req, res, next)
+
+            expect(next).to.have.not.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.called
+        })
+    })
+
     describe("#isValidNewEntry", () => {
         it("should return true with a normal entry", () => {
             let invController = new InventoryController(
