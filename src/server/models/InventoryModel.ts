@@ -36,13 +36,16 @@ export default class InventoryModel {
 
     getDeletionId(id: string) {
         const stmt = "SELECT deletion_id FROM inventory "
-            + "WHERE id = ? AND deletion_id IS NOT NULL"
+            + "WHERE id = ?"
         return dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
             if (results.length === 0) {
                 return -1
-            } else {
+            } else if (!results[0].deletion_id) {
+                return 0
+            }
+            else {
                 return results[0].deletion_id
             }
         })
@@ -62,7 +65,7 @@ export default class InventoryModel {
         return dbPromise.query(stmt, [values, id])
         .then(([results, fiels]) => {
             results = results as OkPacket
-            return results
+            return results.affectedRows > 0
         })
     }
 }

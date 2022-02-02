@@ -4,7 +4,7 @@
 
 import express from  "express"
 import logger from "../logger.js"
-import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError }
+import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError, CustomError }
     from "../error_handling.js"
 import { isInteger } from "../util.js"
 import DeletionModel from "../models/DeletionModel.js"
@@ -226,8 +226,8 @@ export default class InventoryController {
                 + `${req.params.id} in inventory`)
 
         return this.invModel.updateItem(req.body, req.params.id)
-        .then(results => {
-            if (results.affectedRows > 0) {
+        .then(wasUpdated => {
+            if (wasUpdated) {
                 logger.info(`${req.hostname} updated entry with `
                     + `id ${req.params.id}`)
 
@@ -266,7 +266,17 @@ export default class InventoryController {
                 logger.info(`${req.hostname} started to restore entry `
                     + `id ${req.params.id} in inventory`)
 
-                return this.deletionModel.delete(deletionId)
+                return this.deletionModel.delete(deletionId).then((wasDeleted) => {
+                    if (!wasDeleted) {
+                        const errorResponse: ErrorResponse = {
+                            name: ErrorType.FIELD,
+                            message: "The deletion comment with the specified "
+                                + "deletion id does not exist"
+                        }
+        
+                        throw new ClientRequestError(errorResponse)
+                    }
+                })
             } else {
                 logger.info(`${req.hostname} tried to restore entry `
                     + `id ${req.params.id} in inventory which is not deleted`)
@@ -324,7 +334,28 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.id}`)
 
-        return this.deletionModel.insert(req.body.comment)
+        return this.invModel.getDeletionId(req.params.id)
+        .then(deletionId => {
+            if (deletionId === -1) {
+                const body: ErrorResponse = {
+                    name: ErrorType.FIELD,
+                    message: `The specified entry with id ${req.params.id} `
+                        + `does not exist`
+                }
+
+                throw new CustomError(body)
+            } else if (deletionId > 0) {
+                const body: ErrorResponse = {
+                    name: ErrorType.FIELD,
+                    message: `The specified entry with id ${req.params.id} `
+                        +`is already deleted`
+                }
+
+                throw new CustomError(body)
+            }
+
+            return this.deletionModel.insert(req.body.comment)
+        })
         .then(insertId => {
             logger.info(`${req.hostname} added a deletion comment for entry `
                 + `with id ${req.params.id} in inventory`)
@@ -338,7 +369,11 @@ export default class InventoryController {
 
             res.send()
         }, (error) => {
-            handleDbError(error, req, res)
+            if (isCustomError(error)) {
+                res.status(400).send(error.response)
+            } else {
+                handleDbError(error, req, res)
+            }
         })
     }
 }
