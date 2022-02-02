@@ -144,7 +144,7 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested inventory entry with `
             + `id ${req.params.id}`)
 
-        return this.invModel.getItem(req.params.id)
+        return this.invModel.getItem(Number.parseInt(req.params.id))
         .then(item => {
             if (item) {
                 logger.info(`Retrieved inventory entry id ${req.params.id} for `
@@ -225,7 +225,9 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to update entry `
                 + `${req.params.id} in inventory`)
 
-        return this.invModel.updateItem(req.body, req.params.id)
+        return this.invModel.updateItem(req.body,
+            Number.parseInt(req.params.id)
+        )
         .then(wasUpdated => {
             if (wasUpdated) {
                 logger.info(`${req.hostname} updated entry with `
@@ -260,7 +262,7 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to restore inventory entry `
             + `id ${req.params.id}`)
 
-        return this.invModel.getDeletionId(req.params.id)
+        return this.invModel.getDeletionId(Number.parseInt(req.params.id))
         .then(deletionId => {
             if (deletionId !== -1) {
                 logger.info(`${req.hostname} started to restore entry `
@@ -334,7 +336,7 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.id}`)
 
-        return this.invModel.getDeletionId(req.params.id)
+        return this.invModel.getDeletionId(Number.parseInt(req.params.id))
         .then(deletionId => {
             if (deletionId === -1) {
                 const body: ErrorResponse = {
@@ -361,7 +363,8 @@ export default class InventoryController {
                 + `with id ${req.params.id} in inventory`)
 
             return this.invModel.updateItem({ deletion_id: insertId},
-                req.params.id)
+                Number.parseInt(req.params.id)
+            )
         })
         .then(() => {
             logger.info(`${req.hostname} marked entry with `
