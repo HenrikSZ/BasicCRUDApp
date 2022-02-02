@@ -46,10 +46,9 @@
     "build": "tsc && webpack",
     "prestart": "npm run build",
     "start": "node .",
-    "start:dev": "set NODE_ENV='development' && node .",
     "pretest": "npm run build",
     "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
-    "start:client": "webpack serve --config webpack.config.js"
+    "migrate": "node ./node_modules/db-migrate/bin/db-migrate"
   },
   "author": "Henrik Zimmermann",
   "license": "",
