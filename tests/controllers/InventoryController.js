@@ -192,20 +192,7 @@ describe("InventoryController", () => {
             })
         })
         it("should send an error if the item is not available", (done) => {
-            let chair = {
-                name: "Chair",
-                count: 5,
-                id: 1
-            }
-            let desk = {
-                name: "Desk",
-                count: 10,
-                id: 2
-            }
-            let allItems = [chair, desk]
-            let mockModel = mockInventoryModel({
-                allItems: allItems
-            })
+            let mockModel = mockInventoryModel()
             let invController = new InventoryController(
                 mockModel, mockDeletionModel()
             )

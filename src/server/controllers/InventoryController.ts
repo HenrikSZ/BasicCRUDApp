@@ -93,7 +93,7 @@ export default class InventoryController {
                 message: "There has to be a deletion comment for a deletion"
             }
 
-            res.status(400).send()
+            res.status(400).send(body)
         }
     }
 
