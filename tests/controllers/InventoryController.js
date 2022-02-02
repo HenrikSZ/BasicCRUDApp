@@ -218,6 +218,110 @@ describe("InventoryController", () => {
         })
     })
 
+    describe("#getDeletedInventory", () => {
+        it("should send a result containing the deleted inventory", (done) => {
+            let deletedItems = [
+                {
+                    name: "Chair",
+                    count: 5,
+                    id: 1,
+                    comment: "Too small"
+                },
+                {
+                    name: "Desk",
+                    count: 10,
+                    id: 2,
+                    comment: "Wrong colo(u)r"
+                }
+            ]
+            let mockModel = mockInventoryModel({
+                deletedItems: deletedItems
+            })
+            let invController = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq()
+            let res = mockRes()
+            
+            invController.getDeletedInventory(req, res)
+            .then(() => {
+                try {
+                    expect(res.send).to.be.calledWith(deletedItems)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            })
+        })
+    })
+
+    describe("#postNewInventoryItem", () => {
+        it("should insert the new item into the database", (done) => {
+            let insertId = 5
+            let item = {
+                name: "Chair",
+                count: 500
+            }
+
+            let mockModel = mockInventoryModel({
+                insertId: insertId
+            })
+            let invController = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq({
+                body: item
+            })
+            let res = mockRes()
+            
+            invController.postNewInventoryItem(req, res)
+            .then(() => {
+                try {
+                    expect(mockModel.insertItem).to.have.been.calledWith(item)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            })
+        })
+        it("should return new inventory item with a status code 0f 201", (done) => {
+            let insertId = 5
+            let item = {
+                name: "Chair",
+                count: 500
+            }
+
+            let insertedItem = {...item}
+            insertedItem.id = insertId
+
+            let mockModel = mockInventoryModel({
+                insertId: insertId
+            })
+            let invController = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq({
+                body: item
+            })
+            let res = mockRes()
+            
+            invController.postNewInventoryItem(req, res)
+            .then(() => {
+                try {
+                    expect(res.status).to.have.been.calledWith(201)
+                    expect(res.status).to.have.been.calledBefore(res.send)
+                    expect(res.send).to.have.been.calledWith(insertedItem)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            })
+        })
+    })
+
     describe("#isValidNewEntry", () => {
         it("should return true with a normal entry", () => {
             let invController = new InventoryController(
