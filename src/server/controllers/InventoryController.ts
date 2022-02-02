@@ -4,7 +4,9 @@
 
 import express from  "express"
 import logger from "../logger.js"
-import { Error, ErrorResponse, handleMixedError, isInteger } from "../util.js"
+import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError }
+    from "../error_handling.js"
+import { isInteger } from "../util.js"
 import DeletionModel from "../models/DeletionModel.js"
 import InventoryModel from "../models/InventoryModel.js"
 
@@ -38,7 +40,7 @@ export default class InventoryController {
                 + `without a valid entry id (${req.params.id})`)
 
             const body: ErrorResponse = {
-                name: Error.FIELD,
+                name: ErrorType.FIELD,
                 message: "The id has to be specified as number in the url path"
             }
 
@@ -63,7 +65,7 @@ export default class InventoryController {
                 + `parameters for inventory item`)
 
             const body: ErrorResponse = {
-                name: Error.FIELD,
+                name: ErrorType.FIELD,
                 message: "Missing or malformed json fields"
             }
 
@@ -87,7 +89,7 @@ export default class InventoryController {
                 + `inventory without a deletion comment`)
 
             const body: ErrorResponse = {
-                name: Error.FIELD,
+                name: ErrorType.FIELD,
                 message: "There has to be a deletion comment for a deletion"
             }
 
@@ -127,7 +129,7 @@ export default class InventoryController {
 
             res.send(results)
         }, (error) => {
-            handleMixedError(error, req, res)
+            handleDbError(error, req, res)
         })
     }
 
@@ -142,14 +144,27 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested inventory entry with `
             + `id ${req.params.id}`)
 
-        this.invModel.getItem(req.params.id)
-        .then(results => {
-            logger.info(`Retrieved inventory entry id ${req.params.id} for `
-                + `${req.hostname}`)
+        return this.invModel.getItem(req.params.id)
+        .then(item => {
+            if (item) {
+                logger.info(`Retrieved inventory entry id ${req.params.id} for `
+                    + `${req.hostname}`)
 
-            res.send(results[0])
+                res.send(item)
+            } else {
+                logger.info(`${req.hostname} requested unavailable inventory `
+                    + `entry id ${req.params.id}`)
+
+                const errorResponse: ErrorResponse = {
+                    name: ErrorType.FIELD,
+                    message: `The request inventory entry with id ${req.params.id} `
+                        + `is unavailable`
+                }
+
+                res.status(400).send(errorResponse)
+            }
         }, (error) => {
-            handleMixedError(error, req, res)
+            handleDbError(error, req, res)
         })
     }
 
@@ -163,14 +178,14 @@ export default class InventoryController {
     getDeletedInventory(req: express.Request, res: express.Response) {
         logger.info(`${req.hostname} requested all deleted inventory entries`)
 
-        this.invModel.getAllDeletedItems()
+        return this.invModel.getAllDeletedItems()
         .then(results => {
             logger.info(`Retrieved all deleted inventory entries for `
                 + `${req.hostname}`)
 
             res.send(results)
         }, (error) => {
-            handleMixedError(error, req, res)
+            handleDbError(error, req, res)
         })
     }
 
@@ -185,7 +200,7 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to create entry `
                 + `in inventory`)
 
-        this.invModel.insertItem(req.body)
+        return this.invModel.insertItem(req.body)
         .then(insertId => {
             logger.info(`${req.hostname} created entry with `
                 + `id ${insertId} in inventory`)
@@ -196,7 +211,7 @@ export default class InventoryController {
                 id: insertId
             })
         }, (error) => {
-            return handleMixedError(error, req, res)
+            handleDbError(error, req, res)
         })
     }
 
@@ -210,19 +225,27 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to update entry `
                 + `${req.params.id} in inventory`)
 
-        this.invModel.updateItem(req.body, req.params.id)
+        return this.invModel.updateItem(req.body, req.params.id)
         .then(results => {
             if (results.affectedRows > 0) {
                 logger.info(`${req.hostname} updated entry with `
                     + `id ${req.params.id}`)
+
+                res.send()
             } else {
                 logger.info(`${req.hostname} tried to update non-existent `
                     + `entry with id ${req.params.id} in inventory`)
-            }
 
-            res.send()
+                const errorResponse: ErrorResponse = {
+                    name: ErrorType.FIELD,
+                    message: "The entry with the specified it is not"
+                        + "in the inventory"
+                }
+
+                res.status(400).send(errorResponse)
+            }
         }, (error) => {
-            return handleMixedError(error, req, res)
+            handleDbError(error, req, res)
         })
     }
 
@@ -237,7 +260,7 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to restore inventory entry `
             + `id ${req.params.id}`)
 
-        this.invModel.getDeletionId(req.params.id)
+        return this.invModel.getDeletionId(req.params.id)
         .then(deletionId => {
             if (deletionId !== -1) {
                 logger.info(`${req.hostname} started to restore entry `
@@ -248,13 +271,13 @@ export default class InventoryController {
                 logger.info(`${req.hostname} tried to restore entry `
                     + `id ${req.params.id} in inventory which is not deleted`)
 
-                const body: ErrorResponse = {
-                    name: Error.FIELD,
+                const errorResponse: ErrorResponse = {
+                    name: ErrorType.FIELD,
                     message: "The entry with the specified id is not in "
                         + "the deleted entries"
                 }
 
-                return Promise.reject(body)
+                throw new ClientRequestError(errorResponse)
             }
         })
         .then(() => {
@@ -263,7 +286,11 @@ export default class InventoryController {
 
             res.send()
         }, (error) => {
-            return handleMixedError(error, req, res)
+            if (isCustomError(error)) {
+                res.status(400).send(error.response)
+            } else {
+                handleDbError(error, req, res)
+            }
         })
     }
 
@@ -280,9 +307,9 @@ export default class InventoryController {
             || req.body.hasOwnProperty("count")
 
         if (update) {
-            this.updateInventoryItem(req, res)
+            return this.updateInventoryItem(req, res)
         } else {
-            this.restoreInventoryItem(req, res)
+            return this.restoreInventoryItem(req, res)
         }
     }
 
@@ -297,7 +324,7 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.id}`)
 
-        this.deletionModel.insert(req.body.comment)
+        return this.deletionModel.insert(req.body.comment)
         .then(insertId => {
             logger.info(`${req.hostname} added a deletion comment for entry `
                 + `with id ${req.params.id} in inventory`)
@@ -311,7 +338,7 @@ export default class InventoryController {
 
             res.send()
         }, (error) => {
-            return handleMixedError(error, req, res)
+            handleDbError(error, req, res)
         })
     }
 }

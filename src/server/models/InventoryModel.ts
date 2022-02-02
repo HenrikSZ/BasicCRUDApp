@@ -27,7 +27,10 @@ export default class InventoryModel {
         return dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as RowDataPacket[]
-            return results[0]
+            if (results.length !== 0)
+                return results[0]
+            else
+                return null
         })
     }
 

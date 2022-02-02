@@ -128,11 +128,13 @@ describe("InventoryController", () => {
             let allItems = [
                 {
                     name: "Chair",
-                    count: 5
+                    count: 5,
+                    id: 1
                 },
                 {
                     name: "Desk",
-                    count: 10
+                    count: 10,
+                    id: 2
                 }
             ]
             let mockModel = mockInventoryModel({
@@ -149,6 +151,78 @@ describe("InventoryController", () => {
             .then(() => {
                 try {
                     expect(res.send).to.be.calledWith(allItems)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            })
+        })
+    })
+
+    describe("#getInventoryItem", () => {
+        it("should send a result containing the exact item", (done) => {
+            let chair = {
+                name: "Chair",
+                count: 5,
+                id: 2
+            }
+            let mockModel = mockInventoryModel({
+                item: chair
+            })
+            let invController = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq({
+                params: {
+                    id: 2
+                }
+            })
+            let res = mockRes()
+            
+            invController.getInventoryItem(req, res)
+            .then(() => {
+                try {
+                    expect(res.send).to.have.been.calledWith(chair)
+                    expect(mockModel.getItem).to.have.been.calledWith(2)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            })
+        })
+        it("should send an error if the item is not available", (done) => {
+            let chair = {
+                name: "Chair",
+                count: 5,
+                id: 1
+            }
+            let desk = {
+                name: "Desk",
+                count: 10,
+                id: 2
+            }
+            let allItems = [chair, desk]
+            let mockModel = mockInventoryModel({
+                allItems: allItems
+            })
+            let invController = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq({
+                params: {
+                    id: 3
+                }
+            })
+            let res = mockRes()
+            
+            invController.getInventoryItem(req, res)
+            .then(() => {
+                try {
+                    expect(res.status).to.have.been.calledWith(400)
+                    expect(res.status).to.have.been.calledBefore(res.send)
+                    expect(res.send).to.have.been.called
                     done()
                 } catch (err) {
                     done(err)
