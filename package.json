@@ -2,7 +2,7 @@
   "name": "basiccrudapp",
   "version": "1.0.0",
   "description": "A basic implementation of the CRUD principles with deletion-with-comment and restore capability ",
-  "main": "dist/server.dev.js",
+  "main": "dist/server.js",
   "dependencies": {
     "db-migrate": "^0.11.13",
     "db-migrate-mysql": "^2.2.0",
@@ -23,7 +23,6 @@
     "@types/react-dom": "^17.0.11",
     "@types/webpack": "^5.28.0",
     "@types/webpack-env": "^1.16.3",
-    "@types/webpack-hot-middleware": "^2.25.5",
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
     "babel-loader": "^8.2.3",
@@ -54,7 +53,7 @@
     "pretest": "npm run build",
     "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
     "migrate": "node ./node_modules/db-migrate/bin/db-migrate",
-    "migrate-start": "npm run migrate up all && npm run start"
+    "migrate-start": "npm run migrate up all && npm run start:prod"
   },
   "author": "Henrik Zimmermann",
   "license": "",
