@@ -1,9 +1,12 @@
 import path from "path"
 import HTMLWebpackPlugin from "html-webpack-plugin"
+import webpack from "webpack"
 
 export default {
-  mode: "production",
-  entry: "./src/client/index.tsx",
+  mode: "development",
+  entry: {
+    main: ['webpack-hot-middleware/client?path=/__webpack_hmr&timeout=20000', './src/client/index.tsx'],
+  },
   output: {
     filename: "bundle.js",
     path: path.resolve("dist/public"),
@@ -33,7 +36,7 @@ export default {
       },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader', 'postcss-loader'],
+        use: ["style-loader", "css-loader"],
       },
     ], 
   },
@@ -44,5 +47,6 @@ export default {
     new HTMLWebpackPlugin({
       template: "src/client/index.html"
     }),
+    new webpack.HotModuleReplacementPlugin(),
   ]
 }

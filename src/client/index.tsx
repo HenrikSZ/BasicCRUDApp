@@ -5,6 +5,12 @@ import "./index.css"
 import { Inventory } from "./inventory"
 
 
+
+if(module.hot) {
+    module.hot.accept() // eslint-disable-line no-undef  
+}
+
+
 enum AppMode {
     INVENTORY
 }

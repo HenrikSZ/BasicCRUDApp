@@ -25,6 +25,6 @@ Setup - Manual
 - Copy/rename .env.example to .env
 - Set all fields in .env to an existing empty database
 - run: npm ci
-- run: npm run build
+- run: npm run build:prod
 - run: npm run migrate up all
-- run: npm run start
+- run: npm run start:prod

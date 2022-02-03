@@ -17,9 +17,6 @@
         }
     },
     "include": [
-        "src/server/*"
+        "src/client/*"
     ],
-    "exclude": [
-        "src/server/server.dev.ts"
-    ]
 }
