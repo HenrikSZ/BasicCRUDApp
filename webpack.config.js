@@ -1,5 +1,4 @@
 import path from "path"
-import webpack from "webpack"
 import HTMLWebpackPlugin from "html-webpack-plugin"
 
 export default {
@@ -28,10 +27,13 @@ export default {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
     ], 
-  },  
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
   plugins: [
     new HTMLWebpackPlugin({
       template: "src/client/index.html"
