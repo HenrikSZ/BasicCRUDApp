@@ -42,10 +42,13 @@
     "webpack-node-externals": "^3.0.0"
   },
   "scripts": {
-    "prebuild": "eslint --fix",
-    "build": "tsc && webpack --mode development",
-    "start": "node .",
-    "start:dev": "npm run build && npm run start",
+    "lint": "eslint --fix",
+    "build:dev": "npm run lint && tsc -p tsconfig.dev.json && webpack --mode development",
+    "build:prod": "tsc && webpack --mode production",
+
+    "start:dev": "npm run build:dev && node dist/server.dev.js",
+    "start:prod": "node .",
+
     "pretest": "npm run build",
     "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
     "migrate": "node ./node_modules/db-migrate/bin/db-migrate",

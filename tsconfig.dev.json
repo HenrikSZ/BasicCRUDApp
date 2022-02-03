@@ -20,6 +20,6 @@
         "src/server/*"
     ],
     "exclude": [
-        "src/server/server.dev.ts"
-    ]
+        "src/server/server.ts"
+    ],
 }
