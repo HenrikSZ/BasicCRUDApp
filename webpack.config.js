@@ -1,5 +1,4 @@
 import path from "path"
-import webpack from "webpack"
 import HTMLWebpackPlugin from "html-webpack-plugin"
 
 export default {
@@ -10,6 +9,7 @@ export default {
     path: path.resolve("dist/public"),
     publicPath: "/",
   },
+  target: "web",
   module: {
     rules:[
       {
@@ -31,7 +31,10 @@ export default {
         use: ["style-loader", "css-loader"],
       },
     ], 
-  },  
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
   plugins: [
     new HTMLWebpackPlugin({
       template: "src/client/index.html"

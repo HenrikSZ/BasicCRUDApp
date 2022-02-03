@@ -43,7 +43,7 @@
   },
   "scripts": {
     "prebuild": "eslint --fix",
-    "build": "tsc && webpack",
+    "build": "tsc && webpack --mode development",
     "start": "node .",
     "start:dev": "npm run build && npm run start",
     "pretest": "npm run build",
