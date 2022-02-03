@@ -44,11 +44,12 @@
   "scripts": {
     "prebuild": "eslint --fix",
     "build": "tsc && webpack",
-    "prestart": "npm run build",
     "start": "node .",
+    "start:dev": "npm run build && npm run start",
     "pretest": "npm run build",
     "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
-    "migrate": "node ./node_modules/db-migrate/bin/db-migrate"
+    "migrate": "node ./node_modules/db-migrate/bin/db-migrate",
+    "migrate-start": "npm run migrate up all && npm run start"
   },
   "author": "Henrik Zimmermann",
   "license": "",

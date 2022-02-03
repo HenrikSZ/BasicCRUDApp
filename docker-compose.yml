@@ -11,6 +11,8 @@ services:
       - "DB_USER=${DB_USER}"
       - "DB_PASS=${DB_PASS}"
       - "PORT=${PORT}"
+    depends_on:
+      - db
 
   db:
     image: mariadb
@@ -19,7 +21,3 @@ services:
       - "MARIADB_PASSWORD=${DB_PASS}"
       - "MARIADB_RANDOM_ROOT_PASSWORD=yes"
       - "MARIADB_DATABASE=${DB_NAME}"
-    volumes:
-      - ./db:/docker-entrypoint-initdb.d
-    volumes_from:
-      - web

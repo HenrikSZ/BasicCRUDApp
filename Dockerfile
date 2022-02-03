@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:14-alpine
+FROM node:16-alpine
 
 WORKDIR /
 
@@ -9,6 +9,8 @@ RUN npm ci
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE ${PORT}
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "migrate-start"]

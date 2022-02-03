@@ -22,8 +22,9 @@ Setup - Docker
 
 Setup - Manual
 --------------
-- run: npm install
 - Copy/rename .env.example to .env
 - Set all fields in .env to an existing empty database
-- execute the db/0-setup.sql script in the database
+- run: npm ci
+- run: npm run build
+- run: npm run migrate up all
 - run: npm run start
