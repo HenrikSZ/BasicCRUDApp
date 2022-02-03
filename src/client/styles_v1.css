@@ -31,3 +31,7 @@ th:last-child {
 .error-box {
     padding: 5pt;
 }
+
+body {
+    background-color: orange;
+}

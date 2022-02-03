@@ -6,7 +6,17 @@
 
 import path from "path"
 import { fileURLToPath } from 'url'
+import webpack from 'webpack'
+import webpackDevMiddleware, { Configuration } from 'webpack-dev-middleware'
 
+// @ts-ignore
+import webpackHotMiddleware from "webpack-hot-middleware"
+
+// @ts-ignore
+import config from '../webpack.dev.config.js'
+
+
+// @ts-ignore
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -21,10 +31,21 @@ import logger from "./logger.js"
 
 
 const app = express()
+const compiler = webpack(config as Configuration)
 
 app.use(bodyParser.json())
 app.use("/inventory", inventory)
-app.use(express.static(path.resolve(__dirname, "public")))
+
+app.use(webpackDevMiddleware(compiler, {
+    publicPath: config.output.publicPath
+}))
+// @ts-ignore
+app.use(webpackHotMiddleware(compiler))
+app.get('/', (req, res) => {
+    compiler.outputFileSystem.readFile("/index.html", (err, result) => {
+        res.send(result)
+    })
+})
 
 const port = process.env.PORT
 app.listen(port, () => {

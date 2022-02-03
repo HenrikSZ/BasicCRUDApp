@@ -2,7 +2,7 @@ import path from "path"
 import HTMLWebpackPlugin from "html-webpack-plugin"
 
 export default {
-  mode: "development",
+  mode: "production",
   entry: "./src/client/index.tsx",
   output: {
     filename: "bundle.js",

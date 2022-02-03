@@ -3,6 +3,12 @@ import React from "react"
 import "./styles_v1.css"
 
 
+
+if(module.hot) {
+    module.hot.accept() // eslint-disable-line no-undef  
+}
+
+
 enum AppMode {
     NORMAL,
     DELETED
