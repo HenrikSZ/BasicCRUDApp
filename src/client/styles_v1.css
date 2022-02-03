@@ -19,11 +19,15 @@ th:last-child {
     padding: 2pt 2pt 2pt 2pt;
 }
 
-#error-name {
+.error-name {
     font-weight: bold;
     color: red;
 }
 
-#error-box {
-    display: none;
+.error-box span {
+    padding: 0pt 5pt 0pt 5pt;
+}
+
+.error-box {
+    padding: 5pt;
 }

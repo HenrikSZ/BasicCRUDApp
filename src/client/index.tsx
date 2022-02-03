@@ -27,11 +27,17 @@ interface DeletedInventoryItemData extends InventoryItemData {
     comment: string
 }
 
+interface ErrorMessage {
+    name: string,
+    message: string
+}
+
 class App extends React.Component {
     state: {
         mode: AppMode,
         entries: Array<InventoryItemData>,
-        deletedEntries: Array<DeletedInventoryItemData>
+        deletedEntries: Array<DeletedInventoryItemData>,
+        errors: Array<ErrorMessage>
     }
 
     constructor(props: any) {
@@ -40,7 +46,8 @@ class App extends React.Component {
         this.state = {
             mode: AppMode.NORMAL,
             entries: [],
-            deletedEntries: []
+            deletedEntries: [],
+            errors: []
         }
     }
 
@@ -54,7 +61,14 @@ class App extends React.Component {
     render() {
         return (
             <React.StrictMode>
-                <ItemCreator onItemCreation={() => this.loadEntries()}/>
+                {
+                    this.state.errors.map((error, index) => {
+                        return <ErrorBox errorMessage={error} key={index} id={index}
+                            onDismissal={(id: number) => this.removeErrorMessage(id)}/>
+                    })
+                }
+                <ItemCreator onItemCreation={() => this.loadEntries()}
+                    onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
                 {this.getSwitchButton()}
                 {this.getActiveTable()}
             </React.StrictMode>
@@ -74,12 +88,16 @@ class App extends React.Component {
         switch (this.state.mode) {
             case AppMode.DELETED:
                 return <DeletedInventoryTable entries={this.state.deletedEntries}
-                    onReloadRequest={() => this.loadDeletedEntries()}
-                    onItemRestore={(id: number) => this.removeLocalDeletedEntry(id)}/>
+                    onReloadRequest={() => this.loadDeletedEntries()
+                        .catch(error => this.onErrorResponse(error))}
+                    onItemRestore={(id: number) => this.removeLocalDeletedEntry(id)}
+                    onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
             default:
                 return <InventoryTable entries={this.state.entries}
                 onItemDelete={(id: number) => this.removeLocalEntry(id)}
-                onReloadRequest={() => this.loadEntries()}/>
+                onReloadRequest={() => this.loadEntries()
+                    .catch(error => this.onErrorResponse(error))}
+                onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
         }
     }
 
@@ -109,23 +127,37 @@ class App extends React.Component {
 
     loadDeletedEntries() {
         return fetch("/inventory/deleted")
-        .then((response) => response.json())
-        .then((data) =>{
-            let state= {...this.state}
+        .then((response) => {
+            if (response.ok)
+                return response.json()
+            else
+                return Promise.reject(response)
+        })
+        .then(data =>{
+            let state = {...this.state}
             state.deletedEntries = data
 
             this.setState(state)
+        }, error => {
+            this.onErrorResponse(error)
         })
     }
 
     loadEntries() {
         return fetch("/inventory")
-        .then((response) => response.json())
-        .then((data) => {
+        .then((response: any) => {
+            if (response.ok)
+                return response.json()
+            else
+                return Promise.reject(response)
+        })
+        .then(data => {
             let state= {...this.state}
             state.entries = data
 
             this.setState(state)
+        }, error => {
+            this.onErrorResponse(error)
         })
     }
 
@@ -146,13 +178,54 @@ class App extends React.Component {
 
         this.setState(state)
     }
+
+    removeErrorMessage(id: number) {
+        let state = {...this.state}
+        state.errors.splice(id, 1)
+
+        this.setState(state)
+    }
+
+    onErrorResponse(response: any) {
+        response.json()
+        .then((errorMessage: ErrorMessage) => {
+            let state = {...this.state}
+            state.errors.push(errorMessage)
+
+            this.setState(state)
+        })
+    }
+}
+
+class ErrorBox extends React.Component {
+    props: {
+        errorMessage: ErrorMessage,
+            id: number,
+            onDismissal: Function
+        }
+
+    render() {
+        return (
+            <div className="error-box">
+                <button onClick={() => this.props.onDismissal(this.props.id)}>
+                    dismiss
+                </button>
+                <span className="error-name">
+                    {this.props.errorMessage.name}
+                </span>
+                <span>
+                    {this.props.errorMessage.message}
+                </span>
+            </div>
+        )
+    }
 }
 
 class ItemCreator extends React.Component {
     newValues: MutableInventoryItemData
-    props: {onItemCreation: Function}
+    props: {onItemCreation: Function, onErrorResponse: Function}
 
-    constructor(props: {onItemCreation: Function}) {
+    constructor(props: {onItemCreation: Function, onError: Function}) {
         super(props)
 
         this.newValues = {
@@ -203,8 +276,11 @@ class ItemCreator extends React.Component {
                     headers: { 'Content-Type': 'application/json' }
                 }
             )
-            .then(() => {
-                this.props.onItemCreation()
+            .then((response: any) => {
+                if (response.ok)
+                    this.props.onItemCreation()
+                else
+                    this.props.onErrorResponse(response)
             })
         }
     }
@@ -215,11 +291,8 @@ class InventoryTable extends React.Component {
     props: {
         entries: Array<InventoryItemData>,
         onReloadRequest: Function,
-        onItemDelete: Function
-    }
-
-    constructor(props: { entries: Array<InventoryItemData> }) {
-        super(props)
+        onItemDelete: Function,
+        onErrorResponse: Function
     }
 
     render() {
@@ -242,7 +315,8 @@ class InventoryTable extends React.Component {
                     {
                         this.props.entries.map((item) => {
                             return <InventoryItem data={item} key={item.id}
-                                onDelete={(id: number) => this.props.onItemDelete(id)}/>
+                                onDelete={(id: number) => this.props.onItemDelete(id)}
+                                onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
                         })
                     }
                 </tbody>
@@ -257,10 +331,10 @@ class InventoryItem extends React.Component {
     modifications: MutableInventoryItemData
     deletion_comment: string
     state: { mode: InventoryItemMode, data: InventoryItemData }
-    props:  { data: InventoryItemData, onDelete: Function }
+    props:  { data: InventoryItemData, onDelete: Function, onErrorResponse: Function }
 
 
-    constructor(props:  { data: InventoryItemData, onDelete: Function }) {
+    constructor(props:  { data: InventoryItemData, onDelete: Function, onErrorResponse: Function }) {
         super(props)
 
         this.state = {
@@ -361,13 +435,17 @@ class InventoryItem extends React.Component {
                     headers: { 'Content-Type': 'application/json' }
                 }
             )
-            .then(() => {
-                let state = {...this.state}
-                state.mode = InventoryItemMode.NORMAL
-                state.data.name = this.modifications.name ?? state.data.name
-                state.data.count = this.modifications.count ?? state.data.count
+            .then((response: any) => {
+                if (response.ok) {
+                    let state = {...this.state}
+                    state.mode = InventoryItemMode.NORMAL
+                    state.data.name = this.modifications.name ?? state.data.name
+                    state.data.count = this.modifications.count ?? state.data.count
 
-                this.setState(state)
+                    this.setState(state)
+                } else {
+                    this.props.onErrorResponse(response)
+                }
             })
         } else {
             this.switchToMode(InventoryItemMode.NORMAL)
@@ -382,8 +460,11 @@ class InventoryItem extends React.Component {
                 headers: { "Content-Type": "application/json" }
             }
         )
-        .then(() => {
-            this.props.onDelete(this.state.data.id)
+        .then((response: any) => {
+            if (response.ok)
+                this.props.onDelete(this.state.data.id)
+            else
+                this.props.onErrorResponse(response)
         })
     }
 }
@@ -393,13 +474,15 @@ class DeletedInventoryTable extends React.Component {
     props: {
         entries: Array<DeletedInventoryItemData>,
         onReloadRequest: Function,
-        onItemRestore: Function
+        onItemRestore: Function,
+        onErrorResponse: Function
     }
 
     constructor(props: {
         entries: Array<DeletedInventoryItemData>,
         onReloadRequest: Function,
-        onItemRestore: Function
+        onItemRestore: Function,
+        onErrorResponse: Function
     }) {
         super(props)
     }
@@ -424,7 +507,8 @@ class DeletedInventoryTable extends React.Component {
                     {
                         this.props.entries.map((item) => {
                             return <DeletedInventoryItem data={item} key={item.id}
-                                onDelete={(id: number) => this.props.onItemRestore(id)}/>
+                                onDelete={(id: number) => this.props.onItemRestore(id)}
+                                onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
                         })
                     }
                 </tbody>
@@ -435,7 +519,7 @@ class DeletedInventoryTable extends React.Component {
 }
 
 class DeletedInventoryItem extends React.Component {
-    props: {data: DeletedInventoryItemData, onDelete: Function}
+    props: {data: DeletedInventoryItemData, onDelete: Function, onErrorResponse: Function}
 
     render() {
         return (
@@ -454,9 +538,12 @@ class DeletedInventoryItem extends React.Component {
                 method: "PUT"
             }
         )
-        .then(() => {
-            this.props.onDelete(this.props.data.id)
-        }) 
+        .then((response: any) => {
+            if (response.ok)
+                this.props.onDelete(this.props.data.id)
+            else
+                this.props.onErrorResponse(response)
+        })
     }
 }
 
