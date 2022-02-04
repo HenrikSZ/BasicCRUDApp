@@ -2,7 +2,7 @@ import React from "react"
 
 import "./index.css"
 
-import { ConfirmationButton, RibbonButton } from "./buttons"
+import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
 
 
 enum InventoryMode {
@@ -56,13 +56,15 @@ export class Inventory extends React.Component {
             <div>
                 <div className="mb-2">
                     <RibbonButton 
-                        label="Normal"
-                        onClick={() => this.switchToMode(InventoryMode.NORMAL)}
-                        isActive={this.state.mode == InventoryMode.NORMAL}/>
+                            onClick={() => this.switchToMode(InventoryMode.NORMAL)}
+                            isActive={this.state.mode == InventoryMode.NORMAL}>
+                        Normal
+                    </RibbonButton>
                     <RibbonButton 
-                        label="Deleted"
-                        onClick={() => this.switchToMode(InventoryMode.DELETED)}
-                        isActive={this.state.mode == InventoryMode.DELETED}/>
+                            onClick={() => this.switchToMode(InventoryMode.DELETED)}
+                            isActive={this.state.mode == InventoryMode.DELETED}>
+                        Deleted
+                    </RibbonButton>
                 </div>
                 {
                     (this.state.mode == InventoryMode.NORMAL) ? (
@@ -214,7 +216,9 @@ export class ItemCreator extends React.Component {
                                     this.newValues.count = Number.parseInt(evt.target.value)}/>
                         </td>
                         <td>
-                            <ConfirmationButton label="Add" onClick={() => this.saveNew()}/>
+                            <ConfirmationButton onClick={() => this.saveNew()}>
+                                Add
+                            </ConfirmationButton>
                         </td>
                     </tr>
                 </tbody>
@@ -260,7 +264,9 @@ export class InventoryTable extends React.Component {
                         <th className="pr-2 pl-2 text-left">Item Count</th>
                         <th></th>
                         <th>
-                            <ConfirmationButton label="Reload" onClick={() => this.props.onReloadRequest()}/>
+                            <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
+                                Reload
+                            </ConfirmationButton>
                         </th>
                     </tr>
                 </thead>
@@ -296,8 +302,8 @@ export class InventoryItem extends React.Component {
         }
 
         this.modifications = {
-            name: "",
-            count: 0
+            name: props.data.name,
+            count: props.data.count
         }
         this.deletion_comment = ""
     }
@@ -317,16 +323,24 @@ export class InventoryItem extends React.Component {
         return (
             <tr>
                 <td className="border-2 border-gray-700 p-2">
-                    {this.state.data.name}
+                    <div className="w-48">
+                        {this.state.data.name}
+                    </div>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    {this.state.data.count}
+                    <div className="w-32">
+                        {this.state.data.count}
+                    </div>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <button onClick={() => this.switchToMode(InventoryItemMode.EDIT)}>edit</button>
+                    <ConfirmationButton onClick={() => this.switchToMode(InventoryItemMode.EDIT)}>
+                        Edit
+                    </ConfirmationButton>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <button onClick={() => this.switchToMode(InventoryItemMode.DELETE)}>delete</button>
+                    <DangerButton onClick={() => this.switchToMode(InventoryItemMode.DELETE)}>
+                        Delete
+                    </DangerButton>
                 </td>
             </tr>
         )
@@ -335,16 +349,26 @@ export class InventoryItem extends React.Component {
     editMode() {
         return (
             <tr>
-                <td>
-                    <input defaultValue={this.state.data.name} 
+                <td className="border-2 border-gray-700 p-2">
+                    <input className="border-2 rounded-lg border-gray-700 w-48"
+                        defaultValue={this.state.data.name} 
                         onChange={evt => this.modifications.name = evt.target.value}/>
                 </td>
-                <td>
-                    <input type="number" defaultValue={this.state.data.count} 
+                <td className="border-2 border-gray-700 p-2">
+                    <input className="border-2 rounded-lg border-gray-700 w-32"
+                        type="number" defaultValue={this.state.data.count} 
                         onChange={evt => this.modifications.count = Number.parseInt(evt.target.value)}/>
                 </td>
-                <td><button onClick={() => this.saveEdits()}>save</button></td>
-                <td><button onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>discard</button></td>
+                <td className="border-2 border-gray-700 p-2">
+                    <ConfirmationButton onClick={() => this.saveEdits()}>
+                        Save
+                    </ConfirmationButton>
+                </td>
+                <td className="border-2 border-gray-700 p-2">
+                    <DangerButton onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>
+                        Discard
+                    </DangerButton>
+                </td>
             </tr>
         )
     }
@@ -352,14 +376,23 @@ export class InventoryItem extends React.Component {
     deleteMode() {
         return (
             <tr>
-                <td>
+                <td className="border-2 border-gray-700 p-2">
                     Deletion Comment:
                 </td>
-                <td>
-                    <input onChange={evt => this.deletion_comment = evt.target.value}/>
+                <td className="border-2 border-gray-700 p-2">
+                    <input className="border-2 rounded-lg border-gray-700"
+                        onChange={evt => this.deletion_comment = evt.target.value}/>
                 </td>
-                <td><button onClick={() => this.deleteItem()}>delete</button></td>
-                <td><button onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>discard</button></td>
+                <td className="border-2 border-gray-700 p-2">
+                    <ConfirmationButton onClick={() => this.deleteItem()}>
+                        Delete
+                    </ConfirmationButton>
+                </td>
+                <td className="border-2 border-gray-700 p-2">
+                    <DangerButton onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>
+                       Discard
+                    </DangerButton>
+                </td>
             </tr>
         )
     }
@@ -372,19 +405,10 @@ export class InventoryItem extends React.Component {
     }
 
     saveEdits() {
-        let mods: MutableInventoryItemData = {
-            name: "",
-            count: 0
-        }
         let modified = false
 
-        if (this.modifications.name !== this.state.data.name) {
-            mods.name = this.modifications.name
-            modified = true
-        }
-
-        if (this.modifications.count !== this.state.data.count) {
-            mods.count = this.modifications.count
+        if (this.modifications.name !== this.state.data.name
+            || this.modifications.count !== this.state.data.count) {
             modified = true
         }
 
@@ -392,7 +416,7 @@ export class InventoryItem extends React.Component {
             fetch(`/inventory/item/existing/${this.state.data.id}`,
                 { 
                     method: "PUT",
-                    body: JSON.stringify(mods),
+                    body: JSON.stringify(this.modifications),
                     headers: { 'Content-Type': 'application/json' }
                 }
             )
@@ -454,13 +478,13 @@ export class DeletedInventoryTable extends React.Component {
             <table className="table-data-any">
                 <thead>
                     <tr>
-                        <th>Item Name</th>
-                        <th>Item Count</th>
-                        <th>Deletion comment</th>
-                        <th>
-                            <button onClick={() => this.props.onReloadRequest()}>
-                                reload
-                            </button>
+                        <th className="pr-2 pl-2 text-left">Item Name</th>
+                        <th className="pr-2 pl-2 text-left">Item Count</th>
+                        <th className="pr-2 pl-2 text-left">Deletion comment</th>
+                        <th className="pr-2 pl-2 text-left">
+                            <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
+                                Reload
+                            </ConfirmationButton>
                         </th>
                     </tr>
                 </thead>
@@ -485,10 +509,20 @@ class DeletedInventoryItem extends React.Component {
     render() {
         return (
             <tr>
-                <td>{this.props.data.name}</td>
-                <td>{this.props.data.count}</td>
-                <td>{this.props.data.comment}</td>
-                <td><button onClick={() => this.restore()}>restore</button></td>
+                <td className="border-2 border-gray-700 p-2">
+                    {this.props.data.name}
+                </td>
+                <td className="border-2 border-gray-700 p-2">
+                    {this.props.data.count}
+                </td>
+                <td className="border-2 border-gray-700 p-2">
+                    {this.props.data.comment}
+                </td>
+                <td className="border-2 border-gray-700 p-2">
+                    <ConfirmationButton onClick={() => this.restore()}>
+                        Restore
+                    </ConfirmationButton>
+                </td>
             </tr>
         )
     }
