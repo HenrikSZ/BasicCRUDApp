@@ -29,6 +29,32 @@ export class RibbonButton extends React.Component {
 }
 
 
+export class SideRibbonButton extends React.Component {
+    props: {
+        children: ReactChild,
+        isActive: boolean,
+        onClick: Function
+    }
+
+    render() {
+        return (this.props.isActive) ? (
+            <span className="border-l-4 ml-4 mr-4 pl-1
+                font-bold text-2xl
+                border-blue-800 cursor-pointer">
+                {this.props.children}
+            </span>
+        ) : (
+            <span className="border-white border-l-4 ml-4 mr-4 pl-1
+                font-bold text-2xl
+                hover:border-green-800 cursor-pointer"
+                onClick={() => this.props.onClick()}>
+                {this.props.children}
+            </span>
+        )
+    }
+}
+
+
 export class ConfirmationButton extends React.Component {
     props: {
         onClick: Function,

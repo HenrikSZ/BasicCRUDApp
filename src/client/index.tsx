@@ -3,6 +3,7 @@ import React from "react"
 
 import "./index.css"
 import { Inventory } from "./inventory"
+import { SideRibbonButton } from "./buttons"
 
 
 
@@ -46,18 +47,28 @@ class App extends React.Component {
     render() {
         return (
             <React.StrictMode>
-                {
-                    this.state.errors.map((error, index) => {
-                        return <ErrorBox errorMessage={error} key={index} id={index}
-                            onDismissal={(id: number) => this.removeErrorMessage(id)}/>
-                    })
-                }
-                {
-                    (this.state.mode == AppMode.INVENTORY) ? (
-                        <Inventory onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
-                    ) : null
-                }
-               
+                <div className="pl-2 pt-2">
+                    <nav className="float-left mt-16 mr-6">
+                        <SideRibbonButton 
+                                isActive={this.state.mode == AppMode.INVENTORY}
+                                onClick={() => this.switchToMode(AppMode.INVENTORY)}>
+                            Inventory
+                        </SideRibbonButton>
+                    </nav>
+                    <div className="float-left">
+                        {
+                            this.state.errors.map((error, index) => {
+                                return <ErrorBox errorMessage={error} key={index} id={index}
+                                    onDismissal={(id: number) => this.removeErrorMessage(id)}/>
+                            })
+                        }
+                        {
+                            (this.state.mode == AppMode.INVENTORY) ? (
+                                <Inventory onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
+                            ) : null
+                        }
+                    </div>
+                </div>
             </React.StrictMode>
         )
     }
