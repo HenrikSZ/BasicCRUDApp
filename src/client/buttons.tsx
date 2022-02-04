@@ -65,3 +65,24 @@ export class DangerButton extends React.Component {
         )
     }
 }
+
+
+export class ExportButton extends React.Component {
+    props: {
+        link: string,
+        children: React.ReactChild | React.ReactChild[]
+    }
+
+    render() {
+        return (
+            <ConfirmationButton onClick={() => {this.exportAsCsv()}}>
+                {this.props.children}
+            </ConfirmationButton>
+        )
+    }
+
+    exportAsCsv() {
+        let fullLink = this.props.link + "/export.csv"
+        fetch(fullLink)
+    }
+}
