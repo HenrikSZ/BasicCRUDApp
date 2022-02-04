@@ -75,14 +75,14 @@ export class ExportButton extends React.Component {
 
     render() {
         return (
-            <ConfirmationButton onClick={() => {this.exportAsCsv()}}>
+            <ConfirmationButton onClick={() => this.exportCsv()}>
                 {this.props.children}
             </ConfirmationButton>
         )
     }
 
-    exportAsCsv() {
-        let fullLink = this.props.link + "/export.csv"
-        fetch(fullLink)
+    exportCsv() {
+        let frame = document.getElementById("download-frame") as HTMLIFrameElement
+        frame.src = this.props.link + "/export"
     }
 }

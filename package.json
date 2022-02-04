@@ -4,6 +4,8 @@
   "description": "A basic implementation of the CRUD principles with deletion-with-comment and restore capability ",
   "main": "dist/server.js",
   "dependencies": {
+    "csv-stringify": "^6.0.5",
+    "csv-stringify-as-promised": "^3.0.1",
     "db-migrate": "^0.11.13",
     "db-migrate-mysql": "^2.2.0",
     "dotenv": "^11.0.0",
@@ -53,7 +55,7 @@
     "build:prod": "tsc && webpack --mode production",
     "start:dev": "npm run build:dev && node dist/server.dev.js",
     "start:prod": "node .",
-    "pretest": "npm run build:dev",
+    
     "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
     "migrate": "node ./node_modules/db-migrate/bin/db-migrate",
     "migrate-start": "npm run migrate up all && npm run start:prod"

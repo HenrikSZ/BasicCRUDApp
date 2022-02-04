@@ -671,6 +671,132 @@ describe("InventoryController", () => {
         })
     })
 
+    describe("#exportInventoryAsCsv", () => {
+        it("should return the full csv string when given full", (done) => {
+            let data = {
+                name: "Chair",
+                count: 5,
+                id: 10
+            }
+            let expected = "id,name,count\n10,Chair,5\n"
+            let mockModel = mockInventoryModel({
+                allItems: [data]
+            })
+            let invContr = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq()
+            let res = mockRes()
+
+            invContr.exportInventoryAsCsv(req, res)
+            .then(() => {
+                try {
+                    expect(res.send).to.have.been.calledWith(expected)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            }, error => {
+                done(error)
+            })
+        })
+        it("should return selected columns", (done) => {
+            let data = {
+                name: "Chair",
+                count: 5,
+                id: 10,
+                created_at: new Date()
+            }
+            let expected = "id,name,count\n10,Chair,5\n"
+            let mockModel = mockInventoryModel({
+                allItems: [data]
+            })
+            let invContr = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq()
+            let res = mockRes()
+
+            invContr.exportInventoryAsCsv(req, res)
+            .then(() => {
+                try {
+                    expect(res.send).to.have.been.calledWith(expected)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            }, error => {
+                done(error)
+            })
+        })
+    })
+
+    describe("#exportDeletedInventoryAsCsv", () => {
+        it("should return the full csv string when given full", (done) => {
+            let data = {
+                name: "Chair",
+                count: 5,
+                id: 10,
+                comment: "Einszweidreivier"
+            }
+            let expected = "id,name,count,comment\n10,Chair,5,Einszweidreivier\n"
+            let mockModel = mockInventoryModel({
+                deletedItems: [data]
+            })
+            let invContr = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq()
+            let res = mockRes()
+
+            invContr.exportDeletedInventoryAsCsv(req, res)
+            .then(() => {
+                try {
+                    expect(res.send).to.have.been.calledWith(expected)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            }, error => {
+                done(error)
+            })
+        })
+        it("should return selected columns", (done) => {
+            let data = {
+                name: "Chair",
+                count: 5,
+                id: 10,
+                comment: "Einszweidreivier",
+                created_at: new Date()
+            }
+            let expected = "id,name,count,comment\n10,Chair,5,Einszweidreivier\n"
+            let mockModel = mockInventoryModel({
+                deletedItems: [data]
+            })
+            let invContr = new InventoryController(
+                mockModel, mockDeletionModel()
+            )
+
+            let req = mockReq()
+            let res = mockRes()
+
+            invContr.exportDeletedInventoryAsCsv(req, res)
+            .then(() => {
+                try {
+                    expect(res.send).to.have.been.calledWith(expected)
+                    done()
+                } catch (err) {
+                    done(err)
+                }
+            }, error => {
+                done(error)
+            })
+        })
+    })
+
     describe("#isValidNewEntry", () => {
         it("should return true with a normal entry", () => {
             let invController = new InventoryController(

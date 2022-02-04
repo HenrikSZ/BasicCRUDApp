@@ -498,7 +498,7 @@ export class DeletedInventoryTable extends React.Component {
                         <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
                             Reload
                         </ConfirmationButton>
-                        <ExportButton link="/inventory">
+                        <ExportButton link="/inventory/deleted">
                             Export as CSV
                         </ExportButton>
                     </div>
