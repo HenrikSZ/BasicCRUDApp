@@ -32,7 +32,7 @@ export class RibbonButton extends React.Component {
 export class ConfirmationButton extends React.Component {
     props: {
         onClick: Function,
-        children: ReactChild
+        children: ReactChild | ReactChild[]
     }
 
     render() {
@@ -51,7 +51,7 @@ export class ConfirmationButton extends React.Component {
 export class DangerButton extends React.Component {
     props: {
         onClick: Function,
-        children: ReactChild
+        children: ReactChild | ReactChild[]
     }
 
     render() {

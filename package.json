@@ -53,7 +53,7 @@
     "build:prod": "tsc && webpack --mode production",
     "start:dev": "npm run build:dev && node dist/server.dev.js",
     "start:prod": "node .",
-    "pretest": "npm run build",
+    "pretest": "npm run build:dev",
     "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
     "migrate": "node ./node_modules/db-migrate/bin/db-migrate",
     "migrate-start": "npm run migrate up all && npm run start:prod"

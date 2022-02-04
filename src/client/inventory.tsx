@@ -3,6 +3,7 @@ import React from "react"
 import "./index.css"
 
 import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
+import { Section } from "./wrappers"
 
 
 enum InventoryMode {
@@ -54,7 +55,7 @@ export class Inventory extends React.Component {
     render() {
         return(
             <div>
-                <div className="mb-2">
+                <div className="m-4 mb-6">
                     <RibbonButton 
                             onClick={() => this.switchToMode(InventoryMode.NORMAL)}
                             isActive={this.state.mode == InventoryMode.NORMAL}>
@@ -191,38 +192,41 @@ export class ItemCreator extends React.Component {
 
     render() {
         return (
-            <table>
-                <thead>
-                    <tr>
-                        <th className="text-left">
-                            New Name
-                        </th>
-                        <th className="text-left">
-                            New Count
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <input className="border-2 rounded-lg border-gray-700"
-                                placeholder="Chairs"
-                                onChange={evt => this.newValues.name = evt.target.value}/>
-                        </td>
-                        <td>
-                            <input className="border-2 rounded-lg border-gray-700"
-                                type="number" placeholder="1"
-                                onChange={evt =>
-                                    this.newValues.count = Number.parseInt(evt.target.value)}/>
-                        </td>
-                        <td>
-                            <ConfirmationButton onClick={() => this.saveNew()}>
-                                Add
-                            </ConfirmationButton>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <Section>
+                <span className="text-xl font-bold">Add an Item</span>
+                <table>
+                    <thead>
+                        <tr>
+                            <th className="text-left">
+                                New Name
+                            </th>
+                            <th className="text-left">
+                                New Count
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <input className="border-2 rounded-lg border-gray-700"
+                                    placeholder="Chairs"
+                                    onChange={evt => this.newValues.name = evt.target.value}/>
+                            </td>
+                            <td>
+                                <input className="border-2 rounded-lg border-gray-700"
+                                    type="number" placeholder="1"
+                                    onChange={evt =>
+                                        this.newValues.count = Number.parseInt(evt.target.value)}/>
+                            </td>
+                            <td>
+                                <ConfirmationButton onClick={() => this.saveNew()}>
+                                    Add
+                                </ConfirmationButton>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </Section>
         )
     }
 
@@ -257,29 +261,39 @@ export class InventoryTable extends React.Component {
     render() {
         return (
             <React.StrictMode>
-            <table className="table-data-any">
-                <thead>
-                    <tr>
-                        <th className="pr-2 pl-2 text-left">Item Name</th>
-                        <th className="pr-2 pl-2 text-left">Item Count</th>
-                        <th></th>
-                        <th>
-                            <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
-                                Reload
-                            </ConfirmationButton>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
+                <Section>
+                    <span className="text-xl font-bold">Items</span>
+                    <table className="table-data-any">
+                        <thead>
+                            <tr>
+                                <th className="pr-2 pl-2 text-left">Item Name</th>
+                                <th className="pr-2 pl-2 text-left">Item Count</th>
+                                <th></th>
+                                <th>
+                                    <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
+                                        Reload
+                                    </ConfirmationButton>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                this.props.entries.map((item) => {
+                                    return <InventoryItem data={item} key={item.id}
+                                        onDelete={(id: number) => this.props.onItemDelete(id)}
+                                        onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
+                                })
+                            }
+                        </tbody>
+                    </table>
                     {
-                        this.props.entries.map((item) => {
-                            return <InventoryItem data={item} key={item.id}
-                                onDelete={(id: number) => this.props.onItemDelete(id)}
-                                onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
-                        })
+                        (this.props.entries.length === 0) ? (
+                            <div className="border-t-2 border-gray-500 w-full text-center italic">
+                                no entries
+                            </div>
+                        ) : null
                     }
-                </tbody>
-            </table>
+                </Section>
             </React.StrictMode>
         )
     }
@@ -475,29 +489,39 @@ export class DeletedInventoryTable extends React.Component {
     render() {
         return (
             <React.StrictMode>
-            <table className="table-data-any">
-                <thead>
-                    <tr>
-                        <th className="pr-2 pl-2 text-left">Item Name</th>
-                        <th className="pr-2 pl-2 text-left">Item Count</th>
-                        <th className="pr-2 pl-2 text-left">Deletion comment</th>
-                        <th className="pr-2 pl-2 text-left">
-                            <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
-                                Reload
-                            </ConfirmationButton>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
+                <Section>
+                    <span className="text-xl font-bold">Deleted Items</span>
+                    <table className="table-data-any">
+                        <thead>
+                            <tr>
+                                <th className="pr-2 pl-2 text-left">Item Name</th>
+                                <th className="pr-2 pl-2 text-left">Item Count</th>
+                                <th className="pr-2 pl-2 text-left">Deletion comment</th>
+                                <th className="pr-2 pl-2 text-left">
+                                    <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
+                                        Reload
+                                    </ConfirmationButton>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                this.props.entries.map((item) => {
+                                    return <DeletedInventoryItem data={item} key={item.id}
+                                        onDelete={(id: number) => this.props.onItemRestore(id)}
+                                        onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
+                                })
+                            }
+                        </tbody>
+                    </table>
                     {
-                        this.props.entries.map((item) => {
-                            return <DeletedInventoryItem data={item} key={item.id}
-                                onDelete={(id: number) => this.props.onItemRestore(id)}
-                                onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
-                        })
+                        (this.props.entries.length === 0) ? (
+                            <div className="border-t-2 border-gray-500 w-full text-center italic">
+                                no entries
+                            </div>
+                        ) : null
                     }
-                </tbody>
-            </table>
+                </Section>
             </React.StrictMode>
         )
     }
