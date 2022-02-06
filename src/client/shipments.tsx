@@ -1,10 +1,11 @@
-import React from "react"
+import React, { ChangeEvent } from "react"
 
 import "./index.css"
 
 import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItemData, MutableInventoryItemData } from "./inventory"
+import { response } from "express"
 
 
 enum ShipmentViewMode {
@@ -130,7 +131,11 @@ class ShipmentCreator extends React.Component {
                 <div>
                 {
                     this.state.newValues.items.map((item, index) => {
-                        return <ShipmentItemPicker itemData={item} key={index}/>
+                        return <ShipmentItemPicker
+                            onErrorResponse={(response: any) =>
+                                this.props.onErrorResponse(response)}
+                                onItemSet={(item: InventoryItemData) => this.state.newValues.items[index] = item}
+                                key={index}/>
                     })
                 }
                 </div>
@@ -160,9 +165,110 @@ class ShipmentCreator extends React.Component {
 
 
 class ShipmentItemPicker extends React.Component {
-    props: { itemData: MutableInventoryItemData }
+    props: { onErrorResponse: Function, onItemSet: Function }
+    item: InventoryItemData
 
     render() {
-        return <div>Item</div>
+        return (
+            <div>
+                <ItemPicker onErrorResponse={(response: any) => this.props.onErrorResponse(response)}
+                    onSelect={(item: InventoryItemData) => this.props.onItemSet(item)}/>
+                <input className="border-2 rounded-lg border-gray-700 w-32"
+                    type="number" placeholder="count"/>
+            </div>
+        )
+    }
+}
+
+
+class ItemPicker extends React.Component {
+    props: { onErrorResponse: Function, onSelect: Function }
+    state: { selectableItems: InventoryItemData[], itemName: string }
+
+    constructor(props: { onErrorResponse: Function, onSelect: Function }) {
+        super(props)
+
+        this.state = {
+            selectableItems: [],
+            itemName: ""
+        }
+    }
+
+    render() {
+        return (
+            <div className="inline-block">
+                <input className="border-2 rounded-lg border-gray-700 w-48"
+                    placeholder="Item name..."
+                    value={this.state.itemName}
+                    type="text" onChange={(evt: ChangeEvent<HTMLInputElement>) => this.onChange(evt)}/>
+                {
+                    (this.state.selectableItems.length > 0) ? (
+                        <div className="absolute z-10 bg-white border-2 border-gray-700 w-48">
+                            {
+                                this.state.selectableItems.map(item => {
+                                    return (
+                                        <SelectableItem item={item} key={item.id}
+                                            onSelect={(item: InventoryItemData) => this.onSelect(item)}/>
+                                    )
+                                })
+                            }
+                        </div>
+                    ) : null
+                }
+            </div>
+        )
+    }
+
+    onChange(evt: ChangeEvent<HTMLInputElement>) {
+        let state = {...this.state}
+        let name = evt.target.value
+
+        state.itemName = name
+
+        if (name.length == 0) {
+            state.selectableItems = []
+
+            this.setState(state)
+
+            return
+        }
+
+        fetch("/inventory/item/like/" + name)
+        .then(response => {
+            if (response.ok)
+                return response.json()
+            else
+                return Promise.reject(response)
+            })
+        .then(items => {
+            state.selectableItems = items
+
+            this.setState(state)
+        }, response => {
+            this.props.onErrorResponse(response)
+        })
+    }
+
+    onSelect(item: InventoryItemData) {
+        let state = {...this.state}
+        state.selectableItems = []
+        state.itemName = item.name
+        this.setState(state)
+
+        this.props.onSelect(item)
+    }
+}
+
+
+class SelectableItem extends React.Component {
+    props: { item: InventoryItemData, onSelect: Function }
+
+    render() {
+        return  (
+            <div className="hover:bg-gray-300 cursor-pointer"
+                onClick={() => this.props.onSelect(this.props.item)}>
+                {this.props.item.name}
+            </div>
+        )
     }
 }

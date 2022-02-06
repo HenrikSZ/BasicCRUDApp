@@ -75,6 +75,21 @@ export default class InventoryModel {
         })
     }
 
+
+    /**
+     * Reads items whose names are LIKE %name%
+     * 
+     * @param name parts of the name that should be searched for.
+     */
+    getItemLike(name: string): Promise<InventoryItem[]> {
+        const stmt = "SELECT * FROM inventory WHERE name LIKE ? LIMIT 10"
+        return dbPromise.query(stmt, "%" + name + "%")
+        .then(([results, fiels]) => {
+            return results as InventoryItem[]
+        })
+    }
+
+
     /**
      * Reads the deletion id of an item.
      * 

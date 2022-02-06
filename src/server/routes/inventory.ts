@@ -28,5 +28,8 @@ router.delete("/item/existing/:id",
     invContr.deleteCommentMiddleware.bind(invContr),
     invContr.deleteInventoryItem.bind(invContr))
 
+router.get("/item/like/:name",
+    invContr.getItemLike.bind(invContr))
+
 
 export default router

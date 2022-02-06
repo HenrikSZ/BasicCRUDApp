@@ -29,7 +29,7 @@ export default class InventoryController {
      *
      * @param req the request from express.js
      * @param res the response from express.js
-     * @param next function to the next middleware to be called
+     * @param next function to the next middleware
      */
     entryIdMiddleware(req: express.Request, res: express.Response,
         next: express.NextFunction) {
@@ -54,7 +54,7 @@ export default class InventoryController {
      *
      * @param req the request from express.js
      * @param res the response from express.js
-     * @param next function to the next middleware to be called
+     * @param next function to the next middleware
      */
     newInventoryItemMiddleware(req: express.Request, res: express.Response,
         next: express.NextFunction) {
@@ -78,7 +78,7 @@ export default class InventoryController {
      *
      * @param req the request from express.js
      * @param res the response from express.js
-     * @param next function to the next middleware to be called
+     * @param next function to the next middleware
      */
     deleteCommentMiddleware(req: express.Request, res: express.Response,
         next: express.NextFunction) {
@@ -91,6 +91,31 @@ export default class InventoryController {
             const body: ErrorResponse = {
                 name: ErrorType.FIELD,
                 message: "There has to be a deletion comment for a deletion"
+            }
+
+            res.status(400).send(body)
+        }
+    }
+
+
+    /**
+     * Checks if the request parameters contain a name that should be looked for
+     * 
+     * @param req the request from express.js
+     * @param res the response from express.js
+     * @param next function to the next middleware
+     */
+    getItemLikeMiddleware(req: express.Request, res: express.Response,
+        next: express.NextFunction) {
+        if (typeof req.params.name === "string" && req.params.name.length >= 1) {
+            next()
+        } else {
+            logger.info(`${req.hostname} requested to get items `
+                + `like an empty name`)
+
+            const body: ErrorResponse = {
+                name: ErrorType.FIELD,
+                message: "There has to be at least one character to find items"
             }
 
             res.status(400).send(body)
@@ -377,6 +402,25 @@ export default class InventoryController {
             } else {
                 handleDbError(error, req, res)
             }
+        })
+    }
+
+
+    /**
+     * Returns items that have a part of that in their name
+     * 
+     * @param req the request from express.js.
+     * @param res the response from express.js.
+     */
+    getItemLike(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested inventory items like ${name} `
+            + `id ${req.params.id}`)
+        
+        return this.invModel.getItemLike(req.params.name)
+        .then((items) => {
+            res.send(items)
+        }, error => {
+            handleDbError(error, req, res)
         })
     }
 }
