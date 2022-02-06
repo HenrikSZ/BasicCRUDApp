@@ -38,18 +38,18 @@ export class SideRibbonButton extends React.Component {
 
     render() {
         return (this.props.isActive) ? (
-            <span className="border-l-4 ml-4 mr-4 pl-1
+            <div className="border-l-4 m-4 pl-1
                 font-bold text-2xl
                 border-blue-800 cursor-pointer">
                 {this.props.children}
-            </span>
+            </div>
         ) : (
-            <span className="border-white border-l-4 ml-4 mr-4 pl-1
+            <div className="border-white border-l-4 m-4 pl-1
                 font-bold text-2xl
                 hover:border-green-800 cursor-pointer"
                 onClick={() => this.props.onClick()}>
                 {this.props.children}
-            </span>
+            </div>
         )
     }
 }

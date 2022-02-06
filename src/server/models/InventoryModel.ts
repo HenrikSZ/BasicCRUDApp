@@ -7,7 +7,7 @@ import { RowDataPacket, OkPacket } from "mysql2"
 import dbPromise from "./../db.js"
 
 
-interface MinimalInventoryItem extends RowDataPacket {
+export interface MinimalInventoryItem extends RowDataPacket {
     name: string,
     count: number
 }
@@ -54,6 +54,7 @@ export default class InventoryModel {
             return results as any
         })
     }
+
 
     /**
      * Reads one item from the inventory. It can be deleted or not deleted.

@@ -3,6 +3,7 @@ import React from "react"
 
 import "./index.css"
 import { Inventory } from "./inventory"
+import { ShipmentView } from "./shipments"
 import { SideRibbonButton } from "./buttons"
 
 
@@ -13,7 +14,8 @@ if(module.hot) {
 
 
 enum AppMode {
-    INVENTORY
+    INVENTORY,
+    SHIPMENTS
 }
 
 interface ErrorMessage {
@@ -54,6 +56,11 @@ class App extends React.Component {
                                 onClick={() => this.switchToMode(AppMode.INVENTORY)}>
                             Inventory
                         </SideRibbonButton>
+                        <SideRibbonButton 
+                                isActive={this.state.mode == AppMode.SHIPMENTS}
+                                onClick={() => this.switchToMode(AppMode.SHIPMENTS)}>
+                            Shipments
+                        </SideRibbonButton>
                     </nav>
                     <div className="float-left">
                         {
@@ -65,7 +72,9 @@ class App extends React.Component {
                         {
                             (this.state.mode == AppMode.INVENTORY) ? (
                                 <Inventory onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
-                            ) : null
+                            ) : (
+                                <ShipmentView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
+                            )
                         }
                     </div>
                 </div>
