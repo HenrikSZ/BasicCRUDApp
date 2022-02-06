@@ -49,7 +49,7 @@ class App extends React.Component {
     render() {
         return (
             <React.StrictMode>
-                <div className="pl-2 pt-2">
+                <div className="pl-2 pt-2 flex flex-row">
                     <nav className="float-left mt-16 mr-6">
                         <SideRibbonButton 
                                 isActive={this.state.mode == AppMode.INVENTORY}

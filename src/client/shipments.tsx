@@ -1,11 +1,11 @@
 import React, { ChangeEvent } from "react"
 
 import "./index.css"
+import plus_icon from "./icons/plus.svg"
 
 import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItemData, MutableInventoryItemData } from "./inventory"
-import { response } from "express"
 
 
 enum ShipmentViewMode {
@@ -122,7 +122,7 @@ class ShipmentCreator extends React.Component {
                             </td>
                             <td>
                                 <ConfirmationButton onClick={() => this.saveNew()}>
-                                    Add
+                                    Create
                                 </ConfirmationButton>
                             </td>
                         </tr>
@@ -139,9 +139,9 @@ class ShipmentCreator extends React.Component {
                     })
                 }
                 </div>
-                <ConfirmationButton onClick={() => this.addNewItem()}>
-                    Add Item
-                </ConfirmationButton>
+                <button onClick={() => this.addNewItem()} className="m-2">
+                    <img src={plus_icon} className="w-12 h-12"/>
+                </button>
             </Section>
         )
     }

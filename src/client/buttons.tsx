@@ -14,13 +14,13 @@ export class RibbonButton extends React.Component {
         return (this.props.isActive) ? (
             <span className="border-b-4 ml-4 mr-4 pb-1
                 font-bold text-xl
-                border-blue-800 cursor-pointer">
+                border-orange-600 cursor-pointer">
                 {this.props.children}
             </span>
         ) : (
             <span className="border-white border-b-4 ml-4 mr-4 pb-1
                 font-bold text-xl
-                hover:border-green-800 cursor-pointer"
+                hover:border-slate-700 cursor-pointer"
                 onClick={() => this.props.onClick()}>
                 {this.props.children}
             </span>
@@ -40,13 +40,13 @@ export class SideRibbonButton extends React.Component {
         return (this.props.isActive) ? (
             <div className="border-l-4 m-4 pl-1
                 font-bold text-2xl
-                border-blue-800 cursor-pointer">
+                border-orange-600 cursor-pointer">
                 {this.props.children}
             </div>
         ) : (
             <div className="border-white border-l-4 m-4 pl-1
                 font-bold text-2xl
-                hover:border-green-800 cursor-pointer"
+                hover:border-slate-700 cursor-pointer"
                 onClick={() => this.props.onClick()}>
                 {this.props.children}
             </div>
