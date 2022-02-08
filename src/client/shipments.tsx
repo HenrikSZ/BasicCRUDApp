@@ -1,7 +1,8 @@
 import React, { ChangeEvent } from "react"
 
 import "./index.css"
-import plus_icon from "./icons/plus.svg"
+import plusIcon from "./icons/plus.svg"
+import minusIcon from "./icons/minus.png"
 
 import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
@@ -16,7 +17,7 @@ enum ShipmentViewMode {
 interface MutableShipment {
     name: string,
     destination: string,
-    items: InventoryItemData[]
+    items: { data: InventoryItemData, uiKey: string }[]
 }
 
 interface Shipment extends MutableShipment {
@@ -79,6 +80,7 @@ export class ShipmentView extends React.Component {
 class ShipmentCreator extends React.Component {
     props: { onErrorResponse: Function }
     state: { newValues: MutableShipment }
+    currentUiKey: number
 
     constructor(props: { onErrorResponse: Function }) {
         super(props)
@@ -90,6 +92,8 @@ class ShipmentCreator extends React.Component {
                 items: []
             }
         }
+
+        this.currentUiKey = -1
     }
 
     render() {
@@ -132,16 +136,16 @@ class ShipmentCreator extends React.Component {
                 {
                     this.state.newValues.items.map((item, index) => {
                         return <ShipmentItemPicker
-                            onErrorResponse={(response: any) =>
-                                this.props.onErrorResponse(response)}
-                                onItemSet={(item: InventoryItemData) => this.state.newValues.items[index] = item}
-                                key={index}/>
+                                    onErrorResponse={(response: any) =>
+                                        this.props.onErrorResponse(response)}
+                                    onItemSet={(newItem: InventoryItemData) =>
+                                        item.data = newItem}
+                                    onRemove={() => this.removeItem(index)}
+                                        key={item.uiKey}/>
                     })
                 }
+                    <img src={plusIcon} onClick={() => this.addNewItem()} className="w-12 h-12 m-2 cursor-pointer"/>
                 </div>
-                <button onClick={() => this.addNewItem()} className="m-2">
-                    <img src={plus_icon} className="w-12 h-12"/>
-                </button>
             </Section>
         )
     }
@@ -154,10 +158,21 @@ class ShipmentCreator extends React.Component {
         let state = {...this.state}
 
         state.newValues.items.push({
-            id: 0,
-            name: "",
-            count: 0
+            data: {
+                id: 0,
+                name: "",
+                count: 0
+                },
+            uiKey: (this.currentUiKey--).toString()
         })
+
+        this.setState(state)
+    }
+
+    removeItem(index: number) {
+        let state = {...this.state}
+
+        state.newValues.items.splice(index, 1)
 
         this.setState(state)
     }
@@ -165,12 +180,13 @@ class ShipmentCreator extends React.Component {
 
 
 class ShipmentItemPicker extends React.Component {
-    props: { onErrorResponse: Function, onItemSet: Function }
+    props: { onErrorResponse: Function, onItemSet: Function, onRemove: Function }
     item: InventoryItemData
 
     render() {
         return (
-            <div>
+            <div className="flex flex-row space-x-2 p-1">
+                <img src={minusIcon} className="w-6 h-6 cursor-pointer" onClick={() => this.props.onRemove()}/>
                 <ItemPicker onErrorResponse={(response: any) => this.props.onErrorResponse(response)}
                     onSelect={(item: InventoryItemData) => this.props.onItemSet(item)}/>
                 <input className="border-2 rounded-lg border-gray-700 w-32"
