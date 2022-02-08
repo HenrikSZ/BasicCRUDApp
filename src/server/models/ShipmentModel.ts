@@ -4,7 +4,7 @@
 
 
 import { RowDataPacket, OkPacket } from "mysql2"
-import { MinimalInventoryItem } from "./InventoryModel.js"
+import { MinimalInventoryItem } from "./ItemModel.js"
 import dbPromise from "./../db.js"
  
  

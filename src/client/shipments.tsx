@@ -6,7 +6,7 @@ import minusIcon from "./icons/minus.png"
 
 import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
-import { InventoryItemData, MutableInventoryItemData } from "./inventory"
+import { InventoryItemData, MutableInventoryItemData } from "./items"
 
 
 enum ShipmentViewMode {

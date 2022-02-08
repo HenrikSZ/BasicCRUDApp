@@ -4,7 +4,7 @@
 
 
 import { RowDataPacket, OkPacket } from "mysql2"
-import dbPromise from "./../db.js"
+import dbPromise from "../db.js"
 
 
 export interface MinimalInventoryItem extends RowDataPacket {
@@ -25,14 +25,14 @@ interface DeletedInventoryItem extends InventoryItem {
 }
 
 
-export default class InventoryModel {
+export default class ItemModel {
     /**
      * Reads all items in the inventory that are not deleted.
      * 
-     * @returns all items in the inventory.
+     * @returns all items in the items.
      */
     getAllItems(): Promise<InventoryItem[]> {
-        const stmt = "SELECT * FROM inventory WHERE deletion_id IS NULL"
+        const stmt = "SELECT * FROM items WHERE deletion_id IS NULL"
         return dbPromise.query(stmt)
         .then(([results, fields]) => {
             return results as any
@@ -45,9 +45,9 @@ export default class InventoryModel {
      * @returns all deleted items with their deletion comment.
      */
     getAllDeletedItems(): Promise<DeletedInventoryItem[]> {
-        const stmt = "SELECT inventory.id, inventory.name, inventory.count, "
-            + "deletions.comment FROM inventory INNER JOIN deletions "
-            + "ON inventory.deletion_id=deletions.id "
+        const stmt = "SELECT items.id, items.name, items.count, "
+            + "deletions.comment FROM items INNER JOIN deletions "
+            + "ON items.deletion_id=deletions.id "
             + "WHERE deletion_id IS NOT NULL"
         return dbPromise.query(stmt)
         .then(([results, fields]) => {
@@ -57,13 +57,13 @@ export default class InventoryModel {
 
 
     /**
-     * Reads one item from the inventory. It can be deleted or not deleted.
+     * Reads one item from the items. It can be deleted or not deleted.
      * 
      * @param id the id of the item that should be read.
      * @returns the item identified by the id, if it exists. Otherwise null.
      */
     getItem(id: number): Promise<InventoryItem> {
-        const stmt = "SELECT * FROM inventory WHERE id = ?"
+        const stmt = "SELECT * FROM items WHERE id = ?"
         return dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as InventoryItem[]
@@ -82,7 +82,7 @@ export default class InventoryModel {
      * @param name parts of the name that should be searched for.
      */
     getItemLike(name: string): Promise<InventoryItem[]> {
-        const stmt = "SELECT * FROM inventory WHERE name LIKE ? LIMIT 10"
+        const stmt = "SELECT * FROM items WHERE name LIKE ? LIMIT 10"
         return dbPromise.query(stmt, "%" + name + "%")
         .then(([results, fiels]) => {
             return results as InventoryItem[]
@@ -98,7 +98,7 @@ export default class InventoryModel {
      * the deletion_id if it exists and is deleted.
      */
     getDeletionId(id: number): Promise<number> {
-        const stmt = "SELECT * FROM inventory WHERE id = ?"
+        const stmt = "SELECT * FROM items WHERE id = ?"
         return dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as InventoryItem[]
@@ -113,13 +113,13 @@ export default class InventoryModel {
     }
 
     /**
-     * Inserts an item into the inventory.
+     * Inserts an item into the items.
      * 
      * @param item the basic info of the item.
      * @returns the id of this item.
      */
     insertItem(item: MinimalInventoryItem): Promise<number> {
-        const stmt = "INSERT INTO inventory SET ?"
+        const stmt = "INSERT INTO items SET ?"
         return dbPromise.query(stmt, item)
         .then(([results, fields]) => {
             results = results as OkPacket
@@ -129,14 +129,14 @@ export default class InventoryModel {
 
 
     /**
-     * Updates fields of an item in the inventory.
+     * Updates fields of an item in the items.
      * 
      * @param values an object mapping keys to values that should be updated.
      * @param id the id of the item.
      * @returns true if the item could be update, false otherwise.
      */
     updateItem(values: any, id: number): Promise<Boolean> {
-        const stmt = "UPDATE inventory SET ? WHERE id = ?"
+        const stmt = "UPDATE items SET ? WHERE id = ?"
         return dbPromise.query(stmt, [values, id])
         .then(([results, fiels]) => {
             results = results as OkPacket

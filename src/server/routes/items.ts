@@ -1,13 +1,13 @@
 import express from "express"
-import InventoryModel from "../models/InventoryModel.js"
+import ItemModel from "../models/ItemModel.js"
 import DeletionModel from "../models/DeletionModel.js"
-import InventoryController from "./../controllers/InventoryController.js"
+import InventoryController from "../controllers/InventoryController.js"
 
 
 const router = express.Router()
-const invModel = new InventoryModel()
+const itemModel = new ItemModel()
 const delModel = new DeletionModel()
-const invContr = new InventoryController(invModel, delModel)
+const invContr = new InventoryController(itemModel, delModel)
 
 
 router.get("/", invContr.getInventory.bind(invContr))

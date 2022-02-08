@@ -16,14 +16,14 @@ dotenv.config()
 import express from "express"
 import bodyParser from "body-parser"
 
-import inventory from "./routes/inventory.js"
+import itemsRouter from "./routes/items.js"
 import logger from "./logger.js"
 
 
 const app = express()
 
 app.use(bodyParser.json())
-app.use("/inventory", inventory)
+app.use("/items", itemsRouter)
 app.use(express.static(path.resolve(__dirname, "public")))
 
 const port = process.env.PORT

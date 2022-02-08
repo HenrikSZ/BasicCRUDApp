@@ -26,7 +26,7 @@ dotenv.config()
 import express from "express"
 import bodyParser from "body-parser"
 
-import inventory from "./routes/inventory.js"
+import itemsRouter from "./routes/items.js"
 import logger from "./logger.js"
 
 
@@ -34,7 +34,7 @@ const app = express()
 const compiler = webpack(config as Configuration)
 
 app.use(bodyParser.json())
-app.use("/inventory", inventory)
+app.use("/items", itemsRouter)
 
 app.use(webpackDevMiddleware(compiler, {
     publicPath: config.output.publicPath

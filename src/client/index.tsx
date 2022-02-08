@@ -2,7 +2,7 @@ import ReactDOM from "react-dom"
 import React from "react"
 
 import "./index.css"
-import { Inventory } from "./inventory"
+import { ItemView } from "./items"
 import { ShipmentView } from "./shipments"
 import { SideRibbonButton } from "./buttons"
 
@@ -71,7 +71,7 @@ class App extends React.Component {
                         }
                         {
                             (this.state.mode == AppMode.INVENTORY) ? (
-                                <Inventory onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
+                                <ItemView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
                             ) : (
                                 <ShipmentView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
                             )

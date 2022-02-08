@@ -32,7 +32,7 @@ export interface DeletedInventoryItemData extends InventoryItemData {
 }
 
 
-export class Inventory extends React.Component {
+export class ItemView extends React.Component {
     state: {
         mode: InventoryMode,
         entries: Array<InventoryItemData>,
@@ -122,7 +122,7 @@ export class Inventory extends React.Component {
     }
 
     loadDeletedEntries() {
-        return fetch("/inventory/deleted")
+        return fetch("/items/deleted")
         .then((response) => {
             if (response.ok)
                 return response.json()
@@ -140,7 +140,7 @@ export class Inventory extends React.Component {
     }
 
     loadEntries() {
-        return fetch("/inventory")
+        return fetch("/items")
         .then((response: any) => {
             if (response.ok)
                 return response.json()
@@ -232,7 +232,7 @@ export class ItemCreator extends React.Component {
 
     saveNew() {
         if (this.newValues.name && this.newValues.count) {
-            fetch("/inventory/item/new",
+            fetch("/items/item/new",
                 { 
                     method: "POST",
                     body: JSON.stringify(this.newValues),
@@ -427,7 +427,7 @@ export class InventoryItem extends React.Component {
         }
 
         if (modified) {
-            fetch(`/inventory/item/existing/${this.state.data.id}`,
+            fetch(`/items/item/existing/${this.state.data.id}`,
                 { 
                     method: "PUT",
                     body: JSON.stringify(this.modifications),
@@ -452,7 +452,7 @@ export class InventoryItem extends React.Component {
     }
 
     deleteItem() {
-        fetch(`/inventory/item/existing/${this.state.data.id}`,
+        fetch(`/items/item/existing/${this.state.data.id}`,
             {
                 method: "DELETE",
                 body: JSON.stringify({ comment: this.deletion_comment }),
@@ -552,7 +552,7 @@ class DeletedInventoryItem extends React.Component {
     }
 
     restore() {
-        fetch(`/inventory/item/existing/${this.props.data.id}`,
+        fetch(`/items/item/existing/${this.props.data.id}`,
             {
                 method: "PUT"
             }

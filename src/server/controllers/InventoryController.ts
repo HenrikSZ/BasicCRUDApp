@@ -8,7 +8,7 @@ import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestEr
     from "../error_handling.js"
 import { isInteger } from "../util.js"
 import DeletionModel from "../models/DeletionModel.js"
-import InventoryModel from "../models/InventoryModel.js"
+import InventoryModel from "../models/ItemModel.js"
 
 
 /**
