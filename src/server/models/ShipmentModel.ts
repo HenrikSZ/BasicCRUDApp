@@ -4,34 +4,37 @@
 
 
 import { RowDataPacket, OkPacket } from "mysql2"
-import { MinimalInventoryItem } from "./ItemModel.js"
-import dbPromise from "./../db.js"
+import { Pool } from "mysql2/promise"
+import { MinimalInventoryItem, InventoryItem } from "./ItemModel.js"
  
  
-interface MinimalShipment {
+interface MinimalShipment extends RowDataPacket {
     name: string,
     destination: string
 }
 
 interface ClientSideShipment extends MinimalShipment {
-    items: { item_id: number, count: number }[]
+    items: { id: number, count: number }[]
 }
  
 interface Shipment extends MinimalShipment {
     name: string,
     destination: string,
     id: number,
-    items: MappedInventoryItem[]
+    items?: InventoryItem[]
 }
 
-interface MappedInventoryItem extends MinimalInventoryItem {
+interface MappedInventoryItem extends InventoryItem {
     shipment_id: number
 }
 
 
 export default class ShipmentModel {
+    dbPromise: Pool
 
-
+    constructor(dbPromise: Pool) {
+        this.dbPromise = dbPromise
+    }
     /**
      * Reads all shipments from the inventory that are not deleted.
      * 
@@ -39,25 +42,25 @@ export default class ShipmentModel {
      */
     getAllShipments(): Promise<Shipment[]> {
         let stmt = "SELECT * FROM shipments WHERE deletion_id IS NULL"
-        let shipments = null
+        let shipments: Shipment[] | null = null
 
-        return dbPromise.query(stmt)
+        return this.dbPromise.query(stmt)
         .then(([results, fields]) => {
-            shipments =  results
-            stmt = "SELECT shipment_to_inventory.shipment_id, "
-                + "inventory.name, shipment_to_inventory.count "
-                + "FROM shipments_to_inventory INNER JOIN inventory "
-                + "ON shipments_to_inventory.item_id=inventory.id "
+            shipments =  results as Shipment[]
+            stmt = "SELECT shipment_to_items.shipment_id, "
+                + "inventory.name, shipment_to_items.count "
+                + "FROM shipments_to_items INNER JOIN inventory "
+                + "ON shipments_to_items.item_id=inventory.id "
                 + "WHERE deletion_id IS NOT NULL"
-            return dbPromise.query(stmt)
+            return this.dbPromise.query(stmt)
         }).then(([results, fields]) => {
            let shipment_index = 0
             for (let item of results as MappedInventoryItem[]) {
-                while (shipments[shipment_index] != item.shipment_id) {
+                while (shipment_index !== item.shipment_id) {
                     shipment_index++
                 }
 
-                shipments[shipment_index].items.push(item)
+                shipments[shipment_index].items.push(item as InventoryItem)
             }
 
             return shipments
@@ -68,24 +71,26 @@ export default class ShipmentModel {
     /**
      * Reads one item from the inventory. It can be deleted or not deleted.
      * 
-     * @param id the id of the item that should be read.
-     * @returns the item identified by the id, if it exists. Otherwise null.
+     * @param id the id of the shipment that should be read.
+     * @returns the shipment identified by the id, if it exists. Otherwise null.
      */
     getShipment(id: number): Promise<Shipment> {
         let stmt = "SELECT * FROM shipments WHERE id = ?"
-        let shipment = null
+        let shipment: Shipment | null = null
 
-        return dbPromise.query(stmt, id)
+        return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
-            shipment =  results
-            stmt = "SELECT inventory.name, inventory.count "
-                + "FROM shipments_to_inventory INNER JOIN inventory "
-                + "ON shipments_to_inventory.item_id=inventory.id "
-                + "WHERE shipments_to_inventory.shipment_id = ?"
-            return dbPromise.query(stmt, id)
+            shipment = (results as RowDataPacket)[0] as Shipment
+            stmt = "SELECT items.name, shipments_to_items.count "
+                + "FROM shipments_to_items INNER JOIN items "
+                + "ON shipments_to_items.item_id=items.id "
+                + "WHERE shipments_to_items.shipment_id = ?";
+            return this.dbPromise.query(stmt, id)
         }).then(([results, fields]) => {
-            for (let item of results as MinimalInventoryItem[]) {
-                shipment.push(item)
+            shipment.items = []
+
+            for (let item of results as InventoryItem[]) {
+                shipment.items.push(item)
             }
             
             return shipment
@@ -99,8 +104,8 @@ export default class ShipmentModel {
      * @param shipment the basic info of the shipment.
      * @returns the id of this shipment.
      */
-    insertShipment(shipment: ClientSideShipment): Promise<number> {
-        let insertShipment: MinimalShipment = {
+    createShipment(shipment: ClientSideShipment): Promise<number> {
+        let insertShipment = {
             name: shipment.name,
             destination: shipment.destination
         }
@@ -108,21 +113,26 @@ export default class ShipmentModel {
         let shipmentId = 0
 
         let stmt = "INSERT INTO shipments SET ?"
-        return dbPromise.query(stmt, insertShipment)
+        return this.dbPromise.query(stmt, insertShipment)
         .then(([results, fields]) => {
             results = results as OkPacket
             shipmentId = results.insertId
         }).then(() => {
             let promises = []
-            stmt = "INSERT INTO shipment_to_inventory SET = ?"
+            stmt = "INSERT INTO shipments_to_items SET ?"
 
             for (let item of shipment.items) {
-                let promise = dbPromise.query(stmt, item)
+                let insertItem = {
+                    shipment_id: shipmentId,
+                    count: item.count,
+                    item_id: item.id
+                }
+                let promise = this.dbPromise.query(stmt, insertItem)
 
                 promises.push(promise)
             }
 
-            Promise.all(promises)
+            return Promise.all(promises)
         }).then(() => {
             return shipmentId
         })

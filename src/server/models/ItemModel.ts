@@ -12,7 +12,7 @@ export interface MinimalInventoryItem extends RowDataPacket {
     count: number
 }
 
-interface InventoryItem extends MinimalInventoryItem {
+export interface InventoryItem extends MinimalInventoryItem {
     id: number,
     deletion_id: number,
     created_at: Date,

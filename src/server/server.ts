@@ -17,6 +17,7 @@ import express from "express"
 import bodyParser from "body-parser"
 
 import itemsRouter from "./routes/items.js"
+import shipmentsRouter from "./routes/shipments.js"
 import logger from "./logger.js"
 
 
@@ -24,6 +25,7 @@ const app = express()
 
 app.use(bodyParser.json())
 app.use("/items", itemsRouter)
+app.use("/shipments", shipmentsRouter)
 app.use(express.static(path.resolve(__dirname, "public")))
 
 const port = process.env.PORT
