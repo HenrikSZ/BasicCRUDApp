@@ -20,9 +20,9 @@ if (process.env.TEST_DB_CONN_LIMIT)
 if (process.env.TEST_DB_PORT)
     dbConnConfig.port = Number.parseInt(process.env.TEST_DB_CONN_LIMIT, 10)
 
+function createPool() {
+    const dbConnection = mysql2.createPool(dbConnConfig)
+    return dbConnection.promise()
+}
 
-const dbConnection = mysql2.createPool(dbConnConfig)
-const dbPromise = dbConnection.promise()
-
-
-export default dbPromise
+export default createPool

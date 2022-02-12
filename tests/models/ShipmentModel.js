@@ -5,42 +5,49 @@ chai.use(sinon_chai)
 
 const expect = chai.expect
 
-import dbPromise from "../db.js"
+import db from "../db.js"
 
 import ShipmentModel from "../../dist/models/ShipmentModel.js"
 
 
-function insertItemDataSet() {
-    return Promise.all([
-        dbPromise.query("INSERT INTO items (name, count) VALUES ('Chair', 100)"),
-        dbPromise.query("INSERT INTO items (name, count) VALUES ('Bed', 55)"),
-        dbPromise.query("INSERT INTO items (name, count) VALUES ('Table', 1)"),
-    ])
-    .then(results => {
-        return results.map(([queryResult, fields]) => {
-            return queryResult.insertId
-        })
-    })
-}
-
-function clearTables() {
-    return Promise.all([
-        dbPromise.query("DELETE FROM shipments_to_items"),
-        dbPromise.query("DELETE FROM shipments"),
-        dbPromise.query("DELETE FROM items"),
-        dbPromise.query("DELETE FROM deletions")
-    ])
-}
-
-
 describe("ShipmentModel", () => {
+    let dbPromise = null
+
+    before(() => {
+        dbPromise = db()
+    })
+    after(() => {
+        dbPromise.end()
+    })
     beforeEach(clearTables)
 
+    function insertItemDataSet() {
+        return Promise.all([
+            dbPromise.query("INSERT INTO items (name, count) VALUES ('Chair', 100)"),
+            dbPromise.query("INSERT INTO items (name, count) VALUES ('Bed', 55)"),
+            dbPromise.query("INSERT INTO items (name, count) VALUES ('Table', 1)"),
+        ])
+        .then(results => {
+            return results.map(([queryResult, fields]) => {
+                return queryResult.insertId
+            })
+        })
+    }
+    
+    function clearTables() {
+        return Promise.all([
+            dbPromise.query("DELETE FROM shipments_to_items"),
+            dbPromise.query("DELETE FROM shipments"),
+            dbPromise.query("DELETE FROM items"),
+            dbPromise.query("DELETE FROM deletions")
+        ])
+    }
+
     describe("#getShipment", () => {
-        it("should return a shipment with a single item", (done) => {
+        it("should return a shipment with a single item", () => {
             let shipmentId = 0, itemId = 0
 
-            dbPromise.query("INSERT INTO items (name, count) VALUES ('Chair', 100)")
+            return dbPromise.query("INSERT INTO items (name, count) VALUES ('Chair', 100)")
             .then(([results, fields]) => {
                 itemId = results.insertId
 
@@ -60,24 +67,18 @@ describe("ShipmentModel", () => {
                 return model.getShipment(shipmentId)
             })
             .then((shipment) => {
-                try {
-                    expect(shipment.name).to.equal("Test")
-                    expect(shipment.destination).to.equal("Heidelberg")
-                    expect(shipment.items.length).to.equal(1)
-                    expect(shipment.items[0].name).to.equal("Chair")
-                    expect(shipment.items[0].count).to.equal(100)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(shipment.name).to.equal("Test")
+                expect(shipment.destination).to.equal("Heidelberg")
+                expect(shipment.items.length).to.equal(1)
+                expect(shipment.items[0].name).to.equal("Chair")
+                expect(shipment.items[0].count).to.equal(100)
             })
-            .catch(error => done(error))
         })
 
-        it("should return a shipment with multiple items", (done) => {
+        it("should return a shipment with multiple items", () => {
             let shipmentId = 0, itemIds = []
 
-            insertItemDataSet()            
+           return  insertItemDataSet()            
             .then((ids) => {
                 itemIds = ids
                 return dbPromise.query("INSERT INTO shipments (name, destination) "
@@ -98,20 +99,14 @@ describe("ShipmentModel", () => {
                 return model.getShipment(shipmentId)
             })
             .then((shipment) => {
-                try {
-                    expect(shipment.items.length).to.equal(3)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(shipment.items.length).to.equal(3)
             })
-            .catch(error => done(error))
         })
 
-        it("should return a shipment containing only relevant items", (done) => {
+        it("should return a shipment containing only relevant items", () => {
             let shipmentId = 0, itemIds = []
 
-            insertItemDataSet()            
+            return insertItemDataSet()            
             .then((ids) => {
                 itemIds = ids
                 
@@ -134,14 +129,8 @@ describe("ShipmentModel", () => {
                 return model.getShipment(shipmentId)
             })
             .then((shipment) => {
-                try {
-                    expect(shipment.items.length).to.equal(2)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(shipment.items.length).to.equal(2)
             })
-            .catch(error => done(error))
         })
     })
 
@@ -212,9 +201,10 @@ describe("ShipmentModel", () => {
                 ])
             })
         }
-        it("should insert a shipment, so that the field values are correct", (done) => {
+        it("should insert a shipment, so that the field values are correct", () => {
             let name = "Test", destination = "Mannheim"
-            runWithSingleItem(name, destination)
+            
+            return runWithSingleItem(name, destination)
             .then(results => {
                 let shipments = results[0][0]
                 expect(shipments.length).to.equal(1)
@@ -222,13 +212,12 @@ describe("ShipmentModel", () => {
 
                 expect(shipment.name).to.equal(name)
                 expect(shipment.destination).to.equal(destination)
-                done()
             })
-            .catch(error => done(error))
         })
-        it("shold insert an item of a shipment", done => {
+        it("shold insert an item of a shipment", () => {
             let name = "Test", destination = "Mannheim"
-            runWithSingleItem(name, destination)
+            
+            return runWithSingleItem(name, destination)
             .then(results => {
                 let mapped_items = results[1][0]
                 expect(mapped_items.length).to.equal(1)
@@ -237,15 +226,13 @@ describe("ShipmentModel", () => {
                 expect(item.shipment_id).equal(results[2])
                 expect(item.item_id).to.equal(results[3][0])
                 expect(item.count).to.equal(50)
-                done()
             })
-            .catch(error => done(error))
         })
 
-        it("should insert multiple items of a shipment", (done) => {
+        it("should insert multiple items of a shipment", () => {
             let name = "Test2", destination = "Ludwigshafen"
 
-            runWithMultipleItems(name, destination)
+            return runWithMultipleItems(name, destination)
             .then(results => {
                 let mapped_items = results[1][0]
                 expect(mapped_items.length).to.equal(2)   
@@ -255,9 +242,7 @@ describe("ShipmentModel", () => {
 
                 expect(mapped_items[0].shipment_id).to.equal(results[2])
                 expect(mapped_items[1].shipment_id).to.equal(results[2])
-                done()
             })
-            .catch(error => done(error))
         })
     })
 })

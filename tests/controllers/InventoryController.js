@@ -124,7 +124,7 @@ describe("InventoryController", () => {
     })
 
     describe("#getInventory", () => {
-        it("should send a result containing the whole inventory", (done) => {
+        it("should send a result containing the whole inventory", () => {
             let allItems = [
                 {
                     name: "Chair",
@@ -147,20 +147,15 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
             
-            invController.getInventory(req, res)
+            return invController.getInventory(req, res)
             .then(() => {
-                try {
-                    expect(res.send).to.be.calledWith(allItems)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(res.send).to.be.calledWith(allItems)
             })
         })
     })
 
     describe("#getInventoryItem", () => {
-        it("should send a result containing the exact item", (done) => {
+        it("should send a result containing the exact item", () => {
             let chair = {
                 name: "Chair",
                 count: 5,
@@ -180,18 +175,13 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.getInventoryItem(req, res)
+            return invController.getInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(res.send).to.have.been.calledWith(chair)
-                    expect(mockModel.getItem).to.have.been.calledWith(2)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(res.send).to.have.been.calledWith(chair)
+                expect(mockModel.getItem).to.have.been.calledWith(2)
             })
         })
-        it("should send an error if the item is not available", (done) => {
+        it("should send an error if the item is not available", () => {
             let mockModel = mockInventoryModel()
             let invController = new InventoryController(
                 mockModel, mockDeletionModel()
@@ -204,22 +194,17 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.getInventoryItem(req, res)
+            return invController.getInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(res.status).to.have.been.calledWith(400)
-                    expect(res.status).to.have.been.calledBefore(res.send)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(res.status).to.have.been.calledWith(400)
+                expect(res.status).to.have.been.calledBefore(res.send)
+                expect(res.send).to.have.been.calledOnce
             })
         })
     })
 
     describe("#getDeletedInventory", () => {
-        it("should send a result containing the deleted inventory", (done) => {
+        it("should send a result containing the deleted inventory", () => {
             let deletedItems = [
                 {
                     name: "Chair",
@@ -244,20 +229,15 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
             
-            invController.getDeletedInventory(req, res)
+            return invController.getDeletedInventory(req, res)
             .then(() => {
-                try {
-                    expect(res.send).to.be.calledWith(deletedItems)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(res.send).to.be.calledWith(deletedItems)
             })
         })
     })
 
     describe("#postNewInventoryItem", () => {
-        it("should insert the new item into the database", (done) => {
+        it("should insert the new item into the database", () => {
             let insertId = 5
             let item = {
                 name: "Chair",
@@ -276,17 +256,12 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.postNewInventoryItem(req, res)
+            return invController.postNewInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.insertItem).to.have.been.calledWith(item)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.insertItem).to.have.been.calledWith(item)
             })
         })
-        it("should return new inventory item with a status code 0f 201", (done) => {
+        it("should return new inventory item with a status code 0f 201", () => {
             let insertId = 5
             let item = {
                 name: "Chair",
@@ -308,22 +283,17 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.postNewInventoryItem(req, res)
+            return invController.postNewInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(res.status).to.have.been.calledWith(201)
-                    expect(res.status).to.have.been.calledBefore(res.send)
-                    expect(res.send).to.have.been.calledWith(insertedItem)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(res.status).to.have.been.calledWith(201)
+                expect(res.status).to.have.been.calledBefore(res.send)
+                expect(res.send).to.have.been.calledWith(insertedItem)
             })
         })
     })
 
     describe("#updateInventoryItem", () => {
-        it("should update the item", (done) => {
+        it("should update the item", () => {
             let id = 5
             let item = {
                 name: "Chair",
@@ -345,17 +315,12 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.updateInventoryItem(req, res)
+            return invController.updateInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.updateItem).to.have.been.calledWith(item, id)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.updateItem).to.have.been.calledWith(item, id)
             })
         })
-        it("should fail with error 400 when id invalid", (done) => {
+        it("should fail with error 400 when id invalid", () => {
             let id = 5
             let item = {
                 name: "Chair",
@@ -377,22 +342,17 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.updateInventoryItem(req, res)
+            return invController.updateInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(res.status).to.have.been.calledWith(400)
-                    expect(res.status).to.have.been.calledBefore(res.send)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(res.status).to.have.been.calledWith(400)
+                expect(res.status).to.have.been.calledBefore(res.send)
+                expect(res.send).to.have.been.calledOnce
             })
         })
     })
 
     describe("#restoreInventoryItem", () => {
-        it("should restore an deleted entry with a valid id", (done) => {
+        it("should restore an deleted entry with a valid id", () => {
             let itemId = 5
             let deletionId = 8
 
@@ -413,19 +373,14 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.restoreInventoryItem(req, res)
+            return invController.restoreInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
-                    expect(mockDelModel.delete).to.have.been.calledWith(deletionId)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
+                expect(mockDelModel.delete).to.have.been.calledWith(deletionId)
+                expect(res.send).to.have.been.calledOnce
             })
         })
-        it("should fail with error 400 when trying to restore not deleted item", (done) => {
+        it("should fail with error 400 when trying to restore not deleted item", () => {
             let itemId = 5
             let deletionId = -1
 
@@ -446,21 +401,16 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.restoreInventoryItem(req, res)
+            return invController.restoreInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
-                    expect(mockDelModel.delete).to.not.have.been.calledWith(deletionId)
-                    expect(res.status).to.have.been.calledWith(400)
-                    expect(res.status).to.have.been.calledBefore(res.send)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
+                expect(mockDelModel.delete).to.not.have.been.calledWith(deletionId)
+                expect(res.status).to.have.been.calledWith(400)
+                expect(res.status).to.have.been.calledBefore(res.send)
+                expect(res.send).to.have.been.calledOnce
             })
         })
-        it("should fail with error 400 when trying to restore not existing item", (done) => {
+        it("should fail with error 400 when trying to restore not existing item", () => {
             let itemId = -1
             let deletionId = -1
 
@@ -481,18 +431,13 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            invController.restoreInventoryItem(req, res)
+            return invController.restoreInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
-                    expect(mockDelModel.delete).to.not.have.been.called
-                    expect(res.status).to.have.been.calledWith(400)
-                    expect(res.status).to.have.been.calledBefore(res.send)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
+                expect(mockDelModel.delete).to.not.have.been.called
+                expect(res.status).to.have.been.calledWith(400)
+                expect(res.status).to.have.been.calledBefore(res.send)
+                expect(res.send).to.have.been.calledOnce
             })
         })
     })
@@ -545,7 +490,7 @@ describe("InventoryController", () => {
     })
 
     describe("#deleteInventoryItem", () => {
-        it("should delete an item if it is existing", (done) => {
+        it("should delete an item if it is existing", () => {
             let id = 10
             let pastDeletionId = 0
             let deletionId = 11
@@ -573,19 +518,14 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            invController.deleteInventoryItem(req, res)
+            return invController.deleteInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.getDeletionId).to.have.been.calledWith(id)
-                    expect(mockDelModel.insert).to.have.been.calledWith(deletionComment)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.getDeletionId).to.have.been.calledWith(id)
+                expect(mockDelModel.insert).to.have.been.calledWith(deletionComment)
+                expect(res.send).to.have.been.calledOnce
             })
         })
-        it("should fail with error 400 when trying to delete already deleted item", (done) => {
+        it("should fail with error 400 when trying to delete already deleted item", () => {
             let id = 10
             let pastDeletionId = 9
             let deletionId = 11
@@ -613,21 +553,16 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            invController.deleteInventoryItem(req, res)
+            return invController.deleteInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.getDeletionId).to.have.been.calledWith(id)
-                    expect(mockDelModel.insert).to.not.have.been.called
-                    expect(res.status).to.have.been.calledWith(400)
-                    expect(res.status).to.have.been.calledBefore(res.send)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.getDeletionId).to.have.been.calledWith(id)
+                expect(mockDelModel.insert).to.not.have.been.called
+                expect(res.status).to.have.been.calledWith(400)
+                expect(res.status).to.have.been.calledBefore(res.send)
+                expect(res.send).to.have.been.calledOnce
             })
         })
-        it("should fail with error 400 when trying non-existing item", (done) => {
+        it("should fail with error 400 when trying non-existing item", () => {
             let id = 10
             let pastDeletionId = -1
             let deletionId = 11
@@ -655,18 +590,13 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            invController.deleteInventoryItem(req, res)
+            return invController.deleteInventoryItem(req, res)
             .then(() => {
-                try {
-                    expect(mockModel.getDeletionId).to.have.been.calledWith(id)
-                    expect(mockDelModel.insert).to.not.have.been.called
-                    expect(res.status).to.have.been.calledWith(400)
-                    expect(res.status).to.have.been.calledBefore(res.send)
-                    expect(res.send).to.have.been.calledOnce
-                    done()
-                } catch (err) {
-                    done(err)
-                }
+                expect(mockModel.getDeletionId).to.have.been.calledWith(id)
+                expect(mockDelModel.insert).to.not.have.been.called
+                expect(res.status).to.have.been.calledWith(400)
+                expect(res.status).to.have.been.calledBefore(res.send)
+                expect(res.send).to.have.been.calledOnce
             })
         })
     })
