@@ -2,10 +2,10 @@
  * Contains the ShipmentController for anything related to shipments
  */
 
-import ShipmentModel, { ClientSideShipment } from "../models/ShipmentModel"
+import ShipmentModel, { ClientSideShipment } from "../models/ShipmentModel.js"
 import { Request, Response, NextFunction } from "express"
-import logger from "../logger"
-import { ErrorResponse, ErrorType, handleDbError } from "../error_handling"
+import logger from "../logger.js"
+import { ErrorResponse, ErrorType, handleDbError } from "../error_handling.js"
 import validator from "validator"
 
 declare global{
@@ -36,13 +36,17 @@ export default class ShipmentController {
     createShipmentMiddleware(req: Request, res: Response, next: NextFunction) {
         let body = req.body
         if (body.items
+                && body.name
                 && validator.isAlphanumeric(body.name)
+                && body.destination
                 && validator.isAlphanumeric(body.destination)
                 && Array.isArray(body.items)
                 && body.items.length > 0) {
             let allItemsValid = true
             for (let item of body.items) {
-                if (!validator.isNumeric(item)) {
+                if (typeof item !== "object"
+                    || !validator.isNumeric(item.count)
+                    || !validator.isNumeric(item.id)) {
                     allItemsValid = false
                     break
                 }
@@ -80,12 +84,10 @@ export default class ShipmentController {
      * @param res the respons from express.js
      */
     getAllShipments(req: Request, res: Response) {
-        logger.info(`${req.hostname} requested all inventory entries`)
+        logger.info(`${req.hostname} requested all shipments`)
 
         return this.shipmentModel.getAllShipments()
         .then(results => {
-            logger.info(`${req.hostname} requested all shipments`)
-
             res.send(results)
         }, (error) => {
             handleDbError(error, req, res)
@@ -96,10 +98,17 @@ export default class ShipmentController {
     /**
      * Creates a shipment from parameters in the request body.
      * 
-     * @param req the request from express.js
+     * @param req the request from express.js. Must containt a valid shipment attribute.
      * @param res the respons from express.js
      */
     createShipment(req: Request, res: Response) {
+        logger.info(`${req.hostname} requested to create a shipment`)
 
+        return this.shipmentModel.createShipment(req.shipment)
+        .then(() => {
+            res.send()
+        }, (error) => {
+            handleDbError(error, req, res)
+        })
     }
 }
