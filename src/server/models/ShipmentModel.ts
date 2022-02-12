@@ -5,15 +5,15 @@
 
 import { RowDataPacket, OkPacket } from "mysql2"
 import { Pool } from "mysql2/promise"
-import { MinimalInventoryItem, InventoryItem } from "./ItemModel.js"
+import { InventoryItem } from "./ItemModel.js"
  
  
-interface MinimalShipment extends RowDataPacket {
+interface MinimalShipment {
     name: string,
     destination: string
 }
 
-interface ClientSideShipment extends MinimalShipment {
+export interface ClientSideShipment extends MinimalShipment {
     items: { id: number, count: number }[]
 }
  

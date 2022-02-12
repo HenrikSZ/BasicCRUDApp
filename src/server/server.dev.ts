@@ -27,6 +27,7 @@ import express from "express"
 import bodyParser from "body-parser"
 
 import itemsRouter from "./routes/items.js"
+import shipmentsRouter from "./routes/shipments.js"
 import logger from "./logger.js"
 
 
@@ -35,6 +36,7 @@ const compiler = webpack(config as Configuration)
 
 app.use(bodyParser.json())
 app.use("/items", itemsRouter)
+app.use("/shipments", shipmentsRouter)
 
 app.use(webpackDevMiddleware(compiler, {
     publicPath: config.output.publicPath
