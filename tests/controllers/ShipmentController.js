@@ -86,6 +86,28 @@ describe("ShipmentController", () => {
                 destination: "Kiel",
                 items: [
                     {
+                        count: 50,
+                        id: 5
+                    }
+                ]
+            }
+            const req = mockReq({ body: shipment })
+            const res = mockRes()
+            const next = sinon.spy()
+            const model = mockShipmentModel()
+            const contr = new ShipmentController(model)
+
+            contr.createShipmentMiddleware(req, res, next)
+
+            expect(next).to.have.been.calledOnce
+            expect(req.shipment).to.deep.equal(shipment)
+        })
+        it("should allow a valid shipment with stringified numbers", () => {
+            const shipment = {
+                name: "ABC",
+                destination: "Kiel",
+                items: [
+                    {
                         count: "50",
                         id: "5"
                     }

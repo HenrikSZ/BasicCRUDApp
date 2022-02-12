@@ -413,8 +413,8 @@ export default class InventoryController {
      * @param res the response from express.js.
      */
     getItemLike(req: express.Request, res: express.Response) {
-        logger.info(`${req.hostname} requested inventory items like ${name} `
-            + `id ${req.params.id}`)
+        logger.info(`${req.hostname} requested inventory items like `
+            + `${req.params.name} id ${req.params.id}`)
         
         return this.invModel.getItemLike(req.params.name)
         .then((items) => {

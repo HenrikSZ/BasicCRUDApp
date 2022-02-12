@@ -45,8 +45,10 @@ export default class ShipmentController {
             let allItemsValid = true
             for (let item of body.items) {
                 if (typeof item !== "object"
-                    || !validator.isNumeric(item.count)
-                    || !validator.isNumeric(item.id)) {
+                    || !item.count
+                    || !validator.isInt(item.count + "", {min: 1})
+                    || !item.id
+                    || !validator.isInt(item.id + "", {min: 1})) {
                     allItemsValid = false
                     break
                 }

@@ -1,7 +1,9 @@
 import React, { ChangeEvent } from "react"
 
 import "./index.css"
+// @ts-ignore
 import plusIcon from "./icons/plus.svg"
+// @ts-ignore
 import minusIcon from "./icons/minus.png"
 
 import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
@@ -17,7 +19,7 @@ enum ShipmentViewMode {
 interface MutableShipment {
     name: string,
     destination: string,
-    items: { data: InventoryItemData, uiKey: string }[]
+    items: { id: number, count: number }[]
 }
 
 interface Shipment extends MutableShipment {
@@ -81,6 +83,7 @@ class ShipmentCreator extends React.Component {
     props: { onErrorResponse: Function }
     state: { newValues: MutableShipment }
     currentUiKey: number
+    uiKeys: number[]
 
     constructor(props: { onErrorResponse: Function }) {
         super(props)
@@ -94,6 +97,7 @@ class ShipmentCreator extends React.Component {
         }
 
         this.currentUiKey = -1
+        this.uiKeys = []
     }
 
     render() {
@@ -139,9 +143,12 @@ class ShipmentCreator extends React.Component {
                                     onErrorResponse={(response: any) =>
                                         this.props.onErrorResponse(response)}
                                     onItemSet={(newItem: InventoryItemData) =>
-                                        item.data = newItem}
+                                        this.setItemType(index, newItem.id)}
+                                    onCountSet ={(newCount: number) =>
+                                            this.setItemCount(index, newCount)}
+                                    item={item}
                                     onRemove={() => this.removeItem(index)}
-                                        key={item.uiKey}/>
+                                        key={this.uiKeys[index]}/>
                     })
                 }
                     <img src={plusIcon} onClick={() => this.addNewItem()} className="w-12 h-12 m-2 cursor-pointer"/>
@@ -151,20 +158,37 @@ class ShipmentCreator extends React.Component {
     }
 
     saveNew() {
-
+        fetch("/shipments/shipment/new",
+            {
+                method: "PUT",
+                body: JSON.stringify(this.state.newValues),
+                headers: { 'Content-Type': 'application/json' }
+            }
+        )
     }
 
     addNewItem() {
         let state = {...this.state}
 
         state.newValues.items.push({
-            data: {
-                id: 0,
-                name: "",
-                count: 0
-                },
-            uiKey: (this.currentUiKey--).toString()
+            id: 0,
+            count: 0
         })
+        this.uiKeys.push(this.currentUiKey--)
+
+        this.setState(state)
+    }
+
+    setItemType(index: number, itemId: number) {
+        let state = {...this.state}
+        state.newValues.items[index].id = itemId
+
+        this.setState(state)
+    }
+
+    setItemCount(index: number, count: number) {
+        let state = {...this.state}
+        state.newValues.items[index].count = count
 
         this.setState(state)
     }
@@ -180,8 +204,25 @@ class ShipmentCreator extends React.Component {
 
 
 class ShipmentItemPicker extends React.Component {
-    props: { onErrorResponse: Function, onItemSet: Function, onRemove: Function }
+    props: { onErrorResponse: Function,
+                onItemSet: Function,
+                onCountSet: Function,
+                onRemove: Function,
+                item: { id: number, count: number} }
     item: InventoryItemData
+    state: { count: number }
+
+    constructor(props: { onErrorResponse: Function,
+            onItemSet: Function,
+            onCountSet: Function,
+            onRemove: Function,
+            item: { id: number, count: number} }) {
+        super(props)
+
+        this.state = {
+            count: 0
+        }
+    }
 
     render() {
         return (
@@ -190,7 +231,9 @@ class ShipmentItemPicker extends React.Component {
                 <ItemPicker onErrorResponse={(response: any) => this.props.onErrorResponse(response)}
                     onSelect={(item: InventoryItemData) => this.props.onItemSet(item)}/>
                 <input className="border-2 rounded-lg border-gray-700 w-32"
-                    type="number" placeholder="count"/>
+                    type="number" placeholder="count" value={this.props.item.count}
+                    onChange={(evt: ChangeEvent<HTMLInputElement>) =>
+                        this.props.onCountSet(evt.target.value)}/>
             </div>
         )
     }
@@ -249,7 +292,7 @@ class ItemPicker extends React.Component {
             return
         }
 
-        fetch("/inventory/item/like/" + name)
+        fetch("/items/item/like/" + name)
         .then(response => {
             if (response.ok)
                 return response.json()
