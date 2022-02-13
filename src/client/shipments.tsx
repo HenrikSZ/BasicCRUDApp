@@ -22,11 +22,15 @@ interface MutableShipmentData {
     items: { id: number, count: number }[]
 }
 
+interface MappedInventoryItemData extends InventoryItemData {
+    max_count: number
+}
+
 interface ShipmentData {
     id: number,
     name: string,
     destination: string,
-    items: InventoryItemData[]
+    items: MappedInventoryItemData[]
 }
 
 
@@ -202,7 +206,7 @@ class Shipment extends React.Component {
 
 
 class ShipmentItem extends React.Component {
-    props: { data: InventoryItemData }
+    props: { data: MappedInventoryItemData }
 
     constructor(props: { data: InventoryItemData }) {
         super(props)
@@ -211,7 +215,7 @@ class ShipmentItem extends React.Component {
     render() {
         return (
             <div>
-                {this.props.data.name} ({this.props.data.count})
+                {this.props.data.name} ({this.props.data.count}/{this.props.data.max_count})
             </div>
         )
     }

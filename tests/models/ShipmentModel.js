@@ -117,7 +117,7 @@ describe("ShipmentModel", () => {
 
                 return dbPromise.query("INSERT INTO shipments_to_items "
                     + "(shipment_id, item_id, count) VALUES (?, ?, ?)",
-                    [shipmentId, itemId, 100])
+                    [shipmentId, itemId, 50])
             })
             .then(() => {
                 let model = new ShipmentModel(dbPromise)
@@ -129,7 +129,8 @@ describe("ShipmentModel", () => {
                 expect(shipment.destination).to.equal("Heidelberg")
                 expect(shipment.items.length).to.equal(1)
                 expect(shipment.items[0].name).to.equal("Chair")
-                expect(shipment.items[0].count).to.equal(100)
+                expect(shipment.items[0].count).to.equal(50)
+                expect(shipment.items[0].max_count).to.equal(100)
             })
         })
 

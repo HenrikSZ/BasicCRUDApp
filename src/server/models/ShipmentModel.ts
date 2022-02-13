@@ -52,7 +52,8 @@ export default class ShipmentModel {
                 return shipment
             })
             stmt = "SELECT shipments_to_items.shipment_id, "
-                + "items.name, shipments_to_items.count, items.id "
+                + "items.name, shipments_to_items.count, "
+                + "items.count AS max_count, items.id "
                 + "FROM shipments_to_items INNER JOIN items "
                 + "ON shipments_to_items.item_id=items.id "
                 + "WHERE deletion_id IS NULL"
@@ -85,7 +86,9 @@ export default class ShipmentModel {
         return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             shipment = (results as RowDataPacket)[0] as Shipment
-            stmt = "SELECT items.name, shipments_to_items.count "
+            stmt = "SELECT shipments_to_items.shipment_id, "
+                + "items.name, shipments_to_items.count, "
+                + "items.count AS max_count, items.id "
                 + "FROM shipments_to_items INNER JOIN items "
                 + "ON shipments_to_items.item_id=items.id "
                 + "WHERE shipments_to_items.shipment_id = ?";
