@@ -4,6 +4,7 @@
   "description": "A basic implementation of the CRUD principles with deletion-with-comment and restore capability ",
   "main": "dist/server.js",
   "dependencies": {
+    "@perrin4869/postgrator-cli": "^5.0.0",
     "db-migrate": "^0.11.13",
     "db-migrate-mysql": "^2.2.0",
     "dotenv": "^11.0.0",
