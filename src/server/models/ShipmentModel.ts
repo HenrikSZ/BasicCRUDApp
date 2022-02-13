@@ -4,7 +4,8 @@
 
 
 import { RowDataPacket, OkPacket } from "mysql2"
-import { Pool } from "mysql2/promise"
+import { Pool, PoolConnection } from "mysql2/promise"
+import { handleDbError } from "../error_handling.js"
 import { InventoryItem } from "./ItemModel.js"
  
  
@@ -118,15 +119,23 @@ export default class ShipmentModel {
         }
 
         let shipmentId = 0
+        let conn: PoolConnection | null = null
 
-        let stmt = "INSERT INTO shipments SET ?"
-        return this.dbPromise.query(stmt, insertShipment)
+        return this.dbPromise.getConnection()
+        .then((connection) => {
+            conn = connection
+            return conn.beginTransaction()
+        })
+        .then(() => {
+            let stmt = "INSERT INTO shipments SET ?"
+            return conn.query(stmt, insertShipment)
+        })
         .then(([results, fields]) => {
             results = results as OkPacket
             shipmentId = results.insertId
         }).then(() => {
             let promises = []
-            stmt = "INSERT INTO shipments_to_items SET ?"
+            let stmt = "INSERT INTO shipments_to_items SET ?"
 
             for (let item of shipment.items) {
                 let insertItem = {
@@ -134,14 +143,21 @@ export default class ShipmentModel {
                     count: item.count,
                     item_id: item.id
                 }
-                let promise = this.dbPromise.query(stmt, insertItem)
+                let promise = conn.query(stmt, insertItem)
 
                 promises.push(promise)
             }
 
             return Promise.all(promises)
         }).then(() => {
+            conn.commit()
+            conn.release()
             return shipmentId
+        })
+        .catch((error) => {
+            conn.rollback()
+            conn.release()
+            return Promise.reject(error)
         })
     }
 }

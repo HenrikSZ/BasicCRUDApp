@@ -308,6 +308,14 @@ class ShipmentCreator extends React.Component {
                 headers: { 'Content-Type': 'application/json' }
             }
         )
+        .then(response => {
+            if (!response.ok) {
+                return Promise.reject(response)
+            }
+        })
+        .catch(error => {
+            this.props.onErrorResponse(error)
+        })
     }
 
     addNewItem() {

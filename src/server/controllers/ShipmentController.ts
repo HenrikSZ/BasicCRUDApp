@@ -37,9 +37,9 @@ export default class ShipmentController {
         let body = req.body
         if (body.items
                 && body.name
-                && validator.isAlphanumeric(body.name)
+                && validator.isLength(body.name, { min: 1})
                 && body.destination
-                && validator.isAlphanumeric(body.destination)
+                && validator.isLength(body.destination, { min: 1})
                 && Array.isArray(body.items)
                 && body.items.length > 0) {
             let allItemsValid = true
