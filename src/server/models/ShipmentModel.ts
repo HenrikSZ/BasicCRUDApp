@@ -46,17 +46,21 @@ export default class ShipmentModel {
 
         return this.dbPromise.query(stmt)
         .then(([results, fields]) => {
-            shipments =  results as Shipment[]
-            stmt = "SELECT shipment_to_items.shipment_id, "
-                + "inventory.name, shipment_to_items.count "
-                + "FROM shipments_to_items INNER JOIN inventory "
-                + "ON shipments_to_items.item_id=inventory.id "
-                + "WHERE deletion_id IS NOT NULL"
+            shipments = (results as Shipment[]).map(s => {
+                let shipment = {...s}
+                shipment.items = []
+                return shipment
+            })
+            stmt = "SELECT shipments_to_items.shipment_id, "
+                + "items.name, shipments_to_items.count, items.id "
+                + "FROM shipments_to_items INNER JOIN items "
+                + "ON shipments_to_items.item_id=items.id "
+                + "WHERE deletion_id IS NULL"
             return this.dbPromise.query(stmt)
         }).then(([results, fields]) => {
-           let shipment_index = 0
+            let shipment_index = 0
             for (let item of results as MappedInventoryItem[]) {
-                while (shipment_index !== item.shipment_id) {
+                while (shipments[shipment_index].id !== item.shipment_id) {
                     shipment_index++
                 }
 
@@ -138,4 +142,3 @@ export default class ShipmentModel {
         })
     }
 }
- 

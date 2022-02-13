@@ -57,33 +57,43 @@ export class ItemView extends React.Component {
             <div>
                 <div className="m-4 mb-6">
                     <RibbonButton 
-                            onClick={() => this.switchToMode(InventoryMode.NORMAL)}
+                            onClick={() =>
+                                this.switchToMode(InventoryMode.NORMAL)}
                             isActive={this.state.mode == InventoryMode.NORMAL}>
                         Normal
                     </RibbonButton>
                     <RibbonButton 
-                            onClick={() => this.switchToMode(InventoryMode.DELETED)}
+                            onClick={() =>
+                                this.switchToMode(InventoryMode.DELETED)}
                             isActive={this.state.mode == InventoryMode.DELETED}>
                         Deleted
                     </RibbonButton>
                 </div>
                 {
                     (this.state.mode == InventoryMode.NORMAL) ? (
-                        <ItemCreator onItemCreation={() => this.loadEntries()}
-                            onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
+                        <ItemCreator onItemCreation={() =>
+                            this.loadEntries()}
+                            onErrorResponse={(response: any) =>
+                                this.props.onErrorResponse(response)}/>
                     ) : null
                 }
                 {
                     (this.state.mode == InventoryMode.NORMAL) ? (
                         <InventoryTable entries={this.state.entries}
-                            onItemDelete={(id: number) => this.removeLocalEntry(id)}
-                            onReloadRequest={() => this.loadEntries()}
-                            onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
+                            onItemDelete={(id: number) =>
+                                this.removeLocalEntry(id)}
+                            onReloadRequest={() =>
+                                this.loadEntries()}
+                            onErrorResponse={(response: any) =>
+                                this.props.onErrorResponse(response)}/>
                     ) : (
                         <DeletedInventoryTable entries={this.state.deletedEntries}
-                            onReloadRequest={() => this.loadDeletedEntries()}
-                            onItemRestore={(id: number) => this.removeLocalDeletedEntry(id)}
-                            onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
+                            onReloadRequest={() =>
+                                this.loadDeletedEntries()}
+                            onItemRestore={(id: number) =>
+                                this.removeLocalDeletedEntry(id)}
+                            onErrorResponse={(response: any) =>
+                                this.props.onErrorResponse(response)}/>
                     )
                 }
             </div>
@@ -105,11 +115,12 @@ export class ItemView extends React.Component {
     }
 
     componentDidUpdate(prevProps: Readonly<{}>,
-        prevState: Readonly<{
-        mode: InventoryMode,
-        entries: Array<InventoryItemData>,
-        deletedEntries: Array<DeletedInventoryItemData>
-    }>) {
+            prevState: Readonly<{
+                mode: InventoryMode,
+                entries: InventoryItemData[],
+                deletedEntries: DeletedInventoryItemData[]
+            }>
+        ) {
         if (prevState.mode != this.state.mode) {
             switch (this.state.mode) {
                 case InventoryMode.DELETED:

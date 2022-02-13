@@ -91,3 +91,41 @@ export class DangerButton extends React.Component {
         )
     }
 }
+
+let normalDropDownCss = "-rotate-90 transition"
+let activeDropdownCss = "transition"
+
+export class DropdownButton extends React.Component {
+    state: { css: string, active: boolean }
+    props: { onExpand: Function, onRetract: Function }
+
+
+    constructor(props: { onExpand: Function, onRetract: Function }) {
+        super(props)
+
+        this.state = { css: normalDropDownCss, active: false }
+    }
+
+    render() {
+        return (
+            <button className={this.state.css} onClick={() => this.toggleActive()}>
+                &#9660;
+            </button>
+        )
+    }
+
+    toggleActive() {
+        let state = {...this.state}
+        state.active = !state.active
+
+        if (state.active) {
+            state.css = activeDropdownCss
+            this.props.onExpand()
+        } else {
+            state.css = normalDropDownCss
+            this.props.onRetract()
+        }
+
+        this.setState(state)
+    }
+}

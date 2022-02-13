@@ -6,7 +6,7 @@ import plusIcon from "./icons/plus.svg"
 // @ts-ignore
 import minusIcon from "./icons/minus.png"
 
-import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
+import { ConfirmationButton, DangerButton, DropdownButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItemData, MutableInventoryItemData } from "./items"
 
@@ -16,21 +16,24 @@ enum ShipmentViewMode {
     CREATE
 }
 
-interface MutableShipment {
+interface MutableShipmentData {
     name: string,
     destination: string,
     items: { id: number, count: number }[]
 }
 
-interface Shipment extends MutableShipment {
-    id: number
+interface ShipmentData {
+    id: number,
+    name: string,
+    destination: string,
+    items: InventoryItemData[]
 }
 
 
 export class ShipmentView extends React.Component {
     state: {
         mode: ShipmentViewMode,
-        entries: Shipment[],
+        entries: ShipmentData[],
     }
     props: {
         onErrorResponse: Function
@@ -70,9 +73,145 @@ export class ShipmentView extends React.Component {
                 {
                     (this.state.mode == ShipmentViewMode.CREATE) ? (
                         <ShipmentCreator
-                            onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
-                    ) : null
+                            onErrorResponse={(response: any) =>
+                                this.props.onErrorResponse(response)}/>
+                    ) : ((this.state.mode == ShipmentViewMode.NORMAL) ? (
+                        <ShipmentTable entries={this.state.entries}
+                            onReloadRequest={() => this.loadEntries()}/>
+                        ) : null
+                    )
                 }
+            </div>
+        )
+    }
+
+    componentDidMount() {
+        this.loadEntries()
+    }
+
+    componentDidUpdate(prevProps: Readonly<{}>,
+            prevState: Readonly<{
+                mode: ShipmentViewMode,
+                entries: InventoryItemData[],
+            }>
+        ) {
+        if (prevState.mode != this.state.mode) {
+            switch (this.state.mode) {
+                default:
+                    this.loadEntries()
+            }
+        }
+    }
+
+    loadEntries() {
+        return fetch("/shipments")
+        .then((response: any) => {
+            if (response.ok)
+                return response.json()
+            else
+                return Promise.reject(response)
+        })
+        .then(data => {
+            let state= {...this.state}
+            state.entries = data
+
+            this.setState(state)
+        }, error => {
+            this.props.onErrorResponse(error)
+        })
+    }
+}
+
+
+class ShipmentTable extends React.Component {
+    props: { entries: ShipmentData[], onReloadRequest: Function }
+
+    render() {
+        return (
+            <React.StrictMode>
+                <Section>
+                    <div>
+                        <span className="text-xl font-bold">Shipments</span>
+                        <ConfirmationButton onClick={() =>
+                                this.props.onReloadRequest()}>
+                            Reload
+                        </ConfirmationButton>
+                        {
+                            this.props.entries.map(shipment =>
+                                <Shipment data={shipment} key={shipment.id}/>
+                            )
+                        }
+                        {
+                            (this.props.entries.length === 0) ? (
+                                <div className="border-t-2 border-gray-500 w-full text-center italic">
+                                    no entries
+                                </div>
+                            ) : null
+                        }
+                    </div>
+                </Section>
+            </React.StrictMode>
+        )
+    }
+}
+
+class Shipment extends React.Component {
+    props: { data: ShipmentData }
+    state: { dropdownCss: string }
+
+    constructor(props: { data: ShipmentData }) {
+        super(props)
+
+        this.state = {
+            dropdownCss: "hidden"
+        }
+    }
+
+    render() {
+        return (
+            <div className="w-96 pb-2 border-t-2 border-gray-700">
+                <DropdownButton onExpand={() => this.onExpand()}
+                    onRetract={() => this.onRetract()}/>
+                <span className="font-bold text-lg p-4">{this.props.data.name}</span>
+                <span className="italic">to: {this.props.data.destination}</span>
+                <div className={this.state.dropdownCss}>
+                    {
+                        (this.props.data.items.map(item =>
+                            <ShipmentItem data={item} key={item.id}/>
+                        ))
+                    }
+                </div>
+            </div>
+        )
+    }
+
+    onExpand() {
+        let state = {...this.state}
+        state.dropdownCss = "block"
+
+        this.setState(state)
+    }
+
+    onRetract() {
+        let state = {...this.state}
+        state.dropdownCss = "hidden"
+
+        this.setState(state)
+    }
+}
+
+
+class ShipmentItem extends React.Component {
+    props: { data: InventoryItemData }
+
+    constructor(props: { data: InventoryItemData }) {
+        super(props)
+    }
+
+    render() {
+        return (
+            <div>
+                {this.props.data.name} ({this.props.data.count})
             </div>
         )
     }
@@ -81,7 +220,7 @@ export class ShipmentView extends React.Component {
 
 class ShipmentCreator extends React.Component {
     props: { onErrorResponse: Function }
-    state: { newValues: MutableShipment }
+    state: { newValues: MutableShipmentData }
     currentUiKey: number
     uiKeys: number[]
 

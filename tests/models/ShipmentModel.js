@@ -33,6 +33,40 @@ describe("ShipmentModel", () => {
             })
         })
     }
+
+    function insertShipmentDataset() {
+        let itemIds = [], shipmentIds = []
+
+        return insertItemDataSet()
+        .then((ids) => {
+            itemIds = ids
+            return Promise.all([
+                dbPromise.query("INSERT INTO shipments (name, destination) "
+                    + "VALUES ('Test', 'Heidelberg')"),
+                dbPromise.query("INSERT INTO shipments (name, destination) "
+                    + "VALUES ('Test2', 'Heidelberg2')"),
+                dbPromise.query("INSERT INTO shipments (name, destination) "
+                    + "VALUES ('Test3', 'Heidelberg3')")
+            ])
+        })
+        .then((ids) => {
+            shipmentIds = ids.map(r => r[0].insertId)
+
+            let promises = []
+
+            const stmt = "INSERT INTO shipments_to_items "
+                + "(shipment_id, item_id, count) VAlUES (?, ?, ?)"
+
+            for (let i = 0; i < shipmentIds.length; i++) {
+                promises.push(dbPromise.query(stmt, [shipmentIds[i], itemIds[i], i + 1]))
+            }
+
+            promises.push(shipmentIds)
+            promises.push(itemIds)
+
+            return Promise.all(promises)
+        })
+    }
     
     function clearTables() {
         return dbPromise.query("DELETE FROM shipments_to_items")
@@ -46,6 +80,26 @@ describe("ShipmentModel", () => {
                 return dbPromise.query("DELETE FROM deletions")
             })
     }
+
+    describe("#getAllShipments", () => {
+        it("should return all shipments", () => {
+            let shipmentId = 0, itemId = 0
+
+            return insertShipmentDataset()
+            .then(() => {
+                let model = new ShipmentModel(dbPromise)
+
+                return model.getAllShipments(shipmentId)
+            })
+            .then((shipments) => {
+                expect(shipments.length).to.equal(3)
+                shipments.forEach((s, i) => {
+                    expect(s.items.length).to.equal(1)
+                    expect(s.items[0].count).to.equal(i + 1)
+                })
+            })
+        })
+    })
 
     describe("#getShipment", () => {
         it("should return a shipment with a single item", () => {
