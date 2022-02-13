@@ -19,8 +19,6 @@ CREATE TABLE shipments_to_items(
     PRIMARY KEY (shipment_id, item_id)
 );
 
-DELIMITER $$
-
 CREATE PROCEDURE check_shipment_items_count(IN target_item_id BIGINT)
 BEGIN
     DECLARE new_total_count BIGINT;
@@ -40,7 +38,7 @@ BEGIN
         SIGNAL SQLSTATE '55000'
             SET MESSAGE_TEXT = 'Total count of shipments items larger than available items';
     END IF;
-END; $$
+END;
 
 
 CREATE TRIGGER shipment_items_count_too_high_insert
@@ -48,14 +46,14 @@ AFTER INSERT ON shipments_to_items
 FOR EACH ROW
 BEGIN
     CALL check_shipment_items_count(NEW.item_id);
-END; $$
+END;
 
 CREATE TRIGGER shipment_items_count_too_high_update
 AFTER UPDATE ON shipments_to_items
 FOR EACH ROW
 BEGIN
     CALL check_shipment_items_count(NEW.item_id);
-END; $$
+END;
 
 
 CREATE TRIGGER items_count_too_low_insert
@@ -63,13 +61,11 @@ AFTER INSERT ON items
 FOR EACH ROW
 BEGIN
     CALL check_shipment_items_count(NEW.id);
-END; $$
+END;
 
 CREATE TRIGGER items_count_too_low_update
 AFTER UPDATE ON items
 FOR EACH ROW
 BEGIN
     CALL check_shipment_items_count(NEW.id);
-END; $$
-
-DELIMITER ;
+END;

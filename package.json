@@ -5,10 +5,10 @@
   "main": "dist/server.js",
   "dependencies": {
     "@perrin4869/postgrator-cli": "^5.0.0",
-    "db-migrate": "^0.11.13",
     "db-migrate-mysql": "^2.2.0",
     "dotenv": "^11.0.0",
     "express": "^4.17.2",
+    "mysql": "^2.18.1",
     "mysql2": "^2.3.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
