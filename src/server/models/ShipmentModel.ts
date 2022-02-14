@@ -54,7 +54,8 @@ export default class ShipmentModel {
             })
             stmt = "SELECT shipments_to_items.shipment_id, "
                 + "items.name, shipments_to_items.count, "
-                + "items.count AS max_count, items.id "
+                + "items.total_count - items.assigned_count AS available_count, "
+                + "items.id "
                 + "FROM shipments_to_items INNER JOIN items "
                 + "ON shipments_to_items.item_id=items.id "
                 + "WHERE deletion_id IS NULL"
@@ -89,7 +90,8 @@ export default class ShipmentModel {
             shipment = (results as RowDataPacket)[0] as Shipment
             stmt = "SELECT shipments_to_items.shipment_id, "
                 + "items.name, shipments_to_items.count, "
-                + "items.count AS max_count, items.id "
+                + "items.total_count - items.assigned_count AS available_count, "
+                + "items.id "
                 + "FROM shipments_to_items INNER JOIN items "
                 + "ON shipments_to_items.item_id=items.id "
                 + "WHERE shipments_to_items.shipment_id = ?";
