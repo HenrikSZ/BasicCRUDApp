@@ -5,6 +5,7 @@
 
 import { RowDataPacket, OkPacket } from "mysql2"
 import dbPromise from "../db.js"
+import AssignmentModel from "./AssignmentModel.js"
 
 
 export interface MinimalInventoryItem extends RowDataPacket {
@@ -32,7 +33,8 @@ export default class ItemModel {
      * @returns all items in the items.
      */
     getAllItems(): Promise<InventoryItem[]> {
-        const stmt = "SELECT * FROM items WHERE deletion_id IS NULL"
+        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) AS count "
+            + "FROM items WHERE deletion_id IS NULL"
         return dbPromise.query(stmt)
         .then(([results, fields]) => {
             return results as any
@@ -45,9 +47,9 @@ export default class ItemModel {
      * @returns all deleted items with their deletion comment.
      */
     getAllDeletedItems(): Promise<DeletedInventoryItem[]> {
-        const stmt = "SELECT items.id, items.name, items.count, "
+        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id), "
             + "deletions.comment FROM items INNER JOIN deletions "
-            + "ON items.deletion_id=deletions.id "
+            + "ON items.deletion_id = deletions.id "
             + "WHERE deletion_id IS NOT NULL"
         return dbPromise.query(stmt)
         .then(([results, fields]) => {
@@ -63,7 +65,7 @@ export default class ItemModel {
      * @returns the item identified by the id, if it exists. Otherwise null.
      */
     getItem(id: number): Promise<InventoryItem> {
-        const stmt = "SELECT * FROM items WHERE id = ?"
+        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id)"
         return dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as InventoryItem[]
@@ -82,7 +84,8 @@ export default class ItemModel {
      * @param name parts of the name that should be searched for.
      */
     getItemLike(name: string): Promise<InventoryItem[]> {
-        const stmt = "SELECT * FROM items WHERE name LIKE ? LIMIT 10"
+        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) "
+            + "FROM items WHERE name LIKE ? LIMIT 10"
         return dbPromise.query(stmt, "%" + name + "%")
         .then(([results, fiels]) => {
             return results as InventoryItem[]
@@ -98,7 +101,7 @@ export default class ItemModel {
      * the deletion_id if it exists and is deleted.
      */
     getDeletionId(id: number): Promise<number> {
-        const stmt = "SELECT * FROM items WHERE id = ?"
+        const stmt = "SELECT deletion_id FROM items WHERE id = ?"
         return dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as InventoryItem[]
@@ -119,11 +122,22 @@ export default class ItemModel {
      * @returns the id of this item.
      */
     insertItem(item: MinimalInventoryItem): Promise<number> {
-        const stmt = "INSERT INTO items SET ?"
-        return dbPromise.query(stmt, item)
+        let itemToInsert = {
+            name: item.name
+        }
+
+        let insertId = 0
+
+        let stmt = "INSERT INTO items SET ?"
+        return dbPromise.query(stmt, itemToInsert)
         .then(([results, fields]) => {
             results = results as OkPacket
-            return results.insertId
+            insertId = results.insertId
+            
+            return new AssignmentModel().insert(insertId, item.count)
+        })
+        .then(() => {
+            return insertId
         })
     }
 

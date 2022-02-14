@@ -52,13 +52,14 @@ export default class ShipmentModel {
                 shipment.items = []
                 return shipment
             })
-            stmt = "SELECT shipments_to_items.shipment_id, "
-                + "items.name, shipments_to_items.count, "
-                + "items.total_count - items.assigned_count AS available_count, "
+            stmt = "SELECT shipments_to_assignments.shipment_id, "
+                + "items.name, item_assignments.assigned_count AS count, "
                 + "items.id "
-                + "FROM shipments_to_items INNER JOIN items "
-                + "ON shipments_to_items.item_id=items.id "
-                + "WHERE deletion_id IS NULL"
+                + "FROM shipments_to_assignments "
+                + "INNER JOIN item_assignments ON "
+                + "shipments_to_assignments.assignment_id = item_assignments.id "
+                + "INNER JOIN items ON "
+                + "item_assignments.item_id = items.id"
             return this.dbPromise.query(stmt)
         }).then(([results, fields]) => {
             let shipment_index = 0
@@ -88,13 +89,15 @@ export default class ShipmentModel {
         return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             shipment = (results as RowDataPacket)[0] as Shipment
-            stmt = "SELECT shipments_to_items.shipment_id, "
-                + "items.name, shipments_to_items.count, "
-                + "items.total_count - items.assigned_count AS available_count, "
+            stmt = "SELECT shipments_to_assignments.shipment_id, "
+                + "items.name, item_assignments.assigned_count AS count, "
                 + "items.id "
-                + "FROM shipments_to_items INNER JOIN items "
-                + "ON shipments_to_items.item_id=items.id "
-                + "WHERE shipments_to_items.shipment_id = ?";
+                + "FROM shipments_to_assignments "
+                + "INNER JOIN item_assignments ON "
+                + "shipments_to_assignments.assignment_id = item_assignments.id "
+                + "INNER JOIN items ON "
+                + "item_assignments.item_id = items.id"
+                + "WHERE shipments_to_assignments.shipment_id = ?";
             return this.dbPromise.query(stmt, id)
         }).then(([results, fields]) => {
             shipment.items = []
@@ -135,15 +138,31 @@ export default class ShipmentModel {
         .then(([results, fields]) => {
             results = results as OkPacket
             shipmentId = results.insertId
-        }).then(() => {
+        })
+        .then(() => {
             let promises = []
-            let stmt = "INSERT INTO shipments_to_items SET ?"
+            let stmt = "INSERT INTO item_assignments SET ?"
 
             for (let item of shipment.items) {
                 let insertItem = {
+                    item_id: item.id,
+                    assigned_count: item.count
+                }
+                let promise = conn.query(stmt, insertItem)
+
+                promises.push(promise)
+            }
+
+            return Promise.all([promises])
+        })
+        .then((assignmentIds: any[]) => {
+            let promises = []
+            let stmt = "INSERT INTO shipments_to_assignments SET ?"
+
+            for (let assignmentId of assignmentIds) {
+                let insertItem = {
                     shipment_id: shipmentId,
-                    count: item.count,
-                    item_id: item.id
+                    assignment_id: assignmentId
                 }
                 let promise = conn.query(stmt, insertItem)
 

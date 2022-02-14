@@ -11,12 +11,13 @@ CREATE TABLE items(
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
     name VARCHAR(64) NOT NULL UNIQUE,
-    total_count INT UNSIGNED NOT NULL DEFAULT 0,
     FOREIGN KEY (deletion_id) REFERENCES deletions (id) ON DELETE SET NULL
 );
 
 CREATE TABLE item_assignments(
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
     item_id BIGINT NOT NULL,
     assigned_count INT NOT NULL,
     FOREIGN KEY (item_id) REFERENCES items (id)
@@ -26,7 +27,6 @@ CREATE TABLE item_assignments(
 CREATE FUNCTION AVAIL_ITEMS_COUNT(item_id BIGINT)
 RETURNS INT
 BEGIN
-    DECLARE total_item_count BIGINT;
     DECLARE assigned_item_count BIGINT;
 
     SELECT total_count INTO total_item_count
@@ -36,7 +36,7 @@ BEGIN
         FROM item_assignments
         WHERE item_assignments.item_id = item_id;
 
-    RETURN total_item_count - assigned_item_count;
+    RETURN assigned_item_count;
 END;
 
 
@@ -44,7 +44,7 @@ CREATE PROCEDURE CHECK_ITEM_ASSIGNMENT_COUNT(IN item_id BIGINT)
 BEGIN
     IF (AVAIL_ITEMS_COUNT(item_id) < 0)
     THEN
-        SIGNAL SQLSTATE '50001'
+        SIGNAL SQLSTATE '55001'
             SET MESSAGE_TEXT = "Assigned item count larger than available item count";
     END IF;
 END;        
