@@ -83,16 +83,16 @@ describe("ShipmentModel", () => {
             
             return Promise.all([
                 Promise.all([
-                    dbPromise.query(stmt, [itemIds[0], 50]),
+                    dbPromise.query(stmt, [itemIds[0], -50]),
                 ]),
                 Promise.all([
-                    dbPromise.query(stmt, [itemIds[0], 5]),
-                    dbPromise.query(stmt, [itemIds[1], 10]),
+                    dbPromise.query(stmt, [itemIds[0], -5]),
+                    dbPromise.query(stmt, [itemIds[1], -10]),
                 ]),
                 Promise.all([
-                    dbPromise.query(stmt, [itemIds[0], 10]),
-                    dbPromise.query(stmt, [itemIds[1], 2]),
-                    dbPromise.query(stmt, [itemIds[2], 1]),
+                    dbPromise.query(stmt, [itemIds[0], -10]),
+                    dbPromise.query(stmt, [itemIds[1], -2]),
+                    dbPromise.query(stmt, [itemIds[2], -1]),
                 ])
             ])
         })
@@ -245,13 +245,13 @@ describe("ShipmentModel", () => {
         })
     })
 
-    /*
+    
     describe("#createShipment", () => {
         function runWithSingleItem(name, destination) {
             let itemIds = []
 
             return insertItemDataSet()
-            .then((ids) => {
+            .then(ids => {
                 itemIds = ids
 
                 let insertShipment = {
@@ -272,10 +272,33 @@ describe("ShipmentModel", () => {
             .then((id) => {
                 return Promise.all([
                     dbPromise.query("SELECT name, destination FROM shipments"),
-                    dbPromise.query("SELECT shipment_id, item_id, count FROM shipments_to_assignments"),
+                    dbPromise.query("SELECT shipment_id, item_id, assigned_count "
+                        + "FROM shipments_to_assignments "
+                        + "INNER JOIN item_assignments ON assignment_id = item_assignments.id "
+                        + "ORDER BY assignment_id"),
                     id,
                     itemIds
                 ])
+            })
+            .then((results) => {
+                return {
+                    actual: {
+                        shipment: results[0][0][0],
+                        items: results[1][0]
+                    },
+                    expected: {
+                        shipment: {
+                            name: name,
+                            destination: destination
+                        },
+                        items:[
+                            {
+                                shipment_id: results[2],
+                                item_id: itemIds[0],
+                                assigned_count: -50
+                        }]
+                    }
+                }
             })
         }
         function runWithMultipleItems(name, destination) {
@@ -307,38 +330,55 @@ describe("ShipmentModel", () => {
             .then((id) => {
                 return Promise.all([
                     dbPromise.query("SELECT name, destination FROM shipments"),
-                    dbPromise.query("SELECT shipment_id, item_id, count FROM shipments_to_assignments "
-                        + "ORDER BY item_id"),
+                    dbPromise.query("SELECT shipment_id, item_id, assigned_count "
+                        + "FROM shipments_to_assignments "
+                        + "INNER JOIN item_assignments ON assignment_id = item_assignments.id "
+                        + "ORDER BY assignment_id"),
                     id,
                     itemIds
                 ])
             })
+            .then((results) => {
+                return {
+                    actual: {
+                        shipment: results[0][0][0],
+                        items: results[1][0]
+                    },
+                    expected: {
+                        shipment: {
+                            name: name,
+                            destination: destination
+                        },
+                        items: [
+                            {
+                                shipment_id: results[2],
+                                item_id: itemIds[0],
+                                assigned_count: -50
+                            },
+                            {
+                                shipment_id: results[2],
+                                item_id: itemIds[1],
+                                assigned_count: -5
+                            }
+                        ]
+                    }
+                }
+            })
         }
         it("should insert a shipment, so that the field values are correct", () => {
-            let name = "Test", destination = "Mannheim"
+            let name = "Test", destination = "Heidelberg"
             
             return runWithSingleItem(name, destination)
             .then(results => {
-                let shipments = results[0][0]
-                expect(shipments.length).to.equal(1)
-                let shipment = shipments[0]
-
-                expect(shipment.name).to.equal(name)
-                expect(shipment.destination).to.equal(destination)
+                expect(results.actual.shipment).to.deep.equal(results.expected.shipment)
             })
         })
-        it("shold insert an item of a shipment", () => {
-            let name = "Test", destination = "Mannheim"
+        it("should insert a shipment, so that the item is correct", () => {
+            let name = "Test", destination = "Heidelberg"
             
             return runWithSingleItem(name, destination)
             .then(results => {
-                let mapped_items = results[1][0]
-                expect(mapped_items.length).to.equal(1)
-                let item = mapped_items[0]
-
-                expect(item.shipment_id).equal(results[2])
-                expect(item.item_id).to.equal(results[3][0])
-                expect(item.count).to.equal(50)
+                expect(results.actual.item).to.deep.equal(results.expected.item)
             })
         })
 
@@ -347,16 +387,8 @@ describe("ShipmentModel", () => {
 
             return runWithMultipleItems(name, destination)
             .then(results => {
-                let mapped_items = results[1][0]
-                expect(mapped_items.length).to.equal(2)
-
-                // TODO: fix testing when shipment items are inserted in a different order 
-                //expect(mapped_items[0].item_id).to.equal(results[3][0])
-                //expect(mapped_items[1].item_id).to.equal(results[3][1])
-
-                expect(mapped_items[0].shipment_id).to.equal(results[2])
-                expect(mapped_items[1].shipment_id).to.equal(results[2])
+                expect(results.actual.items).to.deep.equal(results.expected.items)                
             })
         })
-    })*/
+    })
 })

@@ -43,7 +43,7 @@ export default class ShipmentModel {
      */
     getAllShipments(): Promise<Shipment[]> {
         let stmt = "SELECT id, name, destination FROM shipments "
-            + "WHERE deletion_id IS NULL"
+            + "WHERE deletion_id IS NULL ORDER BY id"
         let shipments: Shipment[] | null = null
 
         return this.dbPromise.query(stmt)
@@ -54,13 +54,14 @@ export default class ShipmentModel {
                 return shipment
             })
             stmt = "SELECT shipments_to_assignments.shipment_id, "
-                + "items.name, item_assignments.assigned_count, "
+                + "items.name, (-1) * item_assignments.assigned_count AS assigned_count, "
                 + "items.id "
                 + "FROM shipments_to_assignments "
                 + "INNER JOIN item_assignments ON "
                 + "shipments_to_assignments.assignment_id = item_assignments.id "
                 + "INNER JOIN items ON "
-                + "item_assignments.item_id = items.id"
+                + "item_assignments.item_id = items.id "
+                + "ORDER BY shipment_id"
             return this.dbPromise.query(stmt)
         }).then(([results, fields]) => {
             let shipment_index = 0
@@ -91,7 +92,8 @@ export default class ShipmentModel {
         .then(([results, fields]) => {
             shipment = (results as RowDataPacket)[0] as Shipment
             stmt = "SELECT shipments_to_assignments.shipment_id, items.name, "
-                + "item_assignments.assigned_count, items.id "
+                + "(-1) * item_assignments.assigned_count AS assigned_count, "
+                + "items.id "
                 + "FROM shipments_to_assignments "
                 + "INNER JOIN item_assignments ON "
                 + "shipments_to_assignments.assignment_id = item_assignments.id "
@@ -146,16 +148,18 @@ export default class ShipmentModel {
             for (let item of shipment.items) {
                 let insertItem = {
                     item_id: item.id,
-                    assigned_count: item.count
+                    assigned_count: -item.count
                 }
                 let promise = conn.query(stmt, insertItem)
 
                 promises.push(promise)
             }
 
-            return Promise.all([promises])
+            return Promise.all(promises)
         })
-        .then((assignmentIds: any[]) => {
+        .then((ids: any[]) => {
+            let assignmentIds = ids.map((item) => item[0].insertId)
+
             let promises = []
             let stmt = "INSERT INTO shipments_to_assignments SET ?"
 
