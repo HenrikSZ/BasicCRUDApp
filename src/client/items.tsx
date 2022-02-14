@@ -23,6 +23,11 @@ export interface MutableInventoryItemData {
     count: number
 }
 
+interface ChangeInventoryItemData {
+    name: string,
+    count_change: number
+}
+
 export interface InventoryItemData extends MutableInventoryItemData {
     id: number
 }
@@ -312,7 +317,7 @@ export class InventoryTable extends React.Component {
 
 
 export class InventoryItem extends React.Component {
-    modifications: MutableInventoryItemData
+    modifications: ChangeInventoryItemData
     deletion_comment: string
     state: { mode: InventoryItemMode, data: InventoryItemData }
     props:  { data: InventoryItemData, onDelete: Function, onErrorResponse: Function }
@@ -328,7 +333,7 @@ export class InventoryItem extends React.Component {
 
         this.modifications = {
             name: props.data.name,
-            count: props.data.count
+            count_change: 0
         }
         this.deletion_comment = ""
     }
@@ -382,7 +387,8 @@ export class InventoryItem extends React.Component {
                 <td className="border-2 border-gray-700 p-2">
                     <input className="border-2 rounded-lg border-gray-700 w-32"
                         type="number" defaultValue={this.state.data.count} 
-                        onChange={evt => this.modifications.count = Number.parseInt(evt.target.value)}/>
+                        onChange={evt => this.modifications.count_change =
+                            Number.parseInt(evt.target.value) - this.state.data.count}/>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
                     <ConfirmationButton onClick={() => this.saveEdits()}>
@@ -433,7 +439,7 @@ export class InventoryItem extends React.Component {
         let modified = false
 
         if (this.modifications.name !== this.state.data.name
-            || this.modifications.count !== this.state.data.count) {
+            || this.modifications.count_change !== 0) {
             modified = true
         }
 
@@ -449,8 +455,8 @@ export class InventoryItem extends React.Component {
                 if (response.ok) {
                     let state = {...this.state}
                     state.mode = InventoryItemMode.NORMAL
-                    state.data.name = this.modifications.name ?? state.data.name
-                    state.data.count = this.modifications.count ?? state.data.count
+                    state.data.name = this.modifications.name
+                    state.data.count += this.modifications.count_change
 
                     this.setState(state)
                 } else {

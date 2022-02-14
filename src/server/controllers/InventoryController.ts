@@ -265,7 +265,7 @@ export default class InventoryController {
 
                 const errorResponse: ErrorResponse = {
                     name: ErrorType.FIELD,
-                    message: "The entry with the specified it is not"
+                    message: "The entry with the specified id is not "
                         + "in the inventory"
                 }
 

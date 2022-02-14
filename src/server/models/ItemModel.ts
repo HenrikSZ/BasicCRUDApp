@@ -4,6 +4,7 @@
 
 
 import { RowDataPacket, OkPacket } from "mysql2"
+import { PoolConnection } from "mysql2/promise"
 import dbPromise from "../db.js"
 import AssignmentModel from "./AssignmentModel.js"
 
@@ -115,6 +116,7 @@ export default class ItemModel {
         })
     }
 
+
     /**
      * Inserts an item into the items.
      * 
@@ -150,11 +152,43 @@ export default class ItemModel {
      * @returns true if the item could be update, false otherwise.
      */
     updateItem(values: any, id: number): Promise<Boolean> {
-        const stmt = "UPDATE items SET ? WHERE id = ?"
-        return dbPromise.query(stmt, [values, id])
-        .then(([results, fiels]) => {
-            results = results as OkPacket
-            return results.affectedRows > 0
+        let conn: PoolConnection | null = null
+        let modified = false
+
+        return dbPromise.getConnection()
+        .then(connection => {
+            conn = connection
+            conn.beginTransaction()
+        })
+        .then(() => {
+            if (values.count_change) {
+                return new AssignmentModel().insert(id, values.count_change)
+                .then((mod) => {
+                    if (mod) modified = true
+                })
+            }
+        })
+       .then(() => {
+            if (values.name) {
+                const stmt = "UPDATE items SET name = ? WHERE id = ?"
+
+                return conn.query(stmt, [values.name, id])
+                .then(([results, fiels]) => {
+                    results = results as OkPacket
+                    if (results.affectedRows > 0)
+                        modified = true
+                })
+            }
+        })
+        .then(() => {
+            conn.commit()
+            conn.release()
+            return modified
+        })
+        .catch((error) => {
+            conn.rollback()
+            conn.release()
+            return Promise.reject(error)
         })
     }
 }
