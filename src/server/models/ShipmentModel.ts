@@ -42,7 +42,8 @@ export default class ShipmentModel {
      * @returns all items in the inventory.
      */
     getAllShipments(): Promise<Shipment[]> {
-        let stmt = "SELECT * FROM shipments WHERE deletion_id IS NULL"
+        let stmt = "SELECT id, name, destination FROM shipments "
+            + "WHERE deletion_id IS NULL"
         let shipments: Shipment[] | null = null
 
         return this.dbPromise.query(stmt)
@@ -53,7 +54,7 @@ export default class ShipmentModel {
                 return shipment
             })
             stmt = "SELECT shipments_to_assignments.shipment_id, "
-                + "items.name, item_assignments.assigned_count AS count, "
+                + "items.name, item_assignments.assigned_count, "
                 + "items.id "
                 + "FROM shipments_to_assignments "
                 + "INNER JOIN item_assignments ON "
@@ -83,20 +84,19 @@ export default class ShipmentModel {
      * @returns the shipment identified by the id, if it exists. Otherwise null.
      */
     getShipment(id: number): Promise<Shipment> {
-        let stmt = "SELECT * FROM shipments WHERE id = ?"
+        let stmt = "SELECT id, name, destination FROM shipments WHERE id = ?"
         let shipment: Shipment | null = null
 
         return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             shipment = (results as RowDataPacket)[0] as Shipment
-            stmt = "SELECT shipments_to_assignments.shipment_id, "
-                + "items.name, item_assignments.assigned_count AS count, "
-                + "items.id "
+            stmt = "SELECT shipments_to_assignments.shipment_id, items.name, "
+                + "item_assignments.assigned_count, items.id "
                 + "FROM shipments_to_assignments "
                 + "INNER JOIN item_assignments ON "
                 + "shipments_to_assignments.assignment_id = item_assignments.id "
                 + "INNER JOIN items ON "
-                + "item_assignments.item_id = items.id"
+                + "item_assignments.item_id = items.id "
                 + "WHERE shipments_to_assignments.shipment_id = ?";
             return this.dbPromise.query(stmt, id)
         }).then(([results, fields]) => {

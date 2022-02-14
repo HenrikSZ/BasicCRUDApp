@@ -29,9 +29,6 @@ RETURNS INT
 BEGIN
     DECLARE assigned_item_count BIGINT;
 
-    SELECT total_count INTO total_item_count
-        FROM items WHERE id = item_id;
-
     SELECT COALESCE(SUM(assigned_count), 0) INTO assigned_item_count
         FROM item_assignments
         WHERE item_assignments.item_id = item_id;
