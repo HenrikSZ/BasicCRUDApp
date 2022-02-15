@@ -127,5 +127,27 @@ export class DropdownButton extends React.Component {
         }
 
         this.setState(state)
+
+    }
+}
+
+export class ExportButton extends React.Component {
+    props: {
+        link: string,
+        children: React.ReactChild | React.ReactChild[]
+    }
+
+    render() {
+        return (
+            <ConfirmationButton onClick={() => this.exportCsv()}>
+                {this.props.children}
+            </ConfirmationButton>
+        )
+    }
+    
+
+    exportCsv() {
+        let frame = document.getElementById("download-frame") as HTMLIFrameElement
+        frame.src = this.props.link + "/export"
     }
 }

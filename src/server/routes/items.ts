@@ -12,6 +12,8 @@ const invContr = new InventoryController(itemModel, delModel)
 
 router.get("/", invContr.getInventory.bind(invContr))
 router.get("/deleted", invContr.getDeletedInventory.bind(invContr))
+router.get("/export", invContr.exportInventoryAsCsv.bind(invContr))
+router.get("/deleted/export", invContr.exportDeletedInventoryAsCsv.bind(invContr))
 
 router.use("/item/new",
     invContr.newInventoryItemMiddleware.bind(invContr))

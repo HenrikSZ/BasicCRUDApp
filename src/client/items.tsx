@@ -2,7 +2,7 @@ import React from "react"
 
 import "./index.css"
 
-import { ConfirmationButton, DangerButton, RibbonButton } from "./buttons"
+import { ConfirmationButton, DangerButton, ExportButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
 
 
@@ -279,6 +279,14 @@ export class InventoryTable extends React.Component {
             <React.StrictMode>
                 <Section>
                     <span className="text-xl font-bold">Items</span>
+                    <div className="float-right">
+                        <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
+                            Reload
+                        </ConfirmationButton>
+                        <ExportButton link="/items">
+                            Export as CSV
+                        </ExportButton>
+                    </div>
                     <table className="table-data-any">
                         <thead>
                             <tr>
@@ -286,9 +294,6 @@ export class InventoryTable extends React.Component {
                                 <th className="pr-2 pl-2 text-left">Item Count</th>
                                 <th></th>
                                 <th>
-                                    <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
-                                        Reload
-                                    </ConfirmationButton>
                                 </th>
                             </tr>
                         </thead>
@@ -508,17 +513,27 @@ export class DeletedInventoryTable extends React.Component {
             <React.StrictMode>
                 <Section>
                     <span className="text-xl font-bold">Deleted Items</span>
+                    <div className="float-right">
+                        <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
+                            Reload
+                        </ConfirmationButton>
+                        <ExportButton link="/items/deleted">
+                            Export as CSV
+                        </ExportButton>
+                    </div>
                     <table className="table-data-any">
                         <thead>
                             <tr>
-                                <th className="pr-2 pl-2 text-left">Item Name</th>
-                                <th className="pr-2 pl-2 text-left">Item Count</th>
-                                <th className="pr-2 pl-2 text-left">Deletion comment</th>
-                                <th className="pr-2 pl-2 text-left">
-                                    <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
-                                        Reload
-                                    </ConfirmationButton>
+                                <th className="pr-2 pl-2 text-left w-48">
+                                    Item Name
                                 </th>
+                                <th className="pr-2 pl-2 text-left w-32">
+                                    Item Count
+                                </th>
+                                <th className="pr-2 pl-2 text-left w-72">
+                                    Deletion comment
+                                </th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -551,13 +566,19 @@ class DeletedInventoryItem extends React.Component {
         return (
             <tr>
                 <td className="border-2 border-gray-700 p-2">
-                    {this.props.data.name}
+                <div className="w-48">
+                        {this.props.data.name}
+                    </div>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    {this.props.data.count}
+                <div className="w-32">
+                        {this.props.data.count}
+                    </div>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    {this.props.data.comment}
+                <div className="w-72">
+                        {this.props.data.comment}
+                    </div>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
                     <ConfirmationButton onClick={() => this.restore()}>
