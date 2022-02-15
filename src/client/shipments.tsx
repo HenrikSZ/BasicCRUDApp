@@ -179,11 +179,25 @@ class Shipment extends React.Component {
                 <span className="font-bold text-lg p-4">{this.props.data.name}</span>
                 <span className="italic">to: {this.props.data.destination}</span>
                 <div className={this.state.dropdownCss}>
-                    {
-                        (this.props.data.items.map(item =>
-                            <ShipmentItem data={item} key={item.id}/>
-                        ))
-                    }
+                    <table>
+                        <thead>
+                            <tr>
+                                <th className="text-left pr-2">
+                                    Item Name
+                                </th>
+                                <th className="text-left pr-2">
+                                    Count
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                (this.props.data.items.map(item =>
+                                    <ShipmentItem data={item} key={item.id}/>
+                                ))
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
         )
@@ -214,9 +228,14 @@ class ShipmentItem extends React.Component {
 
     render() {
         return (
-            <div>
-                {this.props.data.name} ({this.props.data.assigned_count})
-            </div>
+            <tr>
+                <td className="border-2 border-gray-700 p-2">
+                    {this.props.data.name}
+                </td>
+                <td className="border-2 border-gray-700 p-2">
+                    {this.props.data.assigned_count}
+                </td>
+            </tr>
         )
     }
 }
