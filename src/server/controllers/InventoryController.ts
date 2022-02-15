@@ -4,11 +4,12 @@
 
 import express from  "express"
 import logger from "../logger.js"
-import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError, CustomError }
+import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError, CustomError, handleUnexpectedError }
     from "../error_handling.js"
 import { isInteger } from "../util.js"
 import DeletionModel from "../models/DeletionModel.js"
 import InventoryModel from "../models/InventoryModel.js"
+import { stringify } from "csv-stringify/sync"
 
 
 /**
@@ -377,6 +378,57 @@ export default class InventoryController {
             } else {
                 handleDbError(error, req, res)
             }
+        })
+    }
+
+
+    /**
+     * Exports the inventory table as csv.
+     * 
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
+    exportInventoryAsCsv(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested csv report of the inventory`)
+
+        return this.invModel.getAllItems()
+        .then(items => {
+            return stringify(items, {
+                header: true,
+                columns: ["id", "name", "count"]
+            })
+        })
+        .then((file) => {
+            res.set("Content-Type", "text/csv")
+            res.set("Content-Disposition", "attachment; filename=\"inventory_report.csv\"")
+            res.send(file)
+        }, error => {
+            handleUnexpectedError(error, req, res)
+        })
+    }
+
+    /**
+     * Exports the inventory table as csv.
+     * 
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
+     exportDeletedInventoryAsCsv(req: express.Request, res: express.Response) {
+        logger.info(`${req.hostname} requested csv report of the deleted inventory`)
+
+        return this.invModel.getAllDeletedItems()
+        .then(items => {
+            return stringify(items, {
+                header: true,
+                columns: ["id", "name", "count", "comment"]
+            })
+        })
+        .then((file) => {
+            res.set("Content-Type", "text/csv")
+            res.set("Content-Disposition", "attachment; filename=\"deleted_inventory_report.csv\"")
+            res.send(file)
+        }, error => {
+            handleUnexpectedError(error, req, res)
         })
     }
 }

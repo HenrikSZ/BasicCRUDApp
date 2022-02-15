@@ -3,11 +3,6 @@
  */
 
 
-import express from "express"
-import { QueryError } from "mysql2"
-import logger from "./logger.js"
-
-
 /**
  * Checks whether a given string is an integer
  *

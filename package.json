@@ -5,7 +5,8 @@
   "main": "dist/server.js",
   "dependencies": {
     "@perrin4869/postgrator-cli": "^5.0.0",
-    "db-migrate-mysql": "^2.2.0",
+    "csv-stringify": "^6.0.5",
+    "csv-stringify-as-promised": "^3.0.1",
     "dotenv": "^11.0.0",
     "express": "^4.17.2",
     "mysql": "^2.18.1",
@@ -54,7 +55,7 @@
     "build:prod": "tsc && webpack --mode production",
     "start:dev": "npm run build:dev && node dist/server.dev.js",
     "start:prod": "node .",
-    "pretest": "npm run build:dev",
+    
     "test": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
     "migrate": "node ./node_modules/db-migrate/bin/db-migrate",
     "migrate-start": "npm run migrate up all && npm run start:prod"
