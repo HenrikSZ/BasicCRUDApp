@@ -1,5 +1,5 @@
 /**
- * Contains the ShipmentModel to represent deletions in the database
+ * Contains the ShipmentModel to represent shipments in the database
  */
 
 
@@ -36,14 +36,16 @@ export default class ShipmentModel {
     constructor(dbPromise: Pool) {
         this.dbPromise = dbPromise
     }
+
+
     /**
-     * Reads all shipments from the inventory that are not deleted.
+     * Reads all shipments from the database that are not deleted.
      * 
-     * @returns all items in the inventory.
+     * @returns all shipments in the database.
      */
     getAllShipments(): Promise<Shipment[]> {
         let stmt = "SELECT id, name, destination FROM shipments "
-            + "WHERE deletion_id IS NULL ORDER BY id"
+            + "ORDER BY id"
         let shipments: Shipment[] | null = null
 
         return this.dbPromise.query(stmt)
@@ -79,7 +81,7 @@ export default class ShipmentModel {
 
 
     /**
-     * Reads one item from the inventory. It can be deleted or not deleted.
+     * Reads one shipment from the database.
      * 
      * @param id the id of the shipment that should be read.
      * @returns the shipment identified by the id, if it exists. Otherwise null.
@@ -114,7 +116,7 @@ export default class ShipmentModel {
 
 
     /**
-     * Inserts a shipments into the shiptments.
+     * Inserts a shipments into the database.
      * 
      * @param shipment the basic info of the shipment.
      * @returns the id of this shipment.

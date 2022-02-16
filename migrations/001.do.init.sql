@@ -7,11 +7,9 @@ CREATE TABLE deletions(
 
 CREATE TABLE items(
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    deletion_id BIGINT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
-    name VARCHAR(64) NOT NULL UNIQUE,
-    FOREIGN KEY (deletion_id) REFERENCES deletions (id) ON DELETE SET NULL
+    name VARCHAR(64) NOT NULL UNIQUE
 );
 
 CREATE TABLE item_assignments(
@@ -37,18 +35,13 @@ BEGIN
 END;
 
 
-CREATE PROCEDURE CHECK_ITEM_ASSIGNMENT_COUNT(IN item_id BIGINT)
+CREATE TRIGGER item_assignments_insert
+AFTER INSERT ON item_assignments
+FOR EACH ROW
 BEGIN
-    IF (AVAIL_ITEMS_COUNT(item_id) < 0)
+    IF (AVAIL_ITEMS_COUNT(NEW.item_id) < 0)
     THEN
         SIGNAL SQLSTATE '55001'
             SET MESSAGE_TEXT = "Assigned item count larger than available item count";
     END IF;
-END;        
-
-CREATE TRIGGER item_assignment_too_high
-AFTER INSERT ON item_assignments
-FOR EACH ROW
-BEGIN
-    CALL CHECK_ITEM_ASSIGNMENT_COUNT(NEW.item_id);
 END;
