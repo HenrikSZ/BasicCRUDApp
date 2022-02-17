@@ -1,19 +1,14 @@
 import React, { ChangeEvent } from "react"
 
 import "./index.css"
-// @ts-ignore
-import plusIcon from "./icons/plus.svg"
-// @ts-ignore
-import minusIcon from "./icons/minus.png"
 
-import { ConfirmationButton, DangerButton, DropdownButton, RibbonButton } from "./buttons"
+import { ConfirmationButton, DangerButton, DropdownButton, MinusButton, PlusButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItemData, MutableInventoryItemData } from "./items"
 
 
 enum ShipmentViewMode {
-    NORMAL,
-    CREATE
+    NORMAL
 }
 
 interface MutableShipmentData {
@@ -68,26 +63,21 @@ export class ShipmentView extends React.Component {
                             isActive={this.state.mode == ShipmentViewMode.NORMAL}>
                         Normal
                     </RibbonButton>
-                    <RibbonButton 
-                            onClick={() => this.switchToMode(ShipmentViewMode.CREATE)}
-                            isActive={this.state.mode == ShipmentViewMode.CREATE}>
-                        Create
-                    </RibbonButton>
                 </div>
                 {
-                    (this.state.mode == ShipmentViewMode.CREATE) ? (
-                        <ShipmentCreator
-                            onErrorResponse={(response: any) =>
-                                this.props.onErrorResponse(response)}/>
-                    ) : ((this.state.mode == ShipmentViewMode.NORMAL) ? (
-                        <ShipmentTable entries={this.state.entries}
-                            onReloadRequest={() => this.loadEntries()}
-                            onShipmentDelete={(id: number) =>
-                                this.removeLocalShipment(id)}
-                            onErrorResponse={(response: any) =>
-                                this.props.onErrorResponse(response)}/>
-                        ) : null
-                    )
+                   (this.state.mode == ShipmentViewMode.NORMAL) ? (
+                       <div>
+                            <ShipmentCreator
+                                onErrorResponse={(response: any) =>
+                                    this.props.onErrorResponse(response)}/>
+                            <ShipmentTable entries={this.state.entries}
+                                onReloadRequest={() => this.loadEntries()}
+                                onShipmentDelete={(id: number) =>
+                                    this.removeLocalShipment(id)}
+                                onErrorResponse={(response: any) =>
+                                    this.props.onErrorResponse(response)}/>
+                        </div>
+                    ) : null
                 }
             </div>
         )
@@ -353,7 +343,7 @@ class ShipmentCreator extends React.Component {
                                         key={this.uiKeys[index]}/>
                     })
                 }
-                    <img src={plusIcon} onClick={() => this.addNewItem()} className="w-12 h-12 m-2 cursor-pointer"/>
+                    <PlusButton onClick={() => this.addNewItem()}/>
                 </div>
             </Section>
         )
@@ -437,7 +427,7 @@ class ShipmentItemPicker extends React.Component {
     render() {
         return (
             <div className="flex flex-row space-x-2 p-1">
-                <img src={minusIcon} className="w-6 h-6 cursor-pointer" onClick={() => this.props.onRemove()}/>
+                <MinusButton onClick={() => this.props.onRemove()}/>
                 <ItemPicker onErrorResponse={(response: any) => this.props.onErrorResponse(response)}
                     onSelect={(item: InventoryItemData) => this.props.onItemSet(item)}/>
                 <input className="border-2 rounded-lg border-gray-700 w-32"

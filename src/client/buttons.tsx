@@ -151,3 +151,41 @@ export class ExportButton extends React.Component {
         frame.src = this.props.link + "/export"
     }
 }
+
+
+export class PlusButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return  (
+            <button className="bg-blue-800 text-gray-100 border-white rounded-lg hover:transition-all border-2
+                hover:border-green-800 hover:bg-green-300 hover:text-green-800
+                focus-visible:border-green-800 focus-visible:bg-green-300 focus-visible:text-green-800
+                text-3xl p-1 pr-2 pl-2 pt-0"
+                onClick={() => this.props.onClick()}>
+                +
+            </button>
+        )
+    }
+}
+
+
+export class MinusButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return  (
+            <button className="bg-blue-800 text-gray-100 border-white rounded-lg hover:transition-all border-2
+                hover:border-red-800 hover:bg-red-300 hover:text-red-800
+                focus-visible:border-red-800 focus-visible:bg-red-300 focus-visible:text-red-800
+                text-xl font-bold p-2 pr-3 pl-3 pt-0 pb-1"
+                onClick={() => this.props.onClick()}>
+                -
+            </button>
+        )
+    }
+}
