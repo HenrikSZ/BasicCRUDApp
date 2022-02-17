@@ -81,7 +81,11 @@ export class ShipmentView extends React.Component {
                                 this.props.onErrorResponse(response)}/>
                     ) : ((this.state.mode == ShipmentViewMode.NORMAL) ? (
                         <ShipmentTable entries={this.state.entries}
-                            onReloadRequest={() => this.loadEntries()}/>
+                            onReloadRequest={() => this.loadEntries()}
+                            onShipmentDelete={(id: number) =>
+                                this.removeLocalShipment(id)}
+                            onErrorResponse={(response: any) =>
+                                this.props.onErrorResponse(response)}/>
                         ) : null
                     )
                 }
@@ -124,11 +128,24 @@ export class ShipmentView extends React.Component {
             this.props.onErrorResponse(error)
         })
     }
+
+    removeLocalShipment(id: number) {
+        let state = {...this.state}
+        state.entries = state.entries.filter(shipment => {
+            return shipment.id != id
+        })
+
+        this.setState(state)
+    }
 }
 
 
 class ShipmentTable extends React.Component {
-    props: { entries: ShipmentData[], onReloadRequest: Function }
+    props: { entries: ShipmentData[],
+        onReloadRequest: Function,
+        onShipmentDelete: Function,
+        onErrorResponse: Function
+    }
 
     render() {
         return (
@@ -142,7 +159,10 @@ class ShipmentTable extends React.Component {
                         </ConfirmationButton>
                         {
                             this.props.entries.map(shipment =>
-                                <Shipment data={shipment} key={shipment.id}/>
+                                <Shipment data={shipment} key={shipment.id}
+                                    onDelete={(id: number) => this.props.onShipmentDelete(id)}
+                                    onErrorResponse={(response: any) =>
+                                        this.props.onErrorResponse(response)}/>
                             )
                         }
                         {
@@ -160,7 +180,7 @@ class ShipmentTable extends React.Component {
 }
 
 class Shipment extends React.Component {
-    props: { data: ShipmentData }
+    props: { data: ShipmentData, onDelete: Function, onErrorResponse: Function }
     state: { dropdownCss: string }
 
     constructor(props: { data: ShipmentData }) {
@@ -178,6 +198,9 @@ class Shipment extends React.Component {
                     onRetract={() => this.onRetract()}/>
                 <span className="font-bold text-lg p-4">{this.props.data.name}</span>
                 <span className="italic">to: {this.props.data.destination}</span>
+                <DangerButton onClick={() => this.deleteShipment()}>
+                    Delete
+                </DangerButton>
                 <div className={this.state.dropdownCss}>
                     <table>
                         <thead>
@@ -215,6 +238,21 @@ class Shipment extends React.Component {
         state.dropdownCss = "hidden"
 
         this.setState(state)
+    }
+
+    deleteShipment() {
+        fetch(`/shipments/shipment/existing/${this.props.data.id}`,
+            {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" }
+            }
+        )
+        .then((response: any) => {
+            if (response.ok)
+                this.props.onDelete(this.props.data.id)
+            else
+                this.props.onErrorResponse(response)
+        })
     }
 }
 

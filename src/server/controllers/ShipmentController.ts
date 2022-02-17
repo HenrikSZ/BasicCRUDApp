@@ -11,7 +11,8 @@ import validator from "validator"
 declare global{
     namespace Express {
         interface Request {
-            shipment: ClientSideShipment
+            shipment: ClientSideShipment,
+            shipmentId: number
         }
     }
 }
@@ -68,7 +69,33 @@ export default class ShipmentController {
         }
 
         logger.info(`${req.hostname} tried to add shipment`
-        + `without valid parameters`)
+            + `without valid parameters`)
+
+        const errorBody: ErrorResponse = {
+            name: ErrorType.FIELD,
+            message: "Some fields of the new shipment contain invalid values"
+        }
+
+        res.status(400).send(errorBody)
+    }
+
+
+    /**
+     * Checks whether the parameers of the request contain a valid id.
+     * 
+     * @param req the request from express.js.
+     * @param res the response from express.js
+     * @param next function to the next middleware
+     */
+    shipmentIdMiddleware(req: Request, res: Response, next: NextFunction) {
+        if (req.params.id && validator.isInt(req.params.id + "", {min: 1})) {
+            req.shipmentId = Number.parseInt(req.params.id)
+            next()
+            return
+        }
+
+        logger.info(`${req.hostname} tried to access shipment`
+            + `without valid id (${req.params.id})`)
 
         const errorBody: ErrorResponse = {
             name: ErrorType.FIELD,
@@ -98,15 +125,51 @@ export default class ShipmentController {
 
 
     /**
+     * Reads one shipment specified by its id.
+     * 
+     * @param req the request from express.js. Must contain a valid shipmentId as attribute
+     * @param res the response from express.js
+     */
+    getShipment(req: Request, res: Response) {
+        logger.info(`${req.hostname} requested shipment with id ${req.shipmentId}`)
+
+        return this.shipmentModel.getShipment(req.shipmentId)
+        .then(results => {
+            res.send(results)
+        }, (error) => {
+            handleDbError(error, req, res)
+        })
+    }
+
+
+    /**
      * Creates a shipment from parameters in the request body.
      * 
      * @param req the request from express.js. Must containt a valid shipment attribute.
-     * @param res the respons from express.js
+     * @param res the responss from express.js
      */
     createShipment(req: Request, res: Response) {
         logger.info(`${req.hostname} requested to create a shipment`)
 
         return this.shipmentModel.createShipment(req.shipment)
+        .then(() => {
+            res.send()
+        }, (error) => {
+            handleDbError(error, req, res)
+        })
+    }
+
+
+    /**
+     * Deletes a shipment with the id specified in the request.
+     * 
+     * @param req the request from express.js. Must contain a valid shipmentId attribute.
+     * @param res the response from express.js
+     */
+    deleteShipment(req: Request, res: Response) {
+        logger.info(`${req.hostname} requested to delete shipment with id ${req.shipmentId}`)
+
+        return this.shipmentModel.deleteShipment(req.shipmentId)
         .then(() => {
             res.send()
         }, (error) => {

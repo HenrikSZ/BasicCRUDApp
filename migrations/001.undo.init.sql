@@ -1,5 +1,4 @@
-DROP TRIGGER item_assignment_too_high;
-DROP PROCEDURE CHECK_ITEM_ASSIGNMENT_COUNT;
+DROP TRIGGER item_assignments_insert;
 DROP FUNCTION AVAIL_ITEMS_COUNT;
 
 DROP TABLE item_assignments;

@@ -12,5 +12,9 @@ router.get("/", contr.getAllShipments.bind(contr))
 router.use("/shipment/new", contr.createShipmentMiddleware.bind(contr))
 router.put("/shipment/new", contr.createShipment.bind(contr))
 
+router.use("/shipment/existing/:id", contr.shipmentIdMiddleware.bind(contr))
+router.get("/shipment/existing/:id", contr.getShipment.bind(contr))
+router.delete("/shipment/existing/:id", contr.deleteShipment.bind(contr))
+
 
 export default router

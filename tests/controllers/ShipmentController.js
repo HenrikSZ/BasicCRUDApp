@@ -230,4 +230,108 @@ describe("ShipmentController", () => {
             })
         })
     })
+    describe("#getShipment", () => {
+        it("should send one provided shipment from ShipmentModel", () => {
+            let shipmentId = 10
+            const shipment = getShipmentsFromDatabase()[0]
+            const model = mockShipmentModel({ shipment: shipment })
+            const req = mockReq({ params: {
+                id: shipmentId
+            }})
+            req.shipmentId = shipmentId
+            const res = mockRes()
+            const contr = new ShipmentController(model)
+
+            return contr.getShipment(req, res)
+            .then(() => {
+                expect(model.getShipment).to.have.been.calledWith(shipmentId)
+                expect(res.send).to.have.been.calledWith(shipment)
+            })
+        })
+    })
+    describe("#shipmentIdMiddleware", () => {
+        it("should not allow missing id", () => {
+            const model = mockShipmentModel()
+            const req = mockReq()
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.shipmentIdMiddleware(req, res, next)
+
+            expect(next).to.not.have.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.send).to.have.been.calledOnce
+        })
+        it("should not allow string as id", () => {
+            const model = mockShipmentModel()
+            const req = mockReq({
+                params: {
+                    id: "test"
+                }
+            })
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.shipmentIdMiddleware(req, res, next)
+            
+            expect(next).to.not.have.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.send).to.have.been.calledOnce
+        })
+        it("should not allow negative number as id", () => {
+            const model = mockShipmentModel()
+            const req = mockReq({
+                params: {
+                    id: -10
+                }
+            })
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.shipmentIdMiddleware(req, res, next)
+            
+            expect(next).to.not.have.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.send).to.have.been.calledOnce
+        })
+        it("should allow a valid id as string", () => {
+            let shipmentId = 15
+            const model = mockShipmentModel()
+            const req = mockReq({
+                params: {
+                    id: shipmentId.toString()
+                }
+            })
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.shipmentIdMiddleware(req, res, next)
+            
+            expect(next).to.have.been.called
+            expect(req.shipmentId).to.equal(shipmentId)
+            expect(res.send).to.not.have.been.called
+        })
+        it("should allow a valid id", () => {
+            let shipmentId = 15
+            const model = mockShipmentModel()
+            const req = mockReq({
+                params: {
+                    id: shipmentId
+                }
+            })
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.shipmentIdMiddleware(req, res, next)
+            
+            expect(next).to.have.been.called
+            expect(req.shipmentId).to.equal(shipmentId)
+            expect(res.send).to.not.have.been.called
+        })
+    })
 })

@@ -9,7 +9,9 @@ CREATE TABLE items(
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
-    name VARCHAR(64) NOT NULL UNIQUE
+    deletion_id BIGINT,
+    name VARCHAR(64) NOT NULL UNIQUE,
+    FOREIGN KEY (deletion_id) REFERENCES deletions (id)
 );
 
 CREATE TABLE item_assignments(

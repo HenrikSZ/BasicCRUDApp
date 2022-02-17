@@ -8,6 +8,9 @@ export default function mock(resolves = {}, rejects = {}) {
             : sinon.mock().resolves(resolves.allShipments),
         createShipment: rejects.shipment ?
             sinon.mock().rejects(rejects.shipment)
-            : sinon.mock().resolves()
+            : sinon.mock().resolves(),
+        getShipment: rejects.shipment ?
+            sinon.mock().rejects(rejects.shipment)
+            : sinon.mock().resolves(resolves.shipment)
     }
 }
