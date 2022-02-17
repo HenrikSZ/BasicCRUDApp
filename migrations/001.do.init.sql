@@ -11,7 +11,7 @@ CREATE TABLE items(
     updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
     deletion_id BIGINT,
     name VARCHAR(64) NOT NULL UNIQUE,
-    FOREIGN KEY (deletion_id) REFERENCES deletions (id)
+    FOREIGN KEY (deletion_id) REFERENCES deletions (id) ON DELETE SET NULL
 );
 
 CREATE TABLE item_assignments(

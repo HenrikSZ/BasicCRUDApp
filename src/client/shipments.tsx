@@ -68,6 +68,7 @@ export class ShipmentView extends React.Component {
                    (this.state.mode == ShipmentViewMode.NORMAL) ? (
                        <div>
                             <ShipmentCreator
+                                onItemCreate={() => this.loadEntries()}
                                 onErrorResponse={(response: any) =>
                                     this.props.onErrorResponse(response)}/>
                             <ShipmentTable entries={this.state.entries}
@@ -149,21 +150,24 @@ class ShipmentTable extends React.Component {
                                 Reload
                             </ConfirmationButton>
                         </div>
-                        {
-                            this.props.entries.map(shipment =>
-                                <Shipment data={shipment} key={shipment.id}
-                                    onDelete={(id: number) => this.props.onShipmentDelete(id)}
-                                    onErrorResponse={(response: any) =>
-                                        this.props.onErrorResponse(response)}/>
-                            )
-                        }
-                        {
-                            (this.props.entries.length === 0) ? (
-                                <div className="mt-4 border-t-2 border-gray-500 w-full text-center italic">
-                                    no entries
-                                </div>
-                            ) : null
-                        }
+                        <div className="mt-4">
+                            {
+                                this.props.entries.map(shipment =>
+                                    <Shipment data={shipment} key={shipment.id}
+                                        onDelete={(id: number) => this.props.onShipmentDelete(id)}
+                                        onErrorResponse={(response: any) =>
+                                            this.props.onErrorResponse(response)}/>
+                                )
+                            }
+                            {
+                                (this.props.entries.length === 0) ? (
+                                    <div className="mt-4 border-t-2 
+                                        border-gray-500 w-full text-center italic">
+                                        no entries
+                                    </div>
+                                ) : null
+                            }
+                        </div>
                     </div>
                 </Section>
             </React.StrictMode>
@@ -190,9 +194,11 @@ class Shipment extends React.Component {
                     onRetract={() => this.onRetract()}/>
                 <span className="font-bold text-lg p-4">{this.props.data.name}</span>
                 <span className="italic">to: {this.props.data.destination}</span>
-                <DangerButton onClick={() => this.deleteShipment()}>
-                    Delete
-                </DangerButton>
+                <div className="inline-block float-right">
+                    <DangerButton onClick={() => this.deleteShipment()}>
+                        Delete
+                    </DangerButton>
+                </div>
                 <div className={this.state.dropdownCss}>
                     <table>
                         <thead>
@@ -272,7 +278,7 @@ class ShipmentItem extends React.Component {
 
 
 class ShipmentCreator extends React.Component {
-    props: { onErrorResponse: Function }
+    props: { onErrorResponse: Function, onItemCreate: Function }
     state: { newValues: MutableShipmentData }
     currentUiKey: number
     uiKeys: number[]
@@ -328,23 +334,46 @@ class ShipmentCreator extends React.Component {
                         </tr>
                     </tbody>
                 </table>
-                <div>
-                {
-                    this.state.newValues.items.map((item, index) => {
-                        return <ShipmentItemPicker
-                                    onErrorResponse={(response: any) =>
-                                        this.props.onErrorResponse(response)}
-                                    onItemSet={(newItem: InventoryItemData) =>
-                                        this.setItemType(index, newItem.id)}
-                                    onCountSet ={(newCount: number) =>
-                                            this.setItemCount(index, newCount)}
-                                    item={item}
-                                    onRemove={() => this.removeItem(index)}
-                                        key={this.uiKeys[index]}/>
-                    })
-                }
-                    <PlusButton onClick={() => this.addNewItem()}/>
-                </div>
+                <table>
+                    <thead>
+                        {
+                            (this.state.newValues.items.length > 0) ? (
+                                <tr>
+                                <th></th>
+                                <th className="pr-2 pl-2 text-left">
+                                    Item Name
+                                </th>
+                                <th className="pr-2 pl-2 text-left">
+                                    Item Count
+                                </th>
+                            </tr>
+                            ) : null
+                        }
+                    </thead>
+                    <tbody>
+                        {
+                            this.state.newValues.items.map((item, index) => {
+                                return <ShipmentItemPicker
+                                            onErrorResponse={(response: any) =>
+                                                this.props.onErrorResponse(response)}
+                                            onItemSet={(newItem: InventoryItemData) =>
+                                                this.setItemType(index, newItem.id)}
+                                            onCountSet ={(newCount: number) =>
+                                                    this.setItemCount(index, newCount)}
+                                            item={item}
+                                            onRemove={() => this.removeItem(index)}
+                                                key={this.uiKeys[index]}/>
+                            })
+                        }
+                        <tr>
+                            <td>
+                            <PlusButton onClick={() => this.addNewItem()}/>
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
             </Section>
         )
     }
@@ -358,7 +387,9 @@ class ShipmentCreator extends React.Component {
             }
         )
         .then(response => {
-            if (!response.ok) {
+            if (response.ok) {
+                this.props.onItemCreate()
+            } else {
                 return Promise.reject(response)
             }
         })
@@ -426,15 +457,21 @@ class ShipmentItemPicker extends React.Component {
 
     render() {
         return (
-            <div className="flex flex-row space-x-2 p-1">
-                <MinusButton onClick={() => this.props.onRemove()}/>
-                <ItemPicker onErrorResponse={(response: any) => this.props.onErrorResponse(response)}
-                    onSelect={(item: InventoryItemData) => this.props.onItemSet(item)}/>
-                <input className="border-2 rounded-lg border-gray-700 w-32"
-                    type="number" placeholder="count" value={this.props.item.count}
-                    onChange={(evt: ChangeEvent<HTMLInputElement>) =>
-                        this.props.onCountSet(evt.target.value)}/>
-            </div>
+            <tr>
+                <td>
+                    <MinusButton onClick={() => this.props.onRemove()}/>
+                </td>
+                <td className="pt-1 pb-1">
+                    <ItemPicker onErrorResponse={(response: any) => this.props.onErrorResponse(response)}
+                        onSelect={(item: InventoryItemData) => this.props.onItemSet(item)}/>
+                 </td>
+                <td className="inline-block pt-1 pb-1">
+                        <input className="border-2 rounded-lg border-gray-700 w-32"
+                            type="number" placeholder="count" value={this.props.item.count}
+                            onChange={(evt: ChangeEvent<HTMLInputElement>) =>
+                                this.props.onCountSet(evt.target.value)}/>
+                </td>
+            </tr>
         )
     }
 }

@@ -287,7 +287,7 @@ export class InventoryTable extends React.Component {
                             Export as CSV
                         </ExportButton>
                     </div>
-                    <table className="table-data-any">
+                    <table>
                         <thead>
                             <tr>
                                 <th className="pr-2 pl-2 text-left">Item Name</th>
