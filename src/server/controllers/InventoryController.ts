@@ -388,7 +388,7 @@ export default class InventoryController {
             logger.info(`${req.hostname} added a deletion comment for entry `
                 + `with id ${req.params.id} in inventory`)
 
-            return this.invModel.updateItem({ deletion_id: insertId},
+            return this.invModel.updateItem({ deletion_id: insertId },
                 Number.parseInt(req.params.id)
             )
         })

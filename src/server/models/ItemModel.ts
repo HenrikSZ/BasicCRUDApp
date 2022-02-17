@@ -169,16 +169,14 @@ export default class ItemModel {
             }
         })
        .then(() => {
-            if (values.name) {
-                const stmt = "UPDATE items SET name = ? WHERE id = ?"
+             const stmt = "UPDATE items SET ? WHERE id = ?"
 
-                return conn.query(stmt, [values.name, id])
-                .then(([results, fiels]) => {
-                    results = results as OkPacket
-                    if (results.affectedRows > 0)
-                        modified = true
-                })
-            }
+            return conn.query(stmt, [values, id])
+            .then(([results, fiels]) => {
+                results = results as OkPacket
+                if (results.affectedRows > 0)
+                    modified = true
+            })
         })
         .then(() => {
             conn.commit()
