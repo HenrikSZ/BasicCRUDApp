@@ -118,65 +118,68 @@ describe("ShipmentModel", () => {
             return Promise.all(promises)
         })
         .then(() => {
-            return [
-                {
-                    id: shipmentIds[0],
-                    name: "Test",
-                    destination: "Heidelberg",
-                    items: [
-                        {
-                            shipment_id: shipmentIds[0],
-                            id: itemIds[0],
-                            name: "Chairs",
-                            assigned_count: 50,
-                        },
-                    ]
-                },
-                {
-                    id: shipmentIds[1],
-                    name: "Test2",
-                    destination: "Heidelberg2",
-                    items: [
-                        {
-                            shipment_id: shipmentIds[1],
-                            id: itemIds[0],
-                            name: "Chairs",
-                            assigned_count: 5,
-                        },
-                        {
-                            shipment_id: shipmentIds[1],
-                            id: itemIds[1],
-                            name: "Beds",
-                            assigned_count: 10,
-                        },
-                    ]
-                },
-                {
-                    id: shipmentIds[2],
-                    name: "Test3",
-                    destination: "Heidelberg3",
-                    items: [
-                        {
-                            shipment_id: shipmentIds[2],
-                            id: itemIds[0],
-                            name: "Chairs",
-                            assigned_count: 10,
-                        },
-                        {
-                            shipment_id: shipmentIds[2],
-                            id: itemIds[1],
-                            name: "Beds",
-                            assigned_count: 2,
-                        },
-                        {
-                            shipment_id: shipmentIds[2],
-                            id: itemIds[2],
-                            name: "Tables",
-                            assigned_count: 1,
-                        },
-                    ]
-                },
-            ]
+            return {
+                assignmentIds: assignmentIds,
+                expectedShipments: [
+                    {
+                        id: shipmentIds[0],
+                        name: "Test",
+                        destination: "Heidelberg",
+                        items: [
+                            {
+                                shipment_id: shipmentIds[0],
+                                id: itemIds[0],
+                                name: "Chairs",
+                                assigned_count: 50,
+                            },
+                        ]
+                    },
+                    {
+                        id: shipmentIds[1],
+                        name: "Test2",
+                        destination: "Heidelberg2",
+                        items: [
+                            {
+                                shipment_id: shipmentIds[1],
+                                id: itemIds[0],
+                                name: "Chairs",
+                                assigned_count: 5,
+                            },
+                            {
+                                shipment_id: shipmentIds[1],
+                                id: itemIds[1],
+                                name: "Beds",
+                                assigned_count: 10,
+                            },
+                        ]
+                    },
+                    {
+                        id: shipmentIds[2],
+                        name: "Test3",
+                        destination: "Heidelberg3",
+                        items: [
+                            {
+                                shipment_id: shipmentIds[2],
+                                id: itemIds[0],
+                                name: "Chairs",
+                                assigned_count: 10,
+                            },
+                            {
+                                shipment_id: shipmentIds[2],
+                                id: itemIds[1],
+                                name: "Beds",
+                                assigned_count: 2,
+                            },
+                            {
+                                shipment_id: shipmentIds[2],
+                                id: itemIds[2],
+                                name: "Tables",
+                                assigned_count: 1,
+                            },
+                        ]
+                    },
+                ]
+            }
         })
     }
     
@@ -202,7 +205,7 @@ describe("ShipmentModel", () => {
 
             return insertShipmentDataset()
             .then(expected => {
-                expectedData = expected
+                expectedData = expected.expectedShipments
                 let model = new ShipmentModel(dbPromise)
 
                 return model.getAllShipments()
@@ -219,7 +222,7 @@ describe("ShipmentModel", () => {
 
             return insertShipmentDataset()
             .then(expected => {
-                expectedData = expected[0]
+                expectedData = expected.expectedShipments[0]
 
                 let model = new ShipmentModel(dbPromise)
                 return model.getShipment(expectedData.id)
@@ -234,7 +237,7 @@ describe("ShipmentModel", () => {
 
             return insertShipmentDataset()
             .then((expected) => {
-                expectedData = expected[2]
+                expectedData = expected.expectedShipments[2]
 
                 let model = new ShipmentModel(dbPromise)
                 return model.getShipment(expectedData.id)
@@ -388,6 +391,86 @@ describe("ShipmentModel", () => {
             return runWithMultipleItems(name, destination)
             .then(results => {
                 expect(results.actual.items).to.deep.equal(results.expected.items)                
+            })
+        })
+    })
+
+    describe("#deleteShipment", () => {
+        it("should indicate deletion with true return value", () => {
+            return insertShipmentDataset()
+            .then((expected) => {
+                let shipmentToDelete = expected.expectedShipments[0]
+                let model = new ShipmentModel(dbPromise)
+
+                return model.deleteShipment(shipmentToDelete.id)
+            })
+            .then((deleted) => {
+                expect(deleted).to.equal(true)
+            })
+        })
+
+        it("should delete shipment with one item", () => {
+            let expectedShipmentIds = [], expectedItemIds = [], expectedAssignmentIds = []
+            return insertShipmentDataset()
+            .then((expected) => {
+                let shipmentToDelete = expected.expectedShipments[0]
+                let expectedShipments = expected.expectedShipments.slice(1)
+                let model = new ShipmentModel(dbPromise)
+                expectedShipmentIds = expectedShipments.map(shipment => shipment.id)
+                expectedItemIds = expectedShipments.map(shipment =>
+                    shipment.items.map((item) => item.id))
+                    .reduce((prev, value) => prev.concat(value), [])
+                expectedItemIds = Array.from(new Set(expectedItemIds))
+                expectedAssignmentIds = expected.assignmentIds.slice(1)
+                    .reduce((prev, value) => prev.concat(value), [])
+
+                return model.deleteShipment(shipmentToDelete.id)
+            })
+            .then(() => {
+                return Promise.all([
+                    dbPromise.query("SELECT id FROM shipments"),
+                    dbPromise.query("SELECT DISTINCT assignment_id FROM shipments_to_assignments"),
+                    dbPromise.query("SELECT DISTINCT item_id FROM item_assignments WHERE assigned_count < 0")
+                ])
+            })
+            .then((results) => {
+                results = results.map(r => r[0])
+                expect(results[0].map(r => r.id)).to.equalInAnyOrder(expectedShipmentIds)
+                expect(results[1].map(r => r.assignment_id)).to.equalInAnyOrder(expectedAssignmentIds)
+                expect(results[2].map(r => r.item_id)).to.equalInAnyOrder(expectedItemIds)
+            })
+        })
+        it("should delete shipment with multiple items", () => {
+            let expectedShipmentIds = [], expectedItemIds = [], expectedAssignmentIds = []
+            return insertShipmentDataset()
+            .then((expected) => {
+                let shipmentToDelete = expected.expectedShipments[1]
+                let expectedShipments = [expected.expectedShipments[0]]
+                                            .concat(expected.expectedShipments.slice(2))
+                let model = new ShipmentModel(dbPromise)
+                expectedShipmentIds = expectedShipments.map(shipment => shipment.id)
+                expectedItemIds = expectedShipments.map(shipment =>
+                    shipment.items.map((item) => item.id))
+                    .reduce((prev, value) => prev.concat(value), [])
+                expectedItemIds = Array.from(new Set(expectedItemIds))
+                expectedAssignmentIds = [expected.assignmentIds[0]]
+                                    .concat(expected.assignmentIds.slice(2))
+                                    .reduce((prev, value) => prev.concat(value), [])
+
+                return model.deleteShipment(shipmentToDelete.id)
+            })
+            .then(() => {
+                return Promise.all([
+                    dbPromise.query("SELECT id FROM shipments"),
+                    dbPromise.query("SELECT DISTINCT assignment_id FROM shipments_to_assignments"),
+                    dbPromise.query("SELECT DISTINCT item_id FROM item_assignments WHERE assigned_count < 0")
+                ])
+            })
+            .then((results) => {
+                results = results.map(r => r[0])
+                expect(results[0].map(r => r.id)).to.equalInAnyOrder(expectedShipmentIds)
+                expect(results[1].map(r => r.assignment_id)).to.equalInAnyOrder(expectedAssignmentIds)
+                expect(results[2].map(r => r.item_id)).to.equalInAnyOrder(expectedItemIds)
             })
         })
     })

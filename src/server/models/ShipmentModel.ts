@@ -187,4 +187,20 @@ export default class ShipmentModel {
             return Promise.reject(error)
         })
     }
+
+
+    /**
+     * Deletes a shipment and all dependent objects from the database.
+     * 
+     * @param id the id of the shipment that should be deleted.
+     * @returns true if a shipment was deleted, false otherwise.
+     */    
+    deleteShipment(id: number): Promise<Boolean> {
+        const stmt = "DELETE FROM shipments WHERE id = ?"
+        return this.dbPromise.query(stmt, id)
+        .then(([results, fields]) => {
+            results = results as OkPacket
+            return results.affectedRows > 0
+        })
+    }
 }
