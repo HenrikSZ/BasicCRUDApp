@@ -153,10 +153,12 @@ class ShipmentTable extends React.Component {
                 <Section>
                     <div>
                         <span className="text-xl font-bold">Shipments</span>
-                        <ConfirmationButton onClick={() =>
+                        <div className="ml-4 float-right">
+                            <ConfirmationButton onClick={() =>
                                 this.props.onReloadRequest()}>
-                            Reload
-                        </ConfirmationButton>
+                                Reload
+                            </ConfirmationButton>
+                        </div>
                         {
                             this.props.entries.map(shipment =>
                                 <Shipment data={shipment} key={shipment.id}
@@ -167,7 +169,7 @@ class ShipmentTable extends React.Component {
                         }
                         {
                             (this.props.entries.length === 0) ? (
-                                <div className="border-t-2 border-gray-500 w-full text-center italic">
+                                <div className="mt-4 border-t-2 border-gray-500 w-full text-center italic">
                                     no entries
                                 </div>
                             ) : null

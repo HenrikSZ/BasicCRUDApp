@@ -279,7 +279,7 @@ export class InventoryTable extends React.Component {
             <React.StrictMode>
                 <Section>
                     <span className="text-xl font-bold">Items</span>
-                    <div className="float-right">
+                    <div className="ml-4 float-right">
                         <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
                             Reload
                         </ConfirmationButton>
@@ -512,47 +512,49 @@ export class DeletedInventoryTable extends React.Component {
         return (
             <React.StrictMode>
                 <Section>
-                    <span className="text-xl font-bold">Deleted Items</span>
-                    <div className="float-right">
-                        <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
-                            Reload
-                        </ConfirmationButton>
-                        <ExportButton link="/items/deleted">
-                            Export as CSV
-                        </ExportButton>
+                    <div>
+                        <span className="text-xl font-bold">Deleted Items</span>
+                        <div className="ml-4 float-right">
+                            <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
+                                Reload
+                            </ConfirmationButton>
+                            <ExportButton link="/items/deleted">
+                                Export as CSV
+                            </ExportButton>
+                        </div>
+                        <table className="table-data-any">
+                            <thead>
+                                <tr>
+                                    <th className="pr-2 pl-2 text-left w-48">
+                                        Item Name
+                                    </th>
+                                    <th className="pr-2 pl-2 text-left w-32">
+                                        Item Count
+                                    </th>
+                                    <th className="pr-2 pl-2 text-left w-72">
+                                        Deletion comment
+                                    </th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {
+                                    this.props.entries.map((item) => {
+                                        return <DeletedInventoryItem data={item} key={item.id}
+                                            onDelete={(id: number) => this.props.onItemRestore(id)}
+                                            onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
+                                    })
+                                }
+                            </tbody>
+                        </table>
+                        {
+                            (this.props.entries.length === 0) ? (
+                                <div className="border-t-2 border-gray-500 w-full text-center italic">
+                                    no entries
+                                </div>
+                            ) : null
+                        }
                     </div>
-                    <table className="table-data-any">
-                        <thead>
-                            <tr>
-                                <th className="pr-2 pl-2 text-left w-48">
-                                    Item Name
-                                </th>
-                                <th className="pr-2 pl-2 text-left w-32">
-                                    Item Count
-                                </th>
-                                <th className="pr-2 pl-2 text-left w-72">
-                                    Deletion comment
-                                </th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {
-                                this.props.entries.map((item) => {
-                                    return <DeletedInventoryItem data={item} key={item.id}
-                                        onDelete={(id: number) => this.props.onItemRestore(id)}
-                                        onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
-                                })
-                            }
-                        </tbody>
-                    </table>
-                    {
-                        (this.props.entries.length === 0) ? (
-                            <div className="border-t-2 border-gray-500 w-full text-center italic">
-                                no entries
-                            </div>
-                        ) : null
-                    }
                 </Section>
             </React.StrictMode>
         )
