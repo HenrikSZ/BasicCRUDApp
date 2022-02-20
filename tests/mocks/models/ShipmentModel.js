@@ -11,6 +11,9 @@ export default function mock(resolves = {}, rejects = {}) {
             : sinon.mock().resolves(),
         getShipment: rejects.shipment ?
             sinon.mock().rejects(rejects.shipment)
-            : sinon.mock().resolves(resolves.shipment)
+            : sinon.mock().resolves(resolves.shipment),
+        exportAllShipmentsAsCsv: rejects.shipmentsCsv ?
+            sinon.mock().rejects(rejects.shipmentsCsv)
+            : sinon.mock().resolves(resolves.shipmentsCsv),
     }
 }

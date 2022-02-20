@@ -249,6 +249,30 @@ describe("ShipmentController", () => {
             })
         })
     })
+    describe("#exportShipmentsAsCsv", () => {
+        it("should send the csv file of exported shipments", () => {
+            let resolves = {
+                shipmentsCsv: "shipment,destination,item_name,count\n"
+                    + "Test,Heidelberg,Chairs,50\n"
+                    + "Test2,Heidelberg2,Chairs,5\n"
+                    + "Test2,Heidelberg2,Beds,10\n"
+                    + "Test3,Heidelberg3,Chairs,10\n"
+                    + "Test3,Heidelberg3,Beds,2\n"
+                    + "Test3,Heidelberg3,Tables,1\n"
+            }
+
+            let model = mockShipmentModel(resolves)
+            let req = mockReq()
+            let res = mockRes()
+
+            let contr = new ShipmentController(model)
+
+            return contr.exportShipmentsAsCsv(req, res)
+            .then(() => {
+                expect(res.send).to.have.been.calledWith(resolves.shipmentsCsv)
+            })
+        })  
+    })
     describe("#shipmentIdMiddleware", () => {
         it("should not allow missing id", () => {
             const model = mockShipmentModel()

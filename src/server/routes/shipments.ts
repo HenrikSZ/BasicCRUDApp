@@ -8,6 +8,7 @@ const model = new ShipmentModel(dbPromise)
 const contr = new ShipmentController(model)
 
 router.get("/", contr.getAllShipments.bind(contr))
+router.get("/export", contr.exportShipmentsAsCsv.bind(contr))
 
 router.use("/shipment/new", contr.createShipmentMiddleware.bind(contr))
 router.put("/shipment/new", contr.createShipment.bind(contr))

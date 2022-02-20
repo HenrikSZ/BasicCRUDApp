@@ -176,4 +176,24 @@ export default class ShipmentController {
             handleDbError(error, req, res)
         })
     }
+
+
+    /**
+     * Sends the shipments table as a CSV file.
+     * 
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
+    exportShipmentsAsCsv(req: Request, res: Response) {
+        logger.info(`${req.hostname} requested shipments table as CSV export`)
+
+        return this.shipmentModel.exportAllShipmentsAsCsv()
+        .then(file => {
+            res.set("Content-Type", "text/csv")
+            res.set("Content-Disposition", "attachment; filename=\"shipments_report.csv\"")
+            res.send(file)
+        }, error => {
+            handleDbError(error, req, res)
+        })
+    }
 }

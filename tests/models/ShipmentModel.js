@@ -459,4 +459,26 @@ describe("ShipmentModel", () => {
             })
         })
     })
+    describe("#exportAllShipmentsAsCsv", () => {
+        it("should export all shipments data correctly", () => {
+            return insertShipmentDataset()
+            .then(() => {
+                const model = new ShipmentModel(dbPromise)
+
+                return model.exportAllShipmentsAsCsv()
+            })
+            .then(file => {
+                const expected =
+                    "shipment,destination,item_name,count\n"
+                    + "Test,Heidelberg,Chairs,50\n"
+                    + "Test2,Heidelberg2,Chairs,5\n"
+                    + "Test2,Heidelberg2,Beds,10\n"
+                    + "Test3,Heidelberg3,Chairs,10\n"
+                    + "Test3,Heidelberg3,Beds,2\n"
+                    + "Test3,Heidelberg3,Tables,1\n"
+
+                expect(file).to.equal(expected)
+            })
+        })
+    })
 })

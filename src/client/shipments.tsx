@@ -2,7 +2,7 @@ import React, { ChangeEvent } from "react"
 
 import "./index.css"
 
-import { ConfirmationButton, DangerButton, DropdownButton, MinusButton, PlusButton, RibbonButton } from "./buttons"
+import { ConfirmationButton, DangerButton, DropdownButton, ExportButton, MinusButton, PlusButton, RibbonButton } from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItemData, MutableInventoryItemData } from "./items"
 
@@ -149,6 +149,9 @@ class ShipmentTable extends React.Component {
                                 this.props.onReloadRequest()}>
                                 Reload
                             </ConfirmationButton>
+                            <ExportButton link="/shipments">
+                                Export as CSV
+                            </ExportButton>
                         </div>
                         <div className="mt-4">
                             {

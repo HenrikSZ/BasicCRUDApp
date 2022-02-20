@@ -7,6 +7,8 @@ import { RowDataPacket, OkPacket } from "mysql2"
 import { Pool, PoolConnection } from "mysql2/promise"
 import { handleDbError } from "../error_handling.js"
 import { InventoryItem } from "./ItemModel.js"
+
+import { stringify } from "csv-stringify/sync"
  
  
 interface MinimalShipment {
@@ -201,6 +203,33 @@ export default class ShipmentModel {
         .then(([results, fields]) => {
             results = results as OkPacket
             return results.affectedRows > 0
+        })
+    }
+
+
+    /**
+     * Exports shipment, destination, item_name, count for all items
+     * in CSV format.
+     * 
+     * @returns a string in CSV format containing the fields.
+     */
+    exportAllShipmentsAsCsv() {
+        const stmt = "SELECT shipments.name AS shipment, shipments.destination, "
+            + "items.name AS item_name, -item_assignments.assigned_count AS count "
+            + "FROM shipments_to_assignments "
+            + "LEFT JOIN shipments ON "
+            + "shipments.id = shipments_to_assignments.shipment_id "
+            + "LEFT JOIN item_assignments ON "
+            + "item_assignments.id = shipments_to_assignments.assignment_id "
+            + "LEFT JOIN items ON "
+            + "items.id = item_assignments.item_id "
+            + "ORDER BY shipments.id, items.id"
+        return this.dbPromise.query(stmt)
+        .then(([items, fields]) => {
+            return stringify(items as RowDataPacket[], {
+                header: true,
+                columns: ["shipment", "destination", "item_name", "count"]
+            })
         })
     }
 }
