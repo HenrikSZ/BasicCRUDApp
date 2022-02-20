@@ -64,7 +64,9 @@ Contains assignments of items. Basically changes in the number of items.
 - FOREIGN KEY (item_id) REFERENCES items (id)
 
 ### Triggers
-- item_assignments_insert AFTER INSERT - throws an SQLEXCEPTiON if the total amount of the item in question is negative
+- item_assignments_insert AFTER INSERT - throws an SQLEXCEPTION if the total amount of the item in question is negative
+- item_assignments_insert AFTER UPDATE - throws an SQLEXCEPTION if the total amount of the item in question is negative
+- item_assignments_insert AFTER DELETE - throws an SQLEXCEPTION if the total amount of the item in question is negative
 
 ### Associated Functions
 - AVAIL_ITEMS_COUNT(item_id BIGINT) - returns the amount of available items
