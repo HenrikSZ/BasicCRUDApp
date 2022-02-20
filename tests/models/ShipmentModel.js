@@ -5,6 +5,7 @@ chai.use(deepEqualInAnyOrder)
 const expect = chai.expect
 
 import db from "../db.js"
+import { clearTables } from "../test_util.js"
 
 import ShipmentModel from "../../dist/models/ShipmentModel.js"
 
@@ -18,7 +19,7 @@ describe("ShipmentModel", () => {
     after(() => {
         dbPromise.end()
     })
-    beforeEach(clearTables)
+    beforeEach(() => clearTables(dbPromise))
 
 
     /**
@@ -181,22 +182,6 @@ describe("ShipmentModel", () => {
                 ]
             }
         })
-    }
-    
-    function clearTables() {
-        return dbPromise.query("DELETE FROM shipments_to_assignments")
-            .then(() => {
-                return dbPromise.query("DELETE FROM shipments")
-            })
-            .then(() => {
-                return dbPromise.query("DELETE FROM item_assignments")
-            })
-            .then(() => {
-                return dbPromise.query("DELETE FROM items")
-            })
-            .then(() => {
-                return dbPromise.query("DELETE FROM deletions")
-            })
     }
 
     describe("#getAllShipments", () => {

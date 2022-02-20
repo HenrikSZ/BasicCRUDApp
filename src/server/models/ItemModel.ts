@@ -136,7 +136,7 @@ export default class ItemModel {
             results = results as OkPacket
             insertId = results.insertId
             
-            return new AssignmentModel().insert(insertId, item.count)
+            return new AssignmentModel(dbPromise).insert(insertId, item.count)
         })
         .then(() => {
             return insertId
@@ -162,7 +162,7 @@ export default class ItemModel {
         })
         .then(() => {
             if (values.count_change) {
-                return new AssignmentModel().insert(id, values.count_change)
+                return new AssignmentModel(dbPromise).insert(id, values.count_change)
                 .then((mod) => {
                     if (mod) modified = true
                 })

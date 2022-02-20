@@ -47,3 +47,25 @@ BEGIN
             SET MESSAGE_TEXT = "Assigned item count larger than available item count";
     END IF;
 END;
+
+CREATE TRIGGER item_assignments_update
+AFTER UPDATE ON item_assignments
+FOR EACH ROW
+BEGIN
+    IF (AVAIL_ITEMS_COUNT(NEW.item_id) < 0)
+    THEN
+        SIGNAL SQLSTATE '55001'
+            SET MESSAGE_TEXT = "Assigned item count larger than available item count";
+    END IF;
+END;
+
+CREATE TRIGGER item_assignments_delete
+AFTER DELETE ON item_assignments
+FOR EACH ROW
+BEGIN
+    IF (AVAIL_ITEMS_COUNT(OLD.item_id) < 0)
+    THEN
+        SIGNAL SQLSTATE '55001'
+            SET MESSAGE_TEXT = "Assigned item count larger than available item count";
+    END IF;
+END;
