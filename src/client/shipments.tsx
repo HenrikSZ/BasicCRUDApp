@@ -309,7 +309,7 @@ class ShipmentCreator extends React.Component {
                                 New Name
                             </th>
                             <th className="text-left">
-                                New Description
+                                New Destination
                             </th>
                         </tr>
                     </thead>

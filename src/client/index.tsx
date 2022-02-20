@@ -109,13 +109,13 @@ class ErrorBox extends React.Component {
 
     render() {
         return (
-            <div className="w-10/12 bg-red-300 m-2">
+            <div className="bg-red-300 m-2">
                 <button className="text-red-700 font-bold text-xl p-2 pt-1 pb-1"
                     onClick={() => this.props.onDismissal(this.props.id)}>
                     X
                 </button>
                 <span className="m-1">
-                    <span className="font-bold text-red-700">
+                    <span className="font-bold text-red-700 mr-4">
                         {this.props.errorMessage.name}
                     </span>
                     <span>
