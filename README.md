@@ -28,7 +28,7 @@ implements deletion with comment and undeletion features.
 
 
 # Database Summary
-There are 6 database tables
+The app uses 6 different database tables. Here is a short doc about them.
 
 ## deletions
 Contains deletion comments for objects that have been marked for deletion but have not yet been removed.
@@ -52,16 +52,31 @@ Contains the central information for an item.
 - FOREIGN KEY (deletion_id) REFERENCES deletions (id) ON DELETE SET NULL
 
 
+## external_item_assignments
+Contains info to any item assignments that are not shipments.
+
+### Schema
+- id BIGINT NOT NULL AUTO_INCREMENT,
+- PRIMARY KEY (id)
+
+
 ## item_assignments
 Contains assignments of items. Basically changes in the number of items.
 
 ### Schema
-- id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY - the primary id of this item_assignment
+- id BIGINT NOT NULL AUTO_INCREMENT - the primary id of this item_assignment
+- item_id BIGINT NOT NULL - the id of the item that is assigned
+- shipment_id BIGINT - the id of the shipment if the item is assigned to a shipment, otherwise NULL
+- external_assignment_id BIGINT - the id of the external_item_assignment if it is assigned, otherwise NULL
 - created_at TIMESTAMP NOT NULL DEFAULT NOW() - the time this entry was created
 - updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() - the time this entry was last updated
-- item_id BIGINT NOT NULL - the id of the associated item
-- assigned_count INT NOT NULL - the count that is assigned with this assignment. Increases in stock are - positive, decreases are negative.
-- FOREIGN KEY (item_id) REFERENCES items (id)
+- assigned_count INT NOT NULL - the amount of items that are assigned
+- PRIMARY KEY (id),
+- FOREIGN KEY (item_id) REFERENCES items (id),
+- FOREIGN KEY (shipment_id) REFERENCES shipments (id) ON DELETE CASCADE,
+- FOREIGN KEY (external_assignment_id) REFERENCES external_item_assignments (id) ON DELETE CASCADE,
+- UNIQUE KEY (item_id, shipment_id, external_assignment_id),
+- CONSTRAINT exactly_one_assignment_type_chk CHECK ((CASE WHEN shipment_id IS NULL THEN 0 ELSE 1 END + CASE WHEN external_assignment_id IS NULL THEN 0 ELSE 1 END) = 1)
 
 ### Triggers
 - item_assignments_insert AFTER INSERT - throws an SQLEXCEPTION if the total amount of the item in question is negative
@@ -76,30 +91,12 @@ Contains assignments of items. Basically changes in the number of items.
 Contains shipments of items, collections that are meant to be sent out.
 
 ### Schema
-- id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY - the primary id of this shipment
+- id BIGINT NOT NULL AUTO_INCREMENT - the primary id of this shipment
 - created_at TIMESTAMP NOT NULL DEFAULT NOW() - the time this entry was created
 - updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() - the time this entry was last updated
 - name VARCHAR(64) NOT NULL - the name of this shipment
 - destination VARCHAR(64) NOT NULl - the destination of this shipment
-
-### Triggers
-- shipments_delete BEFORE DELETE - deletes all shipments_to_assignments referencing this shipment
-
-
-## shipments_to_assignments
-Maps the assigned items to a shipment.
-
-### Schema
-- shipment_id BIGINT NOT NULL - the shipment that the assignmnent is mapped to
-- assignment_id BIGINT NOT NULL - the assignment that is mapped to the shipment
-- created_at TIMESTAMP NOT NULL DEFAULT NOW() - the time this entry was created
-- updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() - the time this entry was last updated
-- FOREIGN KEY (shipment_id) REFERENCES shipments (id),
-- FOREIGN KEY (assignment_id) REFERENCES item_assignments (id),
-- PRIMARY KEY (shipment_id, assignment_id)
-
-### Triggers
-- shipments_to_assignments_delete AFTER DELETE - deletes all item_assignments referenced by this mapping
+- PRIMARY KEY (id)
 
 
 ## schemaversion

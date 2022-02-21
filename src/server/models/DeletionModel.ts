@@ -3,8 +3,7 @@
  */
 
 
-import { OkPacket, RowDataPacket } from "mysql2"
-import dbPromise from "../db.js"
+import { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
 import logger from "../logger.js"
 
 
@@ -21,6 +20,13 @@ interface Deletion extends MinimalDeletion {
 
 
 export default class DeletionModel {
+    dbPromise: Pool
+
+    constructor(dbPromise: Pool) {
+        this.dbPromise = dbPromise
+    }
+
+
     /**
      * Inserts a deletion notice into the deletions.
      * 
@@ -31,7 +37,7 @@ export default class DeletionModel {
         logger.debug(`Inserting deletion table with comment "${comment}"`)
 
         const stmt = "INSERT INTO deletions (comment) VALUES (?)"
-        return dbPromise.query(stmt, comment)
+        return this.dbPromise.query(stmt, comment)
         .then(([results, fields]) => {
             results = results as OkPacket
             return results.insertId
@@ -48,7 +54,7 @@ export default class DeletionModel {
         logger.debug(`Deleting from deletion table with id "${id}"`)
 
         const stmt = "DELETE FROM deletions WHERE id = ?"
-        return dbPromise.query(stmt, id)
+        return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as OkPacket
             return results.affectedRows > 0

@@ -1,8 +1,5 @@
 export function clearTables(dbPromise) {
-    return dbPromise.query("DELETE FROM shipments_to_assignments")
-        .then(() => {
-            return dbPromise.query("DELETE FROM shipments")
-        })
+    return dbPromise.query("DELETE FROM shipments")
         .then(() => {
             return dbPromise.query("DELETE FROM item_assignments WHERE assigned_count < 0")
         })

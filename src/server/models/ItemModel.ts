@@ -3,10 +3,9 @@
  */
 
 
-import { RowDataPacket, OkPacket } from "mysql2"
-import { PoolConnection } from "mysql2/promise"
-import dbPromise from "../db.js"
-import AssignmentModel from "./AssignmentModel.js"
+import { RowDataPacket, OkPacket, Pool, PoolConnection } from "mysql2/promise"
+import ExternalItemAssignmentModel from "./ExternalItemAssignmentModel.js"
+import ItemAssignmentModel from "./ItemAssignmentModel.js"
 
 
 export interface MinimalInventoryItem extends RowDataPacket {
@@ -28,6 +27,17 @@ interface DeletedInventoryItem extends InventoryItem {
 
 
 export default class ItemModel {
+    itemAssignmentModel: ItemAssignmentModel
+    externalItemAssignmentModel: ExternalItemAssignmentModel
+    dbPromise: Pool
+
+    constructor(dbPromise: Pool) {
+        this.itemAssignmentModel = new ItemAssignmentModel(dbPromise)
+        this.externalItemAssignmentModel = new ExternalItemAssignmentModel(dbPromise)
+        this.dbPromise = dbPromise
+    }
+
+
     /**
      * Reads all items in the inventory that are not deleted.
      * 
@@ -36,7 +46,7 @@ export default class ItemModel {
     getAllItems(): Promise<InventoryItem[]> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) AS count "
             + "FROM items WHERE deletion_id IS NULL"
-        return dbPromise.query(stmt)
+        return this.dbPromise.query(stmt)
         .then(([results, fields]) => {
             return results as any
         })
@@ -52,7 +62,7 @@ export default class ItemModel {
             + "deletions.comment FROM items INNER JOIN deletions "
             + "ON items.deletion_id = deletions.id "
             + "WHERE deletion_id IS NOT NULL"
-        return dbPromise.query(stmt)
+        return this.dbPromise.query(stmt)
         .then(([results, fields]) => {
             return results as any
         })
@@ -67,7 +77,7 @@ export default class ItemModel {
      */
     getItem(id: number): Promise<InventoryItem> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id)"
-        return dbPromise.query(stmt, id)
+        return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as InventoryItem[]
 
@@ -87,7 +97,7 @@ export default class ItemModel {
     getItemLike(name: string): Promise<InventoryItem[]> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) "
             + "FROM items WHERE name LIKE ? LIMIT 10"
-        return dbPromise.query(stmt, "%" + name + "%")
+        return this.dbPromise.query(stmt, "%" + name + "%")
         .then(([results, fiels]) => {
             return results as InventoryItem[]
         })
@@ -103,7 +113,7 @@ export default class ItemModel {
      */
     getDeletionId(id: number): Promise<number> {
         const stmt = "SELECT deletion_id FROM items WHERE id = ?"
-        return dbPromise.query(stmt, id)
+        return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             results = results as InventoryItem[]
 
@@ -123,7 +133,7 @@ export default class ItemModel {
      * @param item the basic info of the item.
      * @returns the id of this item.
      */
-    insertItem(item: MinimalInventoryItem): Promise<number> {
+    createItem(item: MinimalInventoryItem): Promise<number> {
         let itemToInsert = {
             name: item.name
         }
@@ -131,12 +141,16 @@ export default class ItemModel {
         let insertId = 0
 
         let stmt = "INSERT INTO items SET ?"
-        return dbPromise.query(stmt, itemToInsert)
+        return this.dbPromise.query(stmt, itemToInsert)
         .then(([results, fields]) => {
             results = results as OkPacket
             insertId = results.insertId
             
-            return new AssignmentModel(dbPromise).insert(insertId, item.count)
+            return this.externalItemAssignmentModel.create()
+        })
+        .then(id => {
+            return this.itemAssignmentModel
+                .create(insertId, item.count, undefined, id)
         })
         .then(() => {
             return insertId
@@ -155,15 +169,19 @@ export default class ItemModel {
         let conn: PoolConnection | null = null
         let modified = false
 
-        return dbPromise.getConnection()
+        return this.dbPromise.getConnection()
         .then(connection => {
             conn = connection
             conn.beginTransaction()
         })
         .then(() => {
             if (values.count_change) {
-                return new AssignmentModel(dbPromise).insert(id, values.count_change)
-                .then((mod) => {
+                return this.externalItemAssignmentModel.create()
+                .then(externalAssignmentId => {
+                    return this.itemAssignmentModel
+                        .create(id, values.count_change, undefined, externalAssignmentId, conn)
+                })
+                .then(mod => {
                     if (mod) modified = true
                 })
             }
@@ -173,6 +191,16 @@ export default class ItemModel {
                 const stmt = "UPDATE items SET ? WHERE id = ?"
 
                 return conn.query(stmt, [{name: values.name}, id])
+                .then(([results, fiels]) => {
+                    results = results as OkPacket
+                    if (results.affectedRows > 0)
+                        modified = true
+                })
+            }
+            else if (typeof values.deletion_id === "number") {
+                const stmt = "UPDATE items SET ? WHERE id = ?"
+
+                return conn.query(stmt, [{deletion_id: values.deletion_id}, id])
                 .then(([results, fiels]) => {
                     results = results as OkPacket
                     if (results.affectedRows > 0)

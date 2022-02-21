@@ -30,7 +30,7 @@ describe("ShipmentModel", () => {
      * @returns The ids of the inserted items
      */
     function insertItemDataSet() {
-        let ids = []
+        let itemIds = [], externalItemAssignments = []
 
         return Promise.all([
             dbPromise.query("INSERT INTO items SET name = 'Chairs'"),
@@ -38,18 +38,30 @@ describe("ShipmentModel", () => {
             dbPromise.query("INSERT INTO items SET name = 'Tables'"),
         ])
         .then(results => {
-            ids = results.map(([queryResult, fields]) => queryResult.insertId)
-
-            const stmt = "INSERT INTO item_assignments (item_id, assigned_count) VALUES (?, ?)"
+            itemIds = results.map(([queryResult, fields]) => queryResult.insertId)
 
             return Promise.all([
-                dbPromise.query(stmt, [ids[0], 100]),
-                dbPromise.query(stmt, [ids[1], 55]),
-                dbPromise.query(stmt, [ids[2], 1]),
+                dbPromise.query("INSERT INTO external_item_assignments VALUES()"),
+                dbPromise.query("INSERT INTO external_item_assignments VALUES()"),
+                dbPromise.query("INSERT INTO external_item_assignments VALUES()")
+            ])
+        })
+        .then(results => {
+            externalItemAssignments =
+                results.map(([queryResult, fields]) => queryResult.insertId)
+
+            const stmt = "INSERT INTO item_assignments "
+                + "(item_id, assigned_count, external_assignment_id) "
+                + "VALUES (?, ?, ?)"
+
+            return Promise.all([
+                dbPromise.query(stmt, [itemIds[0], 100, externalItemAssignments[0]]),
+                dbPromise.query(stmt, [itemIds[1], 55, externalItemAssignments[1]]),
+                dbPromise.query(stmt, [itemIds[2], 1, externalItemAssignments[2]]),
             ])
         })
         .then(() => {
-            return ids 
+            return itemIds 
         })
     }
 
@@ -80,43 +92,22 @@ describe("ShipmentModel", () => {
             shipmentIds = ids.map(r => r[0].insertId)
 
             const stmt = "INSERT INTO item_assignments "
-                + "(item_id, assigned_count) VALUES (?, ?)"
+                + "(item_id, assigned_count, shipment_id) VALUES (?, ?, ?)"
             
             return Promise.all([
                 Promise.all([
-                    dbPromise.query(stmt, [itemIds[0], -50]),
+                    dbPromise.query(stmt, [itemIds[0], -50, shipmentIds[0]]),
                 ]),
                 Promise.all([
-                    dbPromise.query(stmt, [itemIds[0], -5]),
-                    dbPromise.query(stmt, [itemIds[1], -10]),
+                    dbPromise.query(stmt, [itemIds[0], -5, shipmentIds[1]]),
+                    dbPromise.query(stmt, [itemIds[1], -10, shipmentIds[1]]),
                 ]),
                 Promise.all([
-                    dbPromise.query(stmt, [itemIds[0], -10]),
-                    dbPromise.query(stmt, [itemIds[1], -2]),
-                    dbPromise.query(stmt, [itemIds[2], -1]),
+                    dbPromise.query(stmt, [itemIds[0], -10, shipmentIds[2]]),
+                    dbPromise.query(stmt, [itemIds[1], -2, shipmentIds[2]]),
+                    dbPromise.query(stmt, [itemIds[2], -1, shipmentIds[2]]),
                 ])
             ])
-        })
-        .then((ids) => {
-            assignmentIds = ids.map(s => s.map(r => r[0].insertId))
-
-            const stmt = "INSERT INTO shipments_to_assignments "
-                + "(shipment_id, assignment_id) VAlUES (?, ?)"
-
-            let promises = []
-            for (let i = 0; i < shipmentIds.length; i++) {
-                let shipmentPromises = []
-                for (let j = 0; j < assignmentIds[i].length; j++) {
-                    shipmentPromises.push(
-                        dbPromise.query(stmt,
-                            [shipmentIds[i], assignmentIds[i][j]])
-                    )
-                }
-
-                promises.push(Promise.all(shipmentPromises))
-            }
-
-            return Promise.all(promises)
         })
         .then(() => {
             return {
@@ -261,9 +252,7 @@ describe("ShipmentModel", () => {
                 return Promise.all([
                     dbPromise.query("SELECT name, destination FROM shipments"),
                     dbPromise.query("SELECT shipment_id, item_id, assigned_count "
-                        + "FROM shipments_to_assignments "
-                        + "INNER JOIN item_assignments ON assignment_id = item_assignments.id "
-                        + "ORDER BY assignment_id"),
+                        + "FROM item_assignments"),
                     id,
                     itemIds
                 ])
@@ -319,9 +308,7 @@ describe("ShipmentModel", () => {
                 return Promise.all([
                     dbPromise.query("SELECT name, destination FROM shipments"),
                     dbPromise.query("SELECT shipment_id, item_id, assigned_count "
-                        + "FROM shipments_to_assignments "
-                        + "INNER JOIN item_assignments ON assignment_id = item_assignments.id "
-                        + "ORDER BY assignment_id"),
+                        + "FROM item_assignments WHERE shipment_id IS NOT NULL"),
                     id,
                     itemIds
                 ])
@@ -395,7 +382,7 @@ describe("ShipmentModel", () => {
         })
 
         it("should delete shipment with one item", () => {
-            let expectedShipmentIds = [], expectedItemIds = [], expectedAssignmentIds = []
+            let expectedShipmentIds = [], expectedItemIds = []
             return insertShipmentDataset()
             .then((expected) => {
                 let shipmentToDelete = expected.expectedShipments[0]
@@ -406,27 +393,23 @@ describe("ShipmentModel", () => {
                     shipment.items.map((item) => item.id))
                     .reduce((prev, value) => prev.concat(value), [])
                 expectedItemIds = Array.from(new Set(expectedItemIds))
-                expectedAssignmentIds = expected.assignmentIds.slice(1)
-                    .reduce((prev, value) => prev.concat(value), [])
 
                 return model.deleteShipment(shipmentToDelete.id)
             })
             .then(() => {
                 return Promise.all([
                     dbPromise.query("SELECT id FROM shipments"),
-                    dbPromise.query("SELECT DISTINCT assignment_id FROM shipments_to_assignments"),
-                    dbPromise.query("SELECT DISTINCT item_id FROM item_assignments WHERE assigned_count < 0")
+                    dbPromise.query("SELECT DISTINCT item_id FROM item_assignments"),
                 ])
             })
             .then((results) => {
                 results = results.map(r => r[0])
                 expect(results[0].map(r => r.id)).to.equalInAnyOrder(expectedShipmentIds)
-                expect(results[1].map(r => r.assignment_id)).to.equalInAnyOrder(expectedAssignmentIds)
-                expect(results[2].map(r => r.item_id)).to.equalInAnyOrder(expectedItemIds)
+                expect(results[1].map(r => r.item_id)).to.equalInAnyOrder(expectedItemIds)
             })
         })
         it("should delete shipment with multiple items", () => {
-            let expectedShipmentIds = [], expectedItemIds = [], expectedAssignmentIds = []
+            let expectedShipmentIds = [], expectedItemIds = []
             return insertShipmentDataset()
             .then((expected) => {
                 let shipmentToDelete = expected.expectedShipments[1]
@@ -438,24 +421,42 @@ describe("ShipmentModel", () => {
                     shipment.items.map((item) => item.id))
                     .reduce((prev, value) => prev.concat(value), [])
                 expectedItemIds = Array.from(new Set(expectedItemIds))
-                expectedAssignmentIds = [expected.assignmentIds[0]]
-                                    .concat(expected.assignmentIds.slice(2))
-                                    .reduce((prev, value) => prev.concat(value), [])
-
                 return model.deleteShipment(shipmentToDelete.id)
             })
             .then(() => {
                 return Promise.all([
                     dbPromise.query("SELECT id FROM shipments"),
-                    dbPromise.query("SELECT DISTINCT assignment_id FROM shipments_to_assignments"),
-                    dbPromise.query("SELECT DISTINCT item_id FROM item_assignments WHERE assigned_count < 0")
+                    dbPromise.query("SELECT DISTINCT item_id FROM item_assignments"),
                 ])
             })
             .then((results) => {
                 results = results.map(r => r[0])
                 expect(results[0].map(r => r.id)).to.equalInAnyOrder(expectedShipmentIds)
-                expect(results[1].map(r => r.assignment_id)).to.equalInAnyOrder(expectedAssignmentIds)
-                expect(results[2].map(r => r.item_id)).to.equalInAnyOrder(expectedItemIds)
+                expect(results[1].map(r => r.item_id)).to.equalInAnyOrder(expectedItemIds)
+            })
+        })
+    })
+    describe("#updateShipmentItem", () => {
+        it("should update the assignment of one item in a shipment", () => {
+            let expectedCount = 40, shipment = {}
+
+            return insertShipmentDataset()
+            .then(expected => {
+                const model = new ShipmentModel(dbPromise)
+                shipment = expected.expectedShipments[0]
+                return model.updateShipmentItem(expectedCount, shipment.id, shipment.items[0].id)
+            })
+            .then(wasUpdated => {
+                expect(wasUpdated).to.be.true
+                const stmt = "SELECT -assigned_count AS count "
+                    + "FROM item_assignments "
+                    + "WHERE shipment_id = ? AND item_id = ?"
+
+                return dbPromise.query(stmt, [shipment.id, shipment.items[0].id])
+            })
+            .then(([results, fields]) => {
+                expect(results).to.have.length(1)
+                expect(results[0].count).to.equal(expectedCount)
             })
         })
     })

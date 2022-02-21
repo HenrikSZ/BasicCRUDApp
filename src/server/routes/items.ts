@@ -2,11 +2,12 @@ import express from "express"
 import ItemModel from "../models/ItemModel.js"
 import DeletionModel from "../models/DeletionModel.js"
 import InventoryController from "../controllers/InventoryController.js"
+import dbPromise from "../db.js"
 
 
 const router = express.Router()
-const itemModel = new ItemModel()
-const delModel = new DeletionModel()
+const itemModel = new ItemModel(dbPromise)
+const delModel = new DeletionModel(dbPromise)
 const invContr = new InventoryController(itemModel, delModel)
 
 

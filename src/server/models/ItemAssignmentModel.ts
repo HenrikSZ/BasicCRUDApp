@@ -4,7 +4,7 @@
 
 
 import { OkPacket, RowDataPacket } from "mysql2"
-import { Pool } from "mysql2/promise"
+import { Pool, PoolConnection } from "mysql2/promise"
 import logger from "../logger.js"
  
  
@@ -20,7 +20,7 @@ interface Deletion extends MinimalDeletion {
 }
  
  
-export default class AssignmentModel {
+export default class ItemAssignmentModel {
     dbPromise: Pool
 
     constructor(dbPromise: Pool) {
@@ -34,12 +34,18 @@ export default class AssignmentModel {
      * @param assignedCount the amount of items that should be assigned.
      * @returns the id of the inserted assignment.
      */
-    insert(itemId: number, assignedCount: number): Promise<number> {
+    create(itemId: number, assignedCount: number,
+            shipmentId?: number,
+            externalItemAssignmentId?: number,
+            dbPromise: Pool | PoolConnection = this.dbPromise): Promise<number> {
         logger.debug(`Inserting assignment of ${assignedCount} `
             +`for item "${itemId}"`)
 
-        const stmt = "INSERT INTO item_assignments (item_id, assigned_count) VALUES (?, ?)"
-        return this.dbPromise.query(stmt, [itemId, assignedCount])
+        const stmt = "INSERT INTO item_assignments "
+            + "(item_id, assigned_count, shipment_id, external_assignment_id) "
+            + "VALUES (?, ?, ?, ?)"
+        return dbPromise.query(stmt,
+            [itemId, assignedCount, shipmentId, externalItemAssignmentId])
         .then(([results, fields]) => {
             results = results as OkPacket
             return results.insertId

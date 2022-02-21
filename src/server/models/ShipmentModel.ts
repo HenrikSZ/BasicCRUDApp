@@ -5,10 +5,10 @@
 
 import { RowDataPacket, OkPacket } from "mysql2"
 import { Pool, PoolConnection } from "mysql2/promise"
-import { handleDbError } from "../error_handling.js"
 import { InventoryItem } from "./ItemModel.js"
 
 import { stringify } from "csv-stringify/sync"
+import ItemAssignmentModel from "./ItemAssignmentModel.js"
  
  
 interface MinimalShipment {
@@ -34,9 +34,11 @@ interface MappedInventoryItem extends InventoryItem {
 
 export default class ShipmentModel {
     dbPromise: Pool
+    assignmentModel: ItemAssignmentModel
 
     constructor(dbPromise: Pool) {
         this.dbPromise = dbPromise
+        this.assignmentModel = new ItemAssignmentModel(this.dbPromise)
     }
 
 
@@ -57,14 +59,13 @@ export default class ShipmentModel {
                 shipment.items = []
                 return shipment
             })
-            stmt = "SELECT shipments_to_assignments.shipment_id, "
+            stmt = "SELECT item_assignments.shipment_id, "
                 + "items.name, (-1) * item_assignments.assigned_count AS assigned_count, "
                 + "items.id "
-                + "FROM shipments_to_assignments "
-                + "INNER JOIN item_assignments ON "
-                + "shipments_to_assignments.assignment_id = item_assignments.id "
+                + "FROM item_assignments "
                 + "INNER JOIN items ON "
                 + "item_assignments.item_id = items.id "
+                + "WHERE shipment_id IS NOT NULL "
                 + "ORDER BY shipment_id"
             return this.dbPromise.query(stmt)
         }).then(([results, fields]) => {
@@ -95,15 +96,13 @@ export default class ShipmentModel {
         return this.dbPromise.query(stmt, id)
         .then(([results, fields]) => {
             shipment = (results as RowDataPacket)[0] as Shipment
-            stmt = "SELECT shipments_to_assignments.shipment_id, items.name, "
-                + "(-1) * item_assignments.assigned_count AS assigned_count, "
+            stmt = "SELECT item_assignments.shipment_id, items.name, "
+                + "-item_assignments.assigned_count AS assigned_count, "
                 + "items.id "
-                + "FROM shipments_to_assignments "
-                + "INNER JOIN item_assignments ON "
-                + "shipments_to_assignments.assignment_id = item_assignments.id "
+                + "FROM item_assignments "
                 + "INNER JOIN items ON "
                 + "item_assignments.item_id = items.id "
-                + "WHERE shipments_to_assignments.shipment_id = ?";
+                + "WHERE item_assignments.shipment_id = ?";
             return this.dbPromise.query(stmt, id)
         }).then(([results, fields]) => {
             shipment.items = []
@@ -144,41 +143,19 @@ export default class ShipmentModel {
         .then(([results, fields]) => {
             results = results as OkPacket
             shipmentId = results.insertId
-        })
-        .then(() => {
+
             let promises = []
-            let stmt = "INSERT INTO item_assignments SET ?"
 
             for (let item of shipment.items) {
-                let insertItem = {
-                    item_id: item.id,
-                    assigned_count: -item.count
-                }
-                let promise = conn.query(stmt, insertItem)
+                let promise = this.assignmentModel
+                    .create(item.id, -item.count, shipmentId, undefined, conn)
 
                 promises.push(promise)
             }
 
             return Promise.all(promises)
         })
-        .then((ids: any[]) => {
-            let assignmentIds = ids.map((item) => item[0].insertId)
-
-            let promises = []
-            let stmt = "INSERT INTO shipments_to_assignments SET ?"
-
-            for (let assignmentId of assignmentIds) {
-                let insertItem = {
-                    shipment_id: shipmentId,
-                    assignment_id: assignmentId
-                }
-                let promise = conn.query(stmt, insertItem)
-
-                promises.push(promise)
-            }
-
-            return Promise.all(promises)
-        }).then(() => {
+        .then(() => {
             conn.commit()
             conn.release()
             return shipmentId
@@ -208,6 +185,26 @@ export default class ShipmentModel {
 
 
     /**
+     * Updates an assignment of a shipment to have a new item count.
+     * 
+     * @param new_count the new count the shipment item should have
+     * @param shipmentId the id of the shipment to update
+     * @param itemId the id of the item to update
+     * @returns true if an item could be updated, false otherwise
+     */
+    updateShipmentItem(newCount: number, shipmentId: number, itemId: number) {
+        const stmt = "UPDATE item_assignments SET assigned_count = ? "
+            + "WHERE shipment_id = ? AND item_id = ?"
+
+        return this.dbPromise.query(stmt, [-newCount, shipmentId, itemId])
+        .then(([results, fields]) => {
+            results = results as OkPacket
+            return results.affectedRows > 0
+        })
+    }
+
+
+    /**
      * Exports shipment, destination, item_name, count for all items
      * in CSV format.
      * 
@@ -216,14 +213,13 @@ export default class ShipmentModel {
     exportAllShipmentsAsCsv() {
         const stmt = "SELECT shipments.name AS shipment, shipments.destination, "
             + "items.name AS item_name, -item_assignments.assigned_count AS count "
-            + "FROM shipments_to_assignments "
-            + "LEFT JOIN shipments ON "
-            + "shipments.id = shipments_to_assignments.shipment_id "
-            + "LEFT JOIN item_assignments ON "
-            + "item_assignments.id = shipments_to_assignments.assignment_id "
-            + "LEFT JOIN items ON "
+            + "FROM item_assignments "
+            + "INNER JOIN shipments ON "
+            + "shipments.id = item_assignments.shipment_id "
+            + "INNER JOIN items ON "
             + "items.id = item_assignments.item_id "
             + "ORDER BY shipments.id, items.id"
+
         return this.dbPromise.query(stmt)
         .then(([items, fields]) => {
             return stringify(items as RowDataPacket[], {

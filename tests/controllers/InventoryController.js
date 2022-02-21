@@ -258,7 +258,7 @@ describe("InventoryController", () => {
             
             return invController.postNewInventoryItem(req, res)
             .then(() => {
-                expect(mockModel.insertItem).to.have.been.calledWith(item)
+                expect(mockModel.createItem).to.have.been.calledWith(item)
             })
         })
         it("should return new inventory item with a status code 0f 201", () => {

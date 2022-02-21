@@ -7,7 +7,7 @@ export default function mock(values = {}) {
         getItem: sinon.mock().resolves(values.item),
         getAllDeletedItems: sinon.mock().resolves(values.deletedItems),
         getDeletionId: sinon.mock().resolves(values.deletionId),
-        insertItem: sinon.mock().resolves(values.insertId),
+        createItem: sinon.mock().resolves(values.insertId),
         updateItem: sinon.mock().resolves(values.wasUpdated)
     }
 }

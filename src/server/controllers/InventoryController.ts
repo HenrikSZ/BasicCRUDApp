@@ -6,10 +6,10 @@ import express from  "express"
 import logger from "../logger.js"
 import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError, CustomError, handleUnexpectedError }
     from "../error_handling.js"
-import { isInteger } from "../util.js"
 import DeletionModel from "../models/DeletionModel.js"
 import ItemModel from "../models/ItemModel.js"
 import { stringify } from "csv-stringify/sync"
+import validator from "validator"
 
 
 /**
@@ -25,6 +25,7 @@ export default class InventoryController {
         this.deletionModel = deletionModel
     }
 
+    
     /**
      * Checks if there is a valid id provided in the url
      *
@@ -34,7 +35,7 @@ export default class InventoryController {
      */
     entryIdMiddleware(req: express.Request, res: express.Response,
         next: express.NextFunction) {
-        if (isInteger(req.params.id)) {
+        if (validator.isInt(req.params.id + "", { min: 1 })) {
             next()
         } else {
             logger.info(`${req.hostname} tried to access inventory`
@@ -48,6 +49,7 @@ export default class InventoryController {
             res.status(400).send(body)
         }
     }
+
 
     /**
      * Checks if the request body contains all valid fields for a new
@@ -73,6 +75,7 @@ export default class InventoryController {
             res.status(400).send(body)
         }
     }
+
 
     /**
      * Checks if the request body contains a comment field
@@ -123,6 +126,7 @@ export default class InventoryController {
         }
     }
 
+
     /**
      * Checks if an object contains all properties of a new inventory item
      * TODO: pull out in separate method
@@ -134,10 +138,11 @@ export default class InventoryController {
         return (
             Object.keys(entry).length == 2
             && entry.hasOwnProperty("name") && entry.hasOwnProperty("count")
-            && entry.name.length !== 0 && isInteger(entry.count)
+            && entry.name.length !== 0 && validator.isInt(entry.count + "", { min: 0 })
             && entry.count >= 0
         )
     }
+
 
     /**
      * Reads the complete inventory and sends all its fields as a
@@ -158,6 +163,7 @@ export default class InventoryController {
             handleDbError(error, req, res)
         })
     }
+
 
     /**
      * Reads one item specified from the id in the request parameters (url)
@@ -217,7 +223,8 @@ export default class InventoryController {
 
     /**
      * Creates a new inventory item from the fields specified in the
-     * request body
+     * request body.
+     * TODO: Correctly implement item count initiation.
      *
      * @param req the request from express.js
      * @param res the response from express.js
@@ -226,7 +233,7 @@ export default class InventoryController {
         logger.info(`${req.hostname} requested to create entry `
                 + `in inventory`)
 
-        return this.invModel.insertItem(req.body)
+        return this.invModel.createItem(req.body)
         .then(insertId => {
             logger.info(`${req.hostname} created entry with `
                 + `id ${insertId} in inventory`)
