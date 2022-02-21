@@ -20,7 +20,7 @@ describe("ItemAssignmentModel", () => {
     })
     beforeEach(() => clearTables(dbPromise))
 
-    function createItemDataSet() {
+    function createItemDataset() {
         let itemIds = [], externalItemAssignmentIds = []
 
         return Promise.all([
@@ -47,7 +47,7 @@ describe("ItemAssignmentModel", () => {
 
     function createAssignments() {
         let itemIds = [], assignmentIds = [], externalItemAssignmentIds = []
-        return createItemDataSet()
+        return createItemDataset()
         .then(ids => {
             itemIds = ids.itemIds
             externalItemAssignmentIds = ids.externalItemAssignmentIds
@@ -71,7 +71,7 @@ describe("ItemAssignmentModel", () => {
         it("should correctly create one assignment", () => {
             let count = 10, itemId = -1
 
-            return createItemDataSet()
+            return createItemDataset()
             .then(ids => {
                 itemId = ids.itemIds[0]
                 const model = new ItemAssignmentModel(dbPromise)
@@ -92,7 +92,7 @@ describe("ItemAssignmentModel", () => {
         it("should throw an error if assignment is too high", () => {
             let count = -10, id = -1
 
-            return createItemDataSet()
+            return createItemDataset()
             .then(ids => {
                 const model = new ItemAssignmentModel(dbPromise)
                 id = ids.itemIds[0]
@@ -105,7 +105,7 @@ describe("ItemAssignmentModel", () => {
         it("should not create if assignment is too high", () => {
             let count = -10, id = -1
 
-            return createItemDataSet()
+            return createItemDataset()
             .then(ids => {
                 const model = new ItemAssignmentModel(dbPromise)
                 id = ids[0]

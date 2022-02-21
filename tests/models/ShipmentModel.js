@@ -79,17 +79,21 @@ describe("ShipmentModel", () => {
         return insertItemDataSet()
         .then((ids) => {
             itemIds = ids
-            return Promise.all([
-                dbPromise.query("INSERT INTO shipments (name, destination) "
-                    + "VALUES ('Test', 'Heidelberg')"),
-                dbPromise.query("INSERT INTO shipments (name, destination) "
-                    + "VALUES ('Test2', 'Heidelberg2')"),
-                dbPromise.query("INSERT INTO shipments (name, destination) "
-                    + "VALUES ('Test3', 'Heidelberg3')")
-            ])
+            return dbPromise.query("INSERT INTO shipments (name, destination) "
+                + "VALUES ('Test', 'Heidelberg')")
         })
-        .then((ids) => {
-            shipmentIds = ids.map(r => r[0].insertId)
+        .then(([results, fields]) => {
+            shipmentIds.push(results.insertId)
+            return dbPromise.query("INSERT INTO shipments (name, destination) "
+                + "VALUES ('Test2', 'Heidelberg2')")
+        })
+        .then(([results, fields]) => {
+            shipmentIds.push(results.insertId)
+            return dbPromise.query("INSERT INTO shipments (name, destination) "
+                + "VALUES ('Test3', 'Heidelberg3')")
+        })
+        .then(([results, fields]) => {
+            shipmentIds.push(results.insertId)
 
             const stmt = "INSERT INTO item_assignments "
                 + "(item_id, assigned_count, shipment_id) VALUES (?, ?, ?)"

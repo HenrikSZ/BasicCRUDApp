@@ -3,8 +3,7 @@
  */
 
 
-import { OkPacket, RowDataPacket } from "mysql2"
-import { Pool } from "mysql2/promise"
+import { Pool, OkPacket } from "mysql2/promise"
 
 
 export default class ExternalItemAssignmentModel {
