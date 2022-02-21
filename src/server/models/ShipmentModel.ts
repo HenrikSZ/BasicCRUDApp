@@ -9,6 +9,7 @@ import { InventoryItem } from "./ItemModel.js"
 
 import { stringify } from "csv-stringify/sync"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
+import dbPromise from "../db.js"
  
  
 interface MinimalShipment {
@@ -36,9 +37,10 @@ export default class ShipmentModel {
     dbPromise: Pool
     assignmentModel: ItemAssignmentModel
 
-    constructor(dbPromise: Pool) {
+    constructor(_dbPromise: Pool = dbPromise,
+            assignmentModel: ItemAssignmentModel = new ItemAssignmentModel()) {
         this.dbPromise = dbPromise
-        this.assignmentModel = new ItemAssignmentModel(this.dbPromise)
+        this.assignmentModel = assignmentModel
     }
 
 
@@ -181,6 +183,18 @@ export default class ShipmentModel {
             results = results as OkPacket
             return results.affectedRows > 0
         })
+    }
+
+
+    /**
+     * Deletes an item assignment of a shipment.
+     * 
+     * @param shipmentId the id of the shipment this item is contained in
+     * @param itemId the id of the item to be deleted
+     * @returns true if an assignment could be deleted, false otherwise
+     */
+    deleteShipmentItem(shipmentId: number, itemId: number) {
+        return this.assignmentModel.deleteShipmentAssignment(shipmentId, itemId)
     }
 
 

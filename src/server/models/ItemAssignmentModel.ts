@@ -5,6 +5,7 @@
 
 import { OkPacket, RowDataPacket } from "mysql2"
 import { Pool, PoolConnection } from "mysql2/promise"
+import dbPromise from "../db.js"
 import logger from "../logger.js"
  
  
@@ -19,12 +20,12 @@ interface Deletion extends MinimalDeletion {
     updated_at: Date
 }
  
- 
+
 export default class ItemAssignmentModel {
     dbPromise: Pool
 
-    constructor(dbPromise: Pool) {
-        this.dbPromise = dbPromise
+    constructor(_dbPromise: Pool = dbPromise) {
+        this.dbPromise = _dbPromise
     }
 
     /**
@@ -63,6 +64,27 @@ export default class ItemAssignmentModel {
 
         const stmt = "DELETE FROM item_assignments WHERE id = ?"
         return this.dbPromise.query(stmt, id)
+        .then(([results, fields]) => {
+            results = results as OkPacket
+            return results.affectedRows > 0
+        })
+    }
+
+
+    /**
+     * Deletes an item assignment of a shipment.
+     * 
+     * @param shipmentId the id of the shipment this item is contained in
+     * @param itemId the id of the item to be deleted
+     * @returns true if an assignment could be deleted, false otherwise
+     */
+    deleteShipmentAssignment(shipmentId: number, itemId: number) {
+        logger.debug(`Deleting from assignments table with `
+            + `shipment_id ${shipmentId} and item_id ${itemId}`)
+
+        const stmt = "DELETE FROM item_assignments "
+            + "WHERE shipment_id = ? AND item_id = ?"
+        return this.dbPromise.query(stmt, [shipmentId, itemId])
         .then(([results, fields]) => {
             results = results as OkPacket
             return results.affectedRows > 0

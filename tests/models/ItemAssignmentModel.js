@@ -159,4 +159,102 @@ describe("ItemAssignmentModel", () => {
             })
         })
     })
+    describe("#deleteShipmentAssignment", () => {
+        function insertShipmentDataset() {
+            const name = "Test", destination = "Düsseldorf", assignedCount = 20
+            let itemId = -1, shipmentId = -1
+            
+            return dbPromise.query("INSERT INTO items SET name = 'House'")
+            .then(([results, fields]) => {
+                itemId = results.insertId
+
+                let stmt = "INSERT INTO shipments SET name = ?, destination = ?";
+                return dbPromise.query(stmt, [name, destination])
+            })
+            .then(([results, fields]) => {
+                shipmentId = results.insertId
+
+                let stmt = "INSERT INTO item_assignments "
+                    + "SET shipment_id = ?, item_id = ?, assigned_count = ?"
+                return dbPromise.query(stmt, [shipmentId, itemId, assignedCount])
+            })
+            .then(() => {
+                return {
+                    itemId: itemId,
+                    shipmentId: shipmentId
+                }
+            })
+        }
+
+        function insertShipmentDatasetForError() {
+            const name = "Test", destination = "Düsseldorf", assignedCount = 20
+            let itemId = -1, shipmentId = -1
+            
+            return dbPromise.query("INSERT INTO items SET name = 'House'")
+            .then(([results, fields]) => {
+                itemId = results.insertId
+                let stmt = "INSERT INTO shipments SET name = ?, destination = ?";
+                return dbPromise.query(stmt, [name, destination])
+            })
+            .then(([results, fields]) => {
+                shipmentId = results.insertId
+
+                let stmt = "INSERT INTO item_assignments "
+                    + "SET shipment_id = ?, item_id = ?, assigned_count = ?"
+                return dbPromise.query(stmt, [shipmentId, itemId, assignedCount])
+            })
+            .then(([results, fields]) => {
+                let stmt = "INSERT INTO external_item_assignments VALUES()"
+                return dbPromise.query(stmt)
+            })
+            .then(([results, fields]) => {
+                let externalId = results.insertId
+                let stmt = "INSERT INTO item_assignments "
+                    + "SET item_id = ?, external_assignment_id = ?, assigned_count = ?"
+                return dbPromise.query(stmt, [itemId, externalId, -assignedCount])
+            })
+            .then(() => {
+                return {
+                    itemId: itemId,
+                    shipmentId: shipmentId
+                }
+            })
+        }
+
+        it("should delete one assigned shipment item", async () => {
+            return insertShipmentDataset()
+            .then(info => {
+                const model = new ItemAssignmentModel(dbPromise)
+                return model.deleteShipmentAssignment(info.shipmentId, info.itemId)
+            })
+            .then(wasDeleted => {
+                expect(wasDeleted).to.be.true
+                return dbPromise.query("SELECT * FROM item_assignments")
+            })
+            .then(([results, fields]) => {
+                expect(results).to.have.length(0)
+            })
+        })
+        it("should throw an error if the assignment would be too high", async () => {
+            return insertShipmentDatasetForError()
+            .then(info => {
+                const model = new ItemAssignmentModel(dbPromise)
+                expect(model.deleteShipmentAssignment(info.shipmentId, info.itemId))
+                    .to.be.rejectedWith("Assigned item count larger than available item count")
+            })
+        })
+        it("should not delete if the assignment would be too high", async () => {
+            return insertShipmentDatasetForError()
+            .then(info => {
+                const model = new ItemAssignmentModel(dbPromise)
+                return model.deleteShipmentAssignment(info.shipmentId, info.itemId)
+            })
+            .catch(() => {
+                return dbPromise.query("SELECT * FROM item_assignments")
+            })
+            .then(([results, fields]) => {
+                expect(results).to.have.length(2)
+            })
+        })
+    })
 })

@@ -7,12 +7,14 @@ import { Request, Response, NextFunction } from "express"
 import logger from "../logger.js"
 import { ErrorResponse, ErrorType, handleDbError } from "../error_handling.js"
 import validator from "validator"
+import ItemAssignmentModel from "../models/ItemAssignmentModel.js"
 
-declare global{
+declare global {
     namespace Express {
         interface Request {
             shipment: ClientSideShipment,
-            shipmentId: number
+            shipmentId: number,
+            itemId: number
         }
     }
 }
@@ -22,9 +24,12 @@ declare global{
  */
 export default class ShipmentController {
     shipmentModel: ShipmentModel
+    itemAssignmentModel: ItemAssignmentModel
 
-    constructor(shipmentModel: ShipmentModel) {
+    constructor(shipmentModel: ShipmentModel = new ShipmentModel(),
+            itemAssignmentModel: ItemAssignmentModel = new ItemAssignmentModel()) {
         this.shipmentModel = shipmentModel
+        this.itemAssignmentModel = itemAssignmentModel
     }
 
     /**
@@ -81,15 +86,15 @@ export default class ShipmentController {
 
 
     /**
-     * Checks whether the parameers of the request contain a valid id.
+     * Checks whether the parameers of the request contain a valid shipmentId.
      * 
      * @param req the request from express.js.
      * @param res the response from express.js
      * @param next function to the next middleware
      */
     shipmentIdMiddleware(req: Request, res: Response, next: NextFunction) {
-        if (req.params.id && validator.isInt(req.params.id + "", {min: 1})) {
-            req.shipmentId = Number.parseInt(req.params.id)
+        if (req.params.shipmentId && validator.isInt(req.params.shipmentId + "", {min: 1})) {
+            req.shipmentId = Number.parseInt(req.params.shipmentId)
             next()
             return
         }
@@ -170,6 +175,24 @@ export default class ShipmentController {
         logger.info(`${req.hostname} requested to delete shipment with id ${req.shipmentId}`)
 
         return this.shipmentModel.deleteShipment(req.shipmentId)
+        .then(() => {
+            res.send()
+        }, (error) => {
+            handleDbError(error, req, res)
+        })
+    }
+
+
+    /**
+     * Deletes a shipment with the id specified in the request.
+     * 
+     * @param req the request from express.js. Must contain a valid shipmentId attribute.
+     * @param res the response from express.js
+     */
+     deleteShipmentItem(req: Request, res: Response) {
+        logger.info(`${req.hostname} requested to delete shipment with id ${req.shipmentId}`)
+
+        return this.itemAssignmentModel.deleteShipmentAssignment(req.shipmentId, req.itemId)
         .then(() => {
             res.send()
         }, (error) => {
