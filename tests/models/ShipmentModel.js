@@ -8,6 +8,7 @@ import db from "../db.js"
 import { clearTables } from "../test_util.js"
 
 import ShipmentModel from "../../dist/models/ShipmentModel.js"
+import ItemAssignmentModel from "../../dist/models/ItemAssignmentModel.js"
 
 
 describe("ShipmentModel", () => {
@@ -437,30 +438,6 @@ describe("ShipmentModel", () => {
                 results = results.map(r => r[0])
                 expect(results[0].map(r => r.id)).to.equalInAnyOrder(expectedShipmentIds)
                 expect(results[1].map(r => r.item_id)).to.equalInAnyOrder(expectedItemIds)
-            })
-        })
-    })
-    describe("#updateShipmentItem", () => {
-        it("should update the assignment of one item in a shipment", () => {
-            let expectedCount = 40, shipment = {}
-
-            return insertShipmentDataset()
-            .then(expected => {
-                const model = new ShipmentModel(dbPromise)
-                shipment = expected.expectedShipments[0]
-                return model.updateShipmentItem(expectedCount, shipment.id, shipment.items[0].id)
-            })
-            .then(wasUpdated => {
-                expect(wasUpdated).to.be.true
-                const stmt = "SELECT -assigned_count AS count "
-                    + "FROM item_assignments "
-                    + "WHERE shipment_id = ? AND item_id = ?"
-
-                return dbPromise.query(stmt, [shipment.id, shipment.items[0].id])
-            })
-            .then(([results, fields]) => {
-                expect(results).to.have.length(1)
-                expect(results[0].count).to.equal(expectedCount)
             })
         })
     })

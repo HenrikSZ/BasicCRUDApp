@@ -38,8 +38,8 @@ export default class ShipmentModel {
     assignmentModel: ItemAssignmentModel
 
     constructor(_dbPromise: Pool = dbPromise,
-            assignmentModel: ItemAssignmentModel = new ItemAssignmentModel()) {
-        this.dbPromise = dbPromise
+            assignmentModel: ItemAssignmentModel = new ItemAssignmentModel(_dbPromise)) {
+        this.dbPromise = _dbPromise
         this.assignmentModel = assignmentModel
     }
 
@@ -201,20 +201,13 @@ export default class ShipmentModel {
     /**
      * Updates an assignment of a shipment to have a new item count.
      * 
-     * @param new_count the new count the shipment item should have
      * @param shipmentId the id of the shipment to update
      * @param itemId the id of the item to update
+     * @param newCount the new count the shipment item should have
      * @returns true if an item could be updated, false otherwise
      */
-    updateShipmentItem(newCount: number, shipmentId: number, itemId: number) {
-        const stmt = "UPDATE item_assignments SET assigned_count = ? "
-            + "WHERE shipment_id = ? AND item_id = ?"
-
-        return this.dbPromise.query(stmt, [-newCount, shipmentId, itemId])
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            return results.affectedRows > 0
-        })
+    updateShipmentItem(shipmentId: number, itemId: number, newCount: number) {
+        return this.assignmentModel.updateShipmentAssignment(shipmentId, itemId, newCount)
     }
 
 

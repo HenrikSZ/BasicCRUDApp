@@ -14,7 +14,8 @@ declare global {
         interface Request {
             shipment: ClientSideShipment,
             shipmentId: number,
-            itemId: number
+            itemId: number,
+            assignedCount: number
         }
     }
 }
@@ -73,7 +74,35 @@ export default class ShipmentController {
             }
         }
 
-        logger.info(`${req.hostname} tried to add shipment`
+        logger.info(`${req.hostname} tried to add shipment d`
+            + `without valid parameters`)
+
+        const errorBody: ErrorResponse = {
+            name: ErrorType.FIELD,
+            message: "Some fields of the new shipment contain invalid values"
+        }
+
+        res.status(400).send(errorBody)
+    }
+
+
+    /**
+     * Checks whether the body of the request contains a valid
+     * assignedCount attribute.
+     * 
+     * @param req the request from express.js.
+     * @param res the response from express.js
+     * @param next function to the next middleware
+     */
+    assignedCountMiddleware(req: Request, res: Response, next: NextFunction) {
+        if (req.params.assignedCount &&
+                validator.isInt(req.params.assignedCount + "")) {
+            req.assignedCount = Number.parseInt(req.params.assignedCount)
+            next()
+            return
+        }
+
+        logger.info(`${req.hostname} tried to add shipment `
             + `without valid parameters`)
 
         const errorBody: ErrorResponse = {
@@ -172,7 +201,8 @@ export default class ShipmentController {
      * @param res the response from express.js
      */
     deleteShipment(req: Request, res: Response) {
-        logger.info(`${req.hostname} requested to delete shipment with id ${req.shipmentId}`)
+        logger.info(`${req.hostname} requested to delete shipment `
+         + `with id ${req.shipmentId}`)
 
         return this.shipmentModel.deleteShipment(req.shipmentId)
         .then(() => {
@@ -182,17 +212,38 @@ export default class ShipmentController {
         })
     }
 
+    /**
+     * 
+     * @param req the request from express.js. Muston containt valid shipmentId
+     * and itemId, and assignedCount attributes.
+     * @param res the resonse from express.js
+     */
+    updateShipmentItem(req: Request, res: Response) {
+        logger.info(`${req.hostname} requested to delete shipment `
+            + `with id ${req.shipmentId}`)
+
+        return this.itemAssignmentModel
+            .updateShipmentAssignment(req.shipmentId, req.itemId, req.assignedCount)
+        .then(() => {
+            res.send()
+        }, (error) => {
+            handleDbError(error, req, res)
+        })
+    }
 
     /**
      * Deletes a shipment with the id specified in the request.
      * 
-     * @param req the request from express.js. Must contain a valid shipmentId attribute.
+     * @param req the request from express.js. Must contain valid shipmentId
+     * and itemId attributes.
      * @param res the response from express.js
      */
      deleteShipmentItem(req: Request, res: Response) {
-        logger.info(`${req.hostname} requested to delete shipment with id ${req.shipmentId}`)
+        logger.info(`${req.hostname} requested to delete shipment `
+            + `with id ${req.shipmentId}`)
 
-        return this.itemAssignmentModel.deleteShipmentAssignment(req.shipmentId, req.itemId)
+        return this.itemAssignmentModel
+            .deleteShipmentAssignment(req.shipmentId, req.itemId)
         .then(() => {
             res.send()
         }, (error) => {

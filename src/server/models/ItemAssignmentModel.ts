@@ -72,6 +72,28 @@ export default class ItemAssignmentModel {
 
 
     /**
+     * Updates the assigned count of an assignment of a shipment item
+     * 
+     * @param shipmentId the id of the shipment this item is contained in
+     * @param itemId the id of the item to be updated
+     * @param assignedCount the new count this item should have
+     * @returns true if an assignment could be updated, false otherwise
+     */
+    updateShipmentAssignment(shipmentId: number, itemId: number, assignedCount: number) {
+        logger.debug(`Updating in assignments table with `
+            + `shipment_id ${shipmentId} and item_id ${itemId} to count ${assignedCount}`)
+
+        const stmt = "UPDATE item_assignments SET assigned_count = ? "
+            + "WHERE shipment_id = ? AND item_id = ?"
+        return this.dbPromise.query(stmt, [assignedCount, shipmentId, itemId])
+        .then(([results, fields]) => {
+            results = results as OkPacket
+            return results.affectedRows > 0
+        })
+    }
+
+
+    /**
      * Deletes an item assignment of a shipment.
      * 
      * @param shipmentId the id of the shipment this item is contained in

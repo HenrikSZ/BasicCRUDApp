@@ -291,7 +291,7 @@ describe("ShipmentController", () => {
             const model = mockShipmentModel()
             const req = mockReq({
                 params: {
-                    id: "test"
+                    shipmentId: "test"
                 }
             })
             const res = mockRes()
@@ -308,7 +308,7 @@ describe("ShipmentController", () => {
             const model = mockShipmentModel()
             const req = mockReq({
                 params: {
-                    id: -10
+                    shipmentId: -10
                 }
             })
             const res = mockRes()
@@ -326,7 +326,7 @@ describe("ShipmentController", () => {
             const model = mockShipmentModel()
             const req = mockReq({
                 params: {
-                    id: shipmentId.toString()
+                    shipmentId: shipmentId.toString()
                 }
             })
             const res = mockRes()
@@ -344,7 +344,7 @@ describe("ShipmentController", () => {
             const model = mockShipmentModel()
             const req = mockReq({
                 params: {
-                    id: shipmentId
+                    shipmentId: shipmentId
                 }
             })
             const res = mockRes()
@@ -355,6 +355,62 @@ describe("ShipmentController", () => {
             
             expect(next).to.have.been.called
             expect(req.shipmentId).to.equal(shipmentId)
+            expect(res.send).to.not.have.been.called
+        })
+    })
+    describe("#assignedCountMiddleware", () => {
+        it("should allow positive numbers in strings", () => {
+            let assignedCount = 10
+            const model = mockShipmentModel()
+            const req = mockReq({
+                params: {
+                    assignedCount: assignedCount.toString()
+                }
+            })
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.assignedCountMiddleware(req, res, next)
+
+            expect(next).to.have.been.calledOnce
+            expect(req.assignedCount).to.equal(assignedCount)
+            expect(res.send).to.not.have.been.called
+        })
+        it("should allow negative numbers in strings", () => {
+            let assignedCount = -10
+            const model = mockShipmentModel()
+            const req = mockReq({
+                params: {
+                    assignedCount: assignedCount.toString()
+                }
+            })
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.assignedCountMiddleware(req, res, next)
+
+            expect(next).to.have.been.calledOnce
+            expect(req.assignedCount).to.equal(assignedCount)
+            expect(res.send).to.not.have.been.called
+        })
+        it("should allow numbers", () => {
+            let assignedCount = 10
+            const model = mockShipmentModel()
+            const req = mockReq({
+                params: {
+                    assignedCount: assignedCount
+                }
+            })
+            const res = mockRes()
+            const next = sinon.spy()
+            const contr = new ShipmentController(model)
+
+            contr.assignedCountMiddleware(req, res, next)
+
+            expect(next).to.have.been.calledOnce
+            expect(req.assignedCount).to.equal(assignedCount)
             expect(res.send).to.not.have.been.called
         })
     })
