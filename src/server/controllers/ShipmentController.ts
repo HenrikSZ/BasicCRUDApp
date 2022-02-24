@@ -95,9 +95,9 @@ export default class ShipmentController {
      * @param next function to the next middleware
      */
     assignedCountMiddleware(req: Request, res: Response, next: NextFunction) {
-        if (req.params.assignedCount &&
-                validator.isInt(req.params.assignedCount + "")) {
-            req.assignedCount = Number.parseInt(req.params.assignedCount)
+        if (req.body.assigned_count &&
+                validator.isInt(req.body.assigned_count + "")) {
+            req.assignedCount = Number.parseInt(req.body.assigned_count)
             next()
             return
         }

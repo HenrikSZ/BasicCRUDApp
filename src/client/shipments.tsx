@@ -77,6 +77,9 @@ export class ShipmentView extends React.Component {
                                     this.removeLocalShipment(id)}
                                 onShipmentItemDelete={(shipmentId: number, itemId: number) =>
                                     this.removeLocalShipmentItem(shipmentId, itemId)}
+                                onShipmentItemUpdate={(shipmentId: number,
+                                        itemId: number, modifications: any) =>
+                                    this.updateLocalShipmentItem(shipmentId, itemId, modifications)}
                                 onErrorResponse={(response: any) =>
                                     this.props.onErrorResponse(response)}/>
                         </div>
@@ -146,6 +149,28 @@ export class ShipmentView extends React.Component {
 
         this.setState(state)
     }
+
+    updateLocalShipmentItem(shipmentId: number, itemId: number, modifications: any) {
+        let state = {...this.state}
+        state.entries = state.entries.map(shipment => {
+            if (shipment.id == shipmentId) {
+                let ret = {...shipment}
+                ret.items = ret.items.map(item => {
+                    if (item.id == itemId) {
+                        item.assigned_count = modifications.assigned_count
+                    } else {
+                        return item
+                    }
+                })
+                
+                return ret
+            } else {
+                return shipment
+            }
+        })
+
+        this.setState(state)
+    }
 }
 
 
@@ -154,6 +179,7 @@ class ShipmentTable extends React.Component {
         onReloadRequest: Function,
         onShipmentDelete: Function,
         onShipmentItemDelete: Function,
+        onShipmentItemUpdate: Function,
         onErrorResponse: Function
     }
 
@@ -180,7 +206,9 @@ class ShipmentTable extends React.Component {
                                         onErrorResponse={(response: any) =>
                                             this.props.onErrorResponse(response)}
                                         onItemDelete={(shipmentId: number, itemId: number) =>
-                                            this.props.onShipmentItemDelete(shipmentId, itemId)}/>
+                                            this.props.onShipmentItemDelete(shipmentId, itemId)}
+                                        onItemUpdate={(modifications: any) =>
+                                            this.props.onShipmentItemUpdate(modifications)}/>
                                 )
                             }
                             {
@@ -203,7 +231,8 @@ class Shipment extends React.Component {
     props: {    data: ShipmentData,
                 onDelete: Function,
                 onErrorResponse: Function,
-                onItemDelete: Function
+                onItemDelete: Function,
+                onItemUpdate: Function
     }
     state: { dropdownCss: string }
 
@@ -251,6 +280,8 @@ class Shipment extends React.Component {
                                         data={item} key={item.id}
                                         onDelete={(itemId: number) =>
                                             this.props.onItemDelete(this.props.data.id, itemId)}
+                                        onUpdate={(modifications: any) =>
+                                            this.props.onItemUpdate(modifications)}
                                         onErrorResponse={(response: any) =>
                                             this.props.onErrorResponse(response)}/>
                                 ))
@@ -295,7 +326,7 @@ class Shipment extends React.Component {
 
 enum ShipmentItemMode {
     NORMAL = 0,
-    MODIFY = 1
+    EDIT = 1
 }
 
 class ShipmentItem extends React.Component {
@@ -303,9 +334,13 @@ class ShipmentItem extends React.Component {
                 data: MappedInventoryItemData,
                 shipmentId: number,
                 onDelete: Function,
+                onUpdate: Function,
                 onErrorResponse: Function
     }
     state: { mode: ShipmentItemMode }
+    modifications: {
+        assigned_count?: number
+    }
 
     constructor(props: {
             data: MappedInventoryItemData,
@@ -317,9 +352,48 @@ class ShipmentItem extends React.Component {
         this.state = { 
             mode: ShipmentItemMode.NORMAL
         }
+
+        this.modifications = {
+            assigned_count: this.props.data.assigned_count
+        }
     }
 
     render() {
+        switch (this.state.mode) {
+            case ShipmentItemMode.EDIT:
+                return this.editMode()
+            default:
+                return this.normalMode()
+        }
+    }
+
+    editMode() {
+        return (
+            <tr>
+                <td className="border-2 border-gray-700 p-2">
+                    {this.props.data.name}
+                </td>
+                <td className="border-2 border-gray-700 p-2">
+                    <input className="border-2 rounded-lg border-gray-700 w-32"
+                            type="number" defaultValue={this.props.data.assigned_count} 
+                            onChange={evt => this.modifications.assigned_count =
+                                Number.parseInt(evt.target.value)}/>
+                </td>
+                <td>
+                    <ConfirmationButton onClick={() => this.saveEdits()}>
+                        Save
+                    </ConfirmationButton>
+                </td>
+                <td>
+                    <DangerButton onClick={() => this.switchToMode(ShipmentItemMode.NORMAL)}>
+                        Discard
+                    </DangerButton>
+                </td>
+            </tr>
+        )
+    }
+
+    normalMode() {
         return (
             <tr>
                 <td className="border-2 border-gray-700 p-2">
@@ -329,8 +403,8 @@ class ShipmentItem extends React.Component {
                     {this.props.data.assigned_count}
                 </td>
                 <td>
-                    <ConfirmationButton onClick={() => this.switchToMode(ShipmentItemMode.MODIFY)}>
-                        Modify
+                    <ConfirmationButton onClick={() => this.switchToMode(ShipmentItemMode.EDIT)}>
+                        Edit
                     </ConfirmationButton>
                 </td>
                 <td>
@@ -352,8 +426,7 @@ class ShipmentItem extends React.Component {
     deleteShipmentItem() {
         fetch(`/shipments/shipment/existing/${this.props.shipmentId}/${this.props.data.id}`,
             {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" }
+                method: "DELETE"
             }
         )
         .then((response: any) => {
@@ -362,6 +435,30 @@ class ShipmentItem extends React.Component {
             else
                 this.props.onErrorResponse(response)
         })
+    }
+
+    saveEdits() {
+        let modified = this.modifications.assigned_count !== this.props.data.count
+
+        if (modified) {
+            fetch(`/shipments/shipment/existing/${this.props.shipmentId}/${this.props.data.id}`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify(this.modifications),
+                    headers: { "Content-Type": "application/json" }
+                }
+            )
+            .then((response: any) => {
+                if (response.ok) {
+                    this.props.onUpdate(this.modifications)
+                    this.switchToMode(ShipmentItemMode.NORMAL)
+                } else {
+                    this.props.onErrorResponse(response)
+                }
+            })
+        } else {
+            this.switchToMode(ShipmentItemMode.NORMAL)
+        }
     }
 }
 
