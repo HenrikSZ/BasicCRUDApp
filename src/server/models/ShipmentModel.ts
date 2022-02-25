@@ -14,6 +14,7 @@ import dbPromise from "../db.js"
  
 interface MinimalShipment {
     name: string,
+    source: string,
     destination: string
 }
 
@@ -21,8 +22,9 @@ export interface ClientSideShipment extends MinimalShipment {
     items: { id: number, count: number }[]
 }
  
-interface Shipment extends MinimalShipment {
+interface Shipment {
     name: string,
+    source: string,
     destination: string,
     id: number,
     items?: InventoryItem[]
@@ -92,7 +94,7 @@ export default class ShipmentModel {
      * @returns the shipment identified by the id, if it exists. Otherwise null.
      */
     getShipment(id: number): Promise<Shipment> {
-        let stmt = "SELECT id, name, destination FROM shipments WHERE id = ?"
+        let stmt = "SELECT id, name, source, destination FROM shipments WHERE id = ?"
         let shipment: Shipment | null = null
 
         return this.dbPromise.query(stmt, id)
@@ -127,6 +129,7 @@ export default class ShipmentModel {
     createShipment(shipment: ClientSideShipment): Promise<number> {
         let insertShipment = {
             name: shipment.name,
+            source: shipment.source,
             destination: shipment.destination
         }
 
@@ -212,13 +215,14 @@ export default class ShipmentModel {
 
 
     /**
-     * Exports shipment, destination, item_name, count for all items
+     * Exports shipment, source, destination, item_name, count for all items
      * in CSV format.
      * 
      * @returns a string in CSV format containing the fields.
      */
     exportAllShipmentsAsCsv() {
-        const stmt = "SELECT shipments.name AS shipment, shipments.destination, "
+        const stmt = "SELECT shipments.name AS shipment, "
+            + "shipments.source, shipments.destination, "
             + "items.name AS item_name, -item_assignments.assigned_count AS count "
             + "FROM item_assignments "
             + "INNER JOIN shipments ON "
@@ -231,7 +235,7 @@ export default class ShipmentModel {
         .then(([items, fields]) => {
             return stringify(items as RowDataPacket[], {
                 header: true,
-                columns: ["shipment", "destination", "item_name", "count"]
+                columns: ["shipment", "source", "destination", "item_name", "count"]
             })
         })
     }

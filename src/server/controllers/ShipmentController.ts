@@ -45,6 +45,8 @@ export default class ShipmentController {
         if (body.items
                 && body.name
                 && validator.isLength(body.name, { min: 1})
+                && body.source
+                && validator.isLength(body.source, { min: 1})
                 && body.destination
                 && validator.isLength(body.destination, { min: 1})
                 && Array.isArray(body.items)
@@ -64,6 +66,7 @@ export default class ShipmentController {
             if (allItemsValid) {
                 let shipment: ClientSideShipment = {
                     name: body.name,
+                    source: body.source,
                     destination: body.destination,
                     items: body.items
                 }

@@ -13,6 +13,7 @@ enum ShipmentViewMode {
 
 interface MutableShipmentData {
     name: string,
+    source: string,
     destination: string,
     items: { id: number, count: number }[]
 }
@@ -24,6 +25,7 @@ interface MappedInventoryItemData extends InventoryItemData {
 interface ShipmentData {
     id: number,
     name: string,
+    source: string,
     destination: string,
     items: MappedInventoryItemData[]
 }
@@ -255,7 +257,7 @@ class Shipment extends React.Component {
                 <DropdownButton onExpand={() => this.onExpand()}
                     onRetract={() => this.onRetract()}/>
                 <span className="font-bold text-lg p-4">{this.props.data.name}</span>
-                <span className="italic">to: {this.props.data.destination}</span>
+                <span className="italic">from: {this.props.data.source} / to: {this.props.data.destination}</span>
                 <div className="inline-block float-right">
                     <DangerButton onClick={() => this.deleteShipment()}>
                         Delete
@@ -475,6 +477,7 @@ class ShipmentCreator extends React.Component {
         this.state = {
             newValues: {
                 name: "",
+                source: "",
                 destination: "",
                 items: []
             }
@@ -495,6 +498,9 @@ class ShipmentCreator extends React.Component {
                                 New Name
                             </th>
                             <th className="text-left">
+                                New Source
+                            </th>
+                            <th className="text-left">
                                 New Destination
                             </th>
                         </tr>
@@ -505,6 +511,12 @@ class ShipmentCreator extends React.Component {
                                 <input className="border-2 rounded-lg border-gray-700"
                                     placeholder="Monday delivery"
                                     onChange={evt => this.state.newValues.name = evt.target.value}/>
+                            </td>
+                            <td>
+                                <input className="border-2 rounded-lg border-gray-700"
+                                    placeholder="Paul's Pizza"
+                                    onChange={evt =>
+                                        this.state.newValues.source = evt.target.value}/>
                             </td>
                             <td>
                                 <input className="border-2 rounded-lg border-gray-700"

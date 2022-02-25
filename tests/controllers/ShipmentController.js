@@ -83,6 +83,7 @@ describe("ShipmentController", () => {
         it("should allow a valid shipment", () => {
             const shipment = {
                 name: "ABC",
+                source: "München",
                 destination: "Kiel",
                 items: [
                     {
@@ -105,6 +106,7 @@ describe("ShipmentController", () => {
         it("should allow a valid shipment with stringified numbers", () => {
             const shipment = {
                 name: "ABC",
+                source: "München",
                 destination: "Kiel",
                 items: [
                     {
@@ -127,6 +129,7 @@ describe("ShipmentController", () => {
         it("should cut off additional fields", () => {
             const target = {
                 name: "ABC",
+                source: "München",
                 destination: "Kiel",
                 items: [
                     {
@@ -165,7 +168,21 @@ describe("ShipmentController", () => {
         }
         it("should not allow a shipment without a name", () => {
             const shipment = {
+                source: "München",
                 destination: "Kiel",
+                items: [
+                    {
+                        count: "50",
+                        id: "5"
+                    }
+                ]
+            }
+            negativeTestOneShipment(shipment)
+        })
+        it("should not allow a shipment without a source", () => {
+            const shipment = {
+                destination: "Kiel",
+                name: "ABC",
                 items: [
                     {
                         count: "50",
@@ -363,8 +380,8 @@ describe("ShipmentController", () => {
             let assignedCount = 10
             const model = mockShipmentModel()
             const req = mockReq({
-                params: {
-                    assignedCount: assignedCount.toString()
+                body: {
+                    assigned_count: assignedCount.toString()
                 }
             })
             const res = mockRes()
@@ -381,8 +398,8 @@ describe("ShipmentController", () => {
             let assignedCount = -10
             const model = mockShipmentModel()
             const req = mockReq({
-                params: {
-                    assignedCount: assignedCount.toString()
+                body: {
+                    assigned_count: assignedCount.toString()
                 }
             })
             const res = mockRes()
@@ -399,8 +416,8 @@ describe("ShipmentController", () => {
             let assignedCount = 10
             const model = mockShipmentModel()
             const req = mockReq({
-                params: {
-                    assignedCount: assignedCount
+                body: {
+                    assigned_count: assignedCount
                 }
             })
             const res = mockRes()

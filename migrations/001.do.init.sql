@@ -22,6 +22,7 @@ CREATE TABLE shipments(
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
     name VARCHAR(64) NOT NULL,
+    source VARCHAR(64) NOT NULL,
     destination VARCHAR(64) NOT NULL,
     PRIMARY KEY (id)
 );

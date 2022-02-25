@@ -68,15 +68,15 @@ describe("ItemAssignmentModel", () => {
     }
 
     function createShipmentDataset() {
-        const name = "Test", destination = "Düsseldorf", assignedCount = 20
+        const name = "Test", source = "Köln", destination = "Düsseldorf", assignedCount = 20
         let itemId = -1, shipmentId = -1
         
         return dbPromise.query("INSERT INTO items SET name = 'House'")
         .then(([results, fields]) => {
             itemId = results.insertId
 
-            let stmt = "INSERT INTO shipments SET name = ?, destination = ?";
-            return dbPromise.query(stmt, [name, destination])
+            let stmt = "INSERT INTO shipments SET name = ?, source = ?, destination = ?";
+            return dbPromise.query(stmt, [name, source, destination])
         })
         .then(([results, fields]) => {
             shipmentId = results.insertId
@@ -94,14 +94,14 @@ describe("ItemAssignmentModel", () => {
     }
 
     function createShipmentDatasetForError() {
-        const name = "Test", destination = "Düsseldorf", assignedCount = 20
+        const name = "Test", source = "Köln", destination = "Düsseldorf", assignedCount = 20
         let itemId = -1, shipmentId = -1
         
         return dbPromise.query("INSERT INTO items SET name = 'House'")
         .then(([results, fields]) => {
             itemId = results.insertId
-            let stmt = "INSERT INTO shipments SET name = ?, destination = ?";
-            return dbPromise.query(stmt, [name, destination])
+            let stmt = "INSERT INTO shipments SET name = ?, source = ?, destination = ?";
+            return dbPromise.query(stmt, [name, source, destination])
         })
         .then(([results, fields]) => {
             shipmentId = results.insertId

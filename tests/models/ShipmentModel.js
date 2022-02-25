@@ -80,18 +80,18 @@ describe("ShipmentModel", () => {
         return insertItemDataSet()
         .then((ids) => {
             itemIds = ids
-            return dbPromise.query("INSERT INTO shipments (name, destination) "
-                + "VALUES ('Test', 'Heidelberg')")
+            return dbPromise.query("INSERT INTO shipments (name, source, destination) "
+                + "VALUES ('Test', 'Mannheim', 'Heidelberg')")
         })
         .then(([results, fields]) => {
             shipmentIds.push(results.insertId)
-            return dbPromise.query("INSERT INTO shipments (name, destination) "
-                + "VALUES ('Test2', 'Heidelberg2')")
+            return dbPromise.query("INSERT INTO shipments (name, source, destination) "
+                + "VALUES ('Test2', 'Mannheim2', 'Heidelberg2')")
         })
         .then(([results, fields]) => {
             shipmentIds.push(results.insertId)
-            return dbPromise.query("INSERT INTO shipments (name, destination) "
-                + "VALUES ('Test3', 'Heidelberg3')")
+            return dbPromise.query("INSERT INTO shipments (name, source, destination) "
+                + "VALUES ('Test3', 'Mannheim3', 'Heidelberg3')")
         })
         .then(([results, fields]) => {
             shipmentIds.push(results.insertId)
@@ -121,6 +121,7 @@ describe("ShipmentModel", () => {
                     {
                         id: shipmentIds[0],
                         name: "Test",
+                        source: "Mannheim",
                         destination: "Heidelberg",
                         items: [
                             {
@@ -134,6 +135,7 @@ describe("ShipmentModel", () => {
                     {
                         id: shipmentIds[1],
                         name: "Test2",
+                        source: "Mannheim2",
                         destination: "Heidelberg2",
                         items: [
                             {
@@ -153,6 +155,7 @@ describe("ShipmentModel", () => {
                     {
                         id: shipmentIds[2],
                         name: "Test3",
+                        source: "Mannheim3",
                         destination: "Heidelberg3",
                         items: [
                             {
@@ -231,7 +234,7 @@ describe("ShipmentModel", () => {
 
     
     describe("#createShipment", () => {
-        function runWithSingleItem(name, destination) {
+        function runWithSingleItem(name, source, destination) {
             let itemIds = []
 
             return insertItemDataSet()
@@ -240,6 +243,7 @@ describe("ShipmentModel", () => {
 
                 let insertShipment = {
                     name: name,
+                    source: source,
                     destination: destination,
                     items: [
                         {
@@ -283,7 +287,7 @@ describe("ShipmentModel", () => {
                 }
             })
         }
-        function runWithMultipleItems(name, destination) {
+        function runWithMultipleItems(name, source, destination) {
             let itemIds = []
 
             return insertItemDataSet()
@@ -292,6 +296,7 @@ describe("ShipmentModel", () => {
 
                 let insertShipment = {
                     name: name,
+                    source: source,
                     destination: destination,
                     items: [
                         {
@@ -327,7 +332,8 @@ describe("ShipmentModel", () => {
                     expected: {
                         shipment: {
                             name: name,
-                            destination: destination
+                            destination: destination,
+                            source: source
                         },
                         items: [
                             {
@@ -346,26 +352,26 @@ describe("ShipmentModel", () => {
             })
         }
         it("should insert a shipment, so that the field values are correct", () => {
-            let name = "Test", destination = "Heidelberg"
+            let name = "Test", source = "Mannheim", destination = "Heidelberg"
             
-            return runWithSingleItem(name, destination)
+            return runWithSingleItem(name, source, destination)
             .then(results => {
                 expect(results.actual.shipment).to.deep.equal(results.expected.shipment)
             })
         })
         it("should insert a shipment, so that the item is correct", () => {
-            let name = "Test", destination = "Heidelberg"
+            let name = "Test", source = "Mannheim", destination = "Heidelberg"
             
-            return runWithSingleItem(name, destination)
+            return runWithSingleItem(name, source, destination)
             .then(results => {
                 expect(results.actual.item).to.deep.equal(results.expected.item)
             })
         })
 
         it("should insert multiple items of a shipment", () => {
-            let name = "Test2", destination = "Ludwigshafen"
+            let name = "Test", source = "Mannheim", destination = "Ludwigshafen"
 
-            return runWithMultipleItems(name, destination)
+            return runWithMultipleItems(name, source, destination)
             .then(results => {
                 expect(results.actual.items).to.deep.equal(results.expected.items)                
             })
@@ -451,13 +457,13 @@ describe("ShipmentModel", () => {
             })
             .then(file => {
                 const expected =
-                    "shipment,destination,item_name,count\n"
-                    + "Test,Heidelberg,Chairs,50\n"
-                    + "Test2,Heidelberg2,Chairs,5\n"
-                    + "Test2,Heidelberg2,Beds,10\n"
-                    + "Test3,Heidelberg3,Chairs,10\n"
-                    + "Test3,Heidelberg3,Beds,2\n"
-                    + "Test3,Heidelberg3,Tables,1\n"
+                    "shipment,source,destination,item_name,count\n"
+                    + "Test,Mannheim,Heidelberg,Chairs,50\n"
+                    + "Test2,Mannheim2,Heidelberg2,Chairs,5\n"
+                    + "Test2,Mannheim2,Heidelberg2,Beds,10\n"
+                    + "Test3,Mannheim3,Heidelberg3,Chairs,10\n"
+                    + "Test3,Mannheim3,Heidelberg3,Beds,2\n"
+                    + "Test3,Mannheim3,Heidelberg3,Tables,1\n"
 
                 expect(file).to.equal(expected)
             })
