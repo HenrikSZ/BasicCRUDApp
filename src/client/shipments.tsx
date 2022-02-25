@@ -159,10 +159,11 @@ export class ShipmentView extends React.Component {
                 let ret = {...shipment}
                 ret.items = ret.items.map(item => {
                     if (item.id == itemId) {
+                        item = {...item}
                         item.assigned_count = modifications.assigned_count
-                    } else {
-                        return item
                     }
+                    
+                    return item
                 })
                 
                 return ret
@@ -209,8 +210,11 @@ class ShipmentTable extends React.Component {
                                             this.props.onErrorResponse(response)}
                                         onItemDelete={(shipmentId: number, itemId: number) =>
                                             this.props.onShipmentItemDelete(shipmentId, itemId)}
-                                        onItemUpdate={(modifications: any) =>
-                                            this.props.onShipmentItemUpdate(modifications)}/>
+                                        onItemUpdate={(shipmentId: number,
+                                                itemId: number,
+                                                modifications: any) =>
+                                            this.props.onShipmentItemUpdate(shipmentId,
+                                                itemId, modifications)}/>
                                 )
                             }
                             {
@@ -282,8 +286,8 @@ class Shipment extends React.Component {
                                         data={item} key={item.id}
                                         onDelete={(itemId: number) =>
                                             this.props.onItemDelete(this.props.data.id, itemId)}
-                                        onUpdate={(modifications: any) =>
-                                            this.props.onItemUpdate(modifications)}
+                                        onUpdate={(itemId: number, modifications: any) =>
+                                            this.props.onItemUpdate(this.props.data.id, itemId, modifications)}
                                         onErrorResponse={(response: any) =>
                                             this.props.onErrorResponse(response)}/>
                                 ))
@@ -452,7 +456,7 @@ class ShipmentItem extends React.Component {
             )
             .then((response: any) => {
                 if (response.ok) {
-                    this.props.onUpdate(this.modifications)
+                    this.props.onUpdate(this.props.data.id, this.modifications)
                     this.switchToMode(ShipmentItemMode.NORMAL)
                 } else {
                     this.props.onErrorResponse(response)

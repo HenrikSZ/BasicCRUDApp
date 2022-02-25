@@ -52,7 +52,7 @@ export default class ShipmentModel {
      * @returns all shipments in the database.
      */
     getAllShipments(): Promise<Shipment[]> {
-        let stmt = "SELECT id, name, destination FROM shipments "
+        let stmt = "SELECT id, name, source, destination FROM shipments "
             + "ORDER BY id"
         let shipments: Shipment[] | null = null
 
@@ -64,7 +64,7 @@ export default class ShipmentModel {
                 return shipment
             })
             stmt = "SELECT item_assignments.shipment_id, "
-                + "items.name, (-1) * item_assignments.assigned_count AS assigned_count, "
+                + "items.name, item_assignments.assigned_count AS assigned_count, "
                 + "items.id "
                 + "FROM item_assignments "
                 + "INNER JOIN items ON "
@@ -101,7 +101,7 @@ export default class ShipmentModel {
         .then(([results, fields]) => {
             shipment = (results as RowDataPacket)[0] as Shipment
             stmt = "SELECT item_assignments.shipment_id, items.name, "
-                + "-item_assignments.assigned_count AS assigned_count, "
+                + "item_assignments.assigned_count AS assigned_count, "
                 + "items.id "
                 + "FROM item_assignments "
                 + "INNER JOIN items ON "
@@ -153,7 +153,7 @@ export default class ShipmentModel {
 
             for (let item of shipment.items) {
                 let promise = this.assignmentModel
-                    .create(item.id, -item.count, shipmentId, undefined, conn)
+                    .create(item.id, item.count, shipmentId, undefined, conn)
 
                 promises.push(promise)
             }
@@ -223,7 +223,7 @@ export default class ShipmentModel {
     exportAllShipmentsAsCsv() {
         const stmt = "SELECT shipments.name AS shipment, "
             + "shipments.source, shipments.destination, "
-            + "items.name AS item_name, -item_assignments.assigned_count AS count "
+            + "items.name AS item_name, item_assignments.assigned_count AS count "
             + "FROM item_assignments "
             + "INNER JOIN shipments ON "
             + "shipments.id = item_assignments.shipment_id "

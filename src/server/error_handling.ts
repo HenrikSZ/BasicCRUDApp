@@ -38,7 +38,7 @@ export class CustomError {
  * @param error
  * @returns true if the error has a cleaned_msg property
  */
-export function isCustomError(error: CustomError):
+export function isCustomError(error: CustomError | QueryError):
         error is CustomError {
     error = error as CustomError
     return Boolean(error.response)
@@ -52,18 +52,39 @@ export function isCustomError(error: CustomError):
 * @param res the response from express.js
 * @returns 0 to return some value if used in promises
 */
-export function handleDbError(error: CustomError,
+export function handleDbError(error: CustomError | QueryError,
         req: express.Request, res: express.Response) {
     if (isCustomError(error)) {
-        
+        res.status(500).send(error.response)
     } else {
-        logDbError(error, req.hostname)
-
-        const body: ErrorResponse = { name: ErrorType.DB }
-        res.status(500).send(body)
+        switch (error.sqlState) {
+            case "55001":
+                handleInvalidCountError(error, res, req.hostname)
+                break
+            default:
+                logDbError(error, req.hostname)
+                const body: ErrorResponse = { name: ErrorType.DB }
+                res.status(500).send(body)
+        }
     }
 
     return 0
+}
+
+
+function handleInvalidCountError(error: QueryError, res: express.Response, hostname?: string) {
+    if (hostname) {
+        logger.error(`${hostname} used an invalid count`)
+    } else {
+        logger.error(`An invalid assigned count was specified (${error.code}): ${error.message}`)
+    }
+
+    let errorResponse: ErrorResponse = {
+        name: ErrorType.FIELD,
+        message: "The assigned value is too high in regard to the stock levels"
+    }
+
+    res.status(400).send(errorResponse)
 }
 
 
@@ -78,10 +99,10 @@ export function handleUnexpectedError(error: any,
 
     let errorResponse: ErrorResponse = {
         name: ErrorType.UNKOWN,
-        message: "This error is completely unexpectd. Please contact the administrator"
+        message: "This error is completely unexpected. Please contact the administrator"
     }
 
-    res.status(500).send()
+    res.status(500).send(errorResponse)
 }
 
 

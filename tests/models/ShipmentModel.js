@@ -128,7 +128,7 @@ describe("ShipmentModel", () => {
                                 shipment_id: shipmentIds[0],
                                 id: itemIds[0],
                                 name: "Chairs",
-                                assigned_count: 50,
+                                assigned_count: -50,
                             },
                         ]
                     },
@@ -142,13 +142,13 @@ describe("ShipmentModel", () => {
                                 shipment_id: shipmentIds[1],
                                 id: itemIds[0],
                                 name: "Chairs",
-                                assigned_count: 5,
+                                assigned_count: -5,
                             },
                             {
                                 shipment_id: shipmentIds[1],
                                 id: itemIds[1],
                                 name: "Beds",
-                                assigned_count: 10,
+                                assigned_count: -10,
                             },
                         ]
                     },
@@ -162,19 +162,19 @@ describe("ShipmentModel", () => {
                                 shipment_id: shipmentIds[2],
                                 id: itemIds[0],
                                 name: "Chairs",
-                                assigned_count: 10,
+                                assigned_count: -10,
                             },
                             {
                                 shipment_id: shipmentIds[2],
                                 id: itemIds[1],
                                 name: "Beds",
-                                assigned_count: 2,
+                                assigned_count: -2,
                             },
                             {
                                 shipment_id: shipmentIds[2],
                                 id: itemIds[2],
                                 name: "Tables",
-                                assigned_count: 1,
+                                assigned_count: -1,
                             },
                         ]
                     },
@@ -248,7 +248,7 @@ describe("ShipmentModel", () => {
                     items: [
                         {
                             id: itemIds[0],
-                            count: 50
+                            count: -50
                         }
                     ]
                 }
@@ -301,11 +301,11 @@ describe("ShipmentModel", () => {
                     items: [
                         {
                             id: itemIds[0],
-                            count: 50
+                            count: -50
                         },
                         {
                             id: itemIds[1],
-                            count: 5
+                            count: -5
                         }
                     ]
                 }
@@ -458,12 +458,12 @@ describe("ShipmentModel", () => {
             .then(file => {
                 const expected =
                     "shipment,source,destination,item_name,count\n"
-                    + "Test,Mannheim,Heidelberg,Chairs,50\n"
-                    + "Test2,Mannheim2,Heidelberg2,Chairs,5\n"
-                    + "Test2,Mannheim2,Heidelberg2,Beds,10\n"
-                    + "Test3,Mannheim3,Heidelberg3,Chairs,10\n"
-                    + "Test3,Mannheim3,Heidelberg3,Beds,2\n"
-                    + "Test3,Mannheim3,Heidelberg3,Tables,1\n"
+                    + "Test,Mannheim,Heidelberg,Chairs,-50\n"
+                    + "Test2,Mannheim2,Heidelberg2,Chairs,-5\n"
+                    + "Test2,Mannheim2,Heidelberg2,Beds,-10\n"
+                    + "Test3,Mannheim3,Heidelberg3,Chairs,-10\n"
+                    + "Test3,Mannheim3,Heidelberg3,Beds,-2\n"
+                    + "Test3,Mannheim3,Heidelberg3,Tables,-1\n"
 
                 expect(file).to.equal(expected)
             })
