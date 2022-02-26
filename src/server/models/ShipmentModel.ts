@@ -18,7 +18,7 @@ interface MinimalShipment {
     destination: string
 }
 
-export interface ClientSideShipment extends MinimalShipment {
+export interface ShipmentCreateData extends MinimalShipment {
     items: { id: number, count: number }[]
 }
  
@@ -28,6 +28,16 @@ interface Shipment {
     destination: string,
     id: number,
     items?: InventoryItem[]
+}
+
+export interface ShipmentUpdateData {
+    name?: string,
+    source?: string,
+    destination?: string,
+}
+
+interface ShipmentItemUpdateData {
+    assigned_count?: number
 }
 
 interface MappedInventoryItem extends InventoryItem {
@@ -126,7 +136,7 @@ export default class ShipmentModel {
      * @param shipment the basic info of the shipment.
      * @returns the id of this shipment.
      */
-    createShipment(shipment: ClientSideShipment): Promise<number> {
+    createShipment(shipment: ShipmentCreateData): Promise<number> {
         let insertShipment = {
             name: shipment.name,
             source: shipment.source,
@@ -174,6 +184,28 @@ export default class ShipmentModel {
 
 
     /**
+     * Updates a shipment to the values specified.
+     * 
+     * @param id the id of the shipment that should be updated.
+     * @param values the values the shipment should be updated to.
+     *  Can be an empty object (nothing happens).
+     * @returns true if a shipment was updated, false otherwise.
+     */
+    updateShipment(id: number, values: ShipmentUpdateData): Promise<Boolean> {
+        if (Object.keys(values).length == 0) {
+            return Promise.resolve(false)
+        }
+
+        const stmt = "UPDATE shipments SET ? WHERE id = ?"
+        return this.dbPromise.query(stmt, [values, id])
+        .then(([results, fields]) => {
+            results = results as OkPacket
+            return results.affectedRows > 0
+        })
+    }
+
+
+    /**
      * Deletes a shipment and all dependent objects from the database.
      * 
      * @param id the id of the shipment that should be deleted.
@@ -206,11 +238,13 @@ export default class ShipmentModel {
      * 
      * @param shipmentId the id of the shipment to update
      * @param itemId the id of the item to update
-     * @param newCount the new count the shipment item should have
+     * @param values the properties of the item that should be updated
      * @returns true if an item could be updated, false otherwise
      */
-    updateShipmentItem(shipmentId: number, itemId: number, newCount: number) {
-        return this.assignmentModel.updateShipmentAssignment(shipmentId, itemId, newCount)
+    updateShipmentItem(shipmentId: number, itemId: number,
+            values: ShipmentItemUpdateData) {
+        return this.assignmentModel
+            .updateShipmentAssignment(shipmentId, itemId, values.assigned_count)
     }
 
 

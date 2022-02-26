@@ -447,6 +447,91 @@ describe("ShipmentModel", () => {
             })
         })
     })
+    describe("#updateShipment", () => {
+        it("should do nothing when no name and destination are specified", () => {
+            const shipmentData = {
+                name: "Test",
+                source: "A",
+                destination: "B"
+            }
+            const stmt = "INSERT INTO shipments "
+                + "SET ?"
+
+            return dbPromise.query(stmt, shipmentData)
+            .then(([results, fields]) => {
+                let id = results.insertId
+                const model = new ShipmentModel(dbPromise)
+
+                return model.updateShipment(id, {})
+            })
+            .then(wasUpdated => {
+                expect(wasUpdated).to.be.false
+                return dbPromise.query("SELECT name, source, destination FROM shipments")
+            })
+            .then(([results, fields]) => {
+                expect(results.length).to.equal(1)
+                expect(results[0]).to.deep.equal(shipmentData)
+            })
+        })
+
+        it("should correctly update when fields are present", () => {
+            const shipmentData = {
+                name: "Test",
+                source: "A",
+                destination: "B"
+            }
+            let modifiedData = {...shipmentData}
+            modifiedData.name = "Production"
+
+            const stmt = "INSERT INTO shipments "
+                + "SET ?"
+
+            return dbPromise.query(stmt, shipmentData)
+            .then(([results, fields]) => {
+                let id = results.insertId
+                const model = new ShipmentModel(dbPromise)
+
+                return model.updateShipment(id, { name: modifiedData.name })
+            })
+            .then(wasUpdated => {
+                expect(wasUpdated).to.be.true
+                return dbPromise.query("SELECT name, source, destination FROM shipments")
+            })
+            .then(([results, fields]) => {
+                expect(results.length).to.equal(1)
+                expect(results[0]).to.deep.equal(modifiedData)
+            })
+        })
+
+        it("should not update when the shipment id is not assigned", () => {
+            const shipmentData = {
+                name: "Test",
+                source: "A",
+                destination: "B"
+            }
+            let modifiedData = {...shipmentData}
+            modifiedData.name = "Production"
+
+            const stmt = "INSERT INTO shipments "
+                + "SET ?"
+
+            return dbPromise.query(stmt, shipmentData)
+            .then(([results, fields]) => {
+                let id = results.insertId
+                const model = new ShipmentModel(dbPromise)
+
+                return model.updateShipment(id + 1, { name: modifiedData.name })
+            })
+            .then(wasUpdated => {
+                expect(wasUpdated).to.be.false
+                return dbPromise.query("SELECT name, source, destination FROM shipments")
+            })
+            .then(([results, fields]) => {
+                expect(results.length).to.equal(1)
+                expect(results[0]).to.deep.equal(shipmentData)
+            })
+        })
+    })
     describe("#exportAllShipmentsAsCsv", () => {
         it("should export all shipments data correctly", () => {
             return insertShipmentDataset()

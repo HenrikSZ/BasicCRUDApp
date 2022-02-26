@@ -5,6 +5,7 @@ import "./index.css"
 import { BackButton, ConfirmationButton, DeleteButton, DropdownButton, EditButton, ExportButton, MinusButton, PlusButton, ReloadButton, RibbonButton, SaveButton } from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItemData, MutableInventoryItemData } from "./items"
+import ReactTooltip from "react-tooltip"
 
 
 enum ShipmentViewMode {
@@ -77,6 +78,8 @@ export class ShipmentView extends React.Component {
                                 onReloadRequest={() => this.loadEntries()}
                                 onShipmentDelete={(id: number) =>
                                     this.removeLocalShipment(id)}
+                                onShipmentUpdate={(id: number, modifications: any) =>
+                                    this.updateLocalShipment(id, modifications)} 
                                 onShipmentItemDelete={(shipmentId: number, itemId: number) =>
                                     this.removeLocalShipmentItem(shipmentId, itemId)}
                                 onShipmentItemUpdate={(shipmentId: number,
@@ -136,6 +139,22 @@ export class ShipmentView extends React.Component {
         this.setState(state)
     }
 
+    updateLocalShipment(shipmentId: number, modifications: any) {
+        let state = {...this.state}
+        state.entries = state.entries.map(shipment => {
+            if (shipment.id == shipmentId) {
+                shipment = {...shipment}
+                shipment.name = modifications.name
+                shipment.source = modifications.source
+                shipment.destination = modifications.destination
+            }
+
+            return shipment
+        })
+
+        this.setState(state)
+    }
+
     removeLocalShipmentItem(shipmentId: number, itemId: number) {
         let state = {...this.state}
         state.entries = state.entries.map(shipment => {
@@ -181,6 +200,7 @@ class ShipmentTable extends React.Component {
     props: { entries: ShipmentData[],
         onReloadRequest: Function,
         onShipmentDelete: Function,
+        onShipmentUpdate: Function,
         onShipmentItemDelete: Function,
         onShipmentItemUpdate: Function,
         onErrorResponse: Function
@@ -205,6 +225,8 @@ class ShipmentTable extends React.Component {
                                 this.props.entries.map(shipment =>
                                     <Shipment data={shipment} key={shipment.id}
                                         onDelete={(id: number) => this.props.onShipmentDelete(id)}
+                                        onUpdate={(id: number, modifications: any) =>
+                                            this.props.onShipmentUpdate(id, modifications)}
                                         onErrorResponse={(response: any) =>
                                             this.props.onErrorResponse(response)}
                                         onItemDelete={(shipmentId: number, itemId: number) =>
@@ -232,12 +254,177 @@ class ShipmentTable extends React.Component {
     }
 }
 
+enum ShipmentHeaderMode {
+    NORMAL,
+    EDIT
+}
+
+class ShipmentHeader extends React.Component {
+    props: {
+        data: ShipmentData,
+        onExpand: Function,
+        onRetract: Function,
+        onDelete: Function,
+        onUpdate: Function,
+        onErrorResponse: Function,
+    }
+    state: {
+        mode: ShipmentHeaderMode
+    }
+    modifications: {
+        name?: string,
+        source?: string,
+        destination?: string
+    }
+
+    constructor(props: {
+        data: ShipmentData,
+        onExpand: Function,
+        onRetract: Function,
+        onDelete: Function,
+        onUpdate: Function,
+        onErrorResponse: Function
+    }) {
+        super(props)
+
+        this.state = {
+            mode: ShipmentHeaderMode.NORMAL
+        }
+
+        this.modifications = {
+            name: this.props.data.name,
+            source: this.props.data.source,
+            destination: this.props.data.destination
+        }
+    }
+
+    switchToMode(mode: ShipmentHeaderMode) {
+        let state = {...this.state}
+        state.mode = mode
+
+        this.setState(state)
+    }
+
+    render() {
+        switch (this.state.mode) {
+            case ShipmentHeaderMode.EDIT:
+                return this.editMode()
+            default:
+                return this.normalMode()
+        }
+    }
+
+    normalMode() {
+        return (
+            <div className="flex flex-row">
+                <DropdownButton onExpand={() => this.props.onExpand()}
+                    onRetract={() => this.props.onRetract()}/>
+                <div className="font-bold text-lg p-1">{this.props.data.name}</div>
+                <div className="p-1">
+                    <i>from</i> {this.props.data.source}
+                </div>
+                <div className="p-1">
+                    <i>to</i> {this.props.data.destination}
+                </div>
+                <div className="ml-auto">
+                    <EditButton onClick={() => this.switchToMode(ShipmentHeaderMode.EDIT)}/>
+                </div>
+                <div>
+                    <DeleteButton onClick={() => this.deleteShipment()}/>
+                </div>
+            </div>
+        )
+    }
+
+    editMode() {
+        return (
+            <div className="flex flex-row">
+                <DropdownButton onExpand={() => this.props.onExpand()}
+                    onRetract={() => this.props.onRetract()}/>
+                <div className="font-bold text-lg pr-1 pl-1">
+                    <input className="border-2 rounded-lg border-gray-700 w-16"
+                            defaultValue={this.props.data.name} 
+                            onChange={evt => this.modifications.name =
+                                evt.target.value}/>
+                </div>
+                <div className="italic flex flex-row space-x-2">
+                    <div className="italic mt-1">
+                        from
+                    </div>
+                    <input className="border-2 rounded-lg border-gray-700 w-16"
+                            defaultValue={this.props.data.source} 
+                            onChange={evt => this.modifications.source =
+                                evt.target.value}/>
+                    <div className="italic mt-1">
+                        to
+                    </div>
+                    <input className="border-2 rounded-lg border-gray-700 w-16"
+                        defaultValue={this.props.data.destination} 
+                        onChange={evt => this.modifications.destination =
+                            evt.target.value}/>
+                </div>
+                <div className="ml-auto">
+                    <BackButton onClick={() => this.switchToMode(ShipmentHeaderMode.NORMAL)}/>
+                </div>
+                <div>
+                    <SaveButton onClick={() => this.saveEdits()}/>
+                </div>
+            </div>
+        )
+    }
+
+    componentDidUpdate() {
+        ReactTooltip.hide()
+        ReactTooltip.rebuild()
+    }
+
+    deleteShipment() {
+        fetch(`/shipments/shipment/existing/${this.props.data.id}`,
+            {
+                method: "DELETE",
+            }
+        )
+        .then((response: any) => {
+            if (response.ok)
+                this.props.onDelete(this.props.data.id)
+            else
+                this.props.onErrorResponse(response)
+        })
+    }
+
+    saveEdits() {
+        let modified = this.modifications.source !== this.props.data.source
+            || this.modifications.destination !== this.props.data.destination
+            || this.modifications.name !== this.props.data.destination
+
+        if (modified) {
+            fetch(`/shipments/shipment/existing/${this.props.data.id}`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(this.modifications),
+                }
+            )
+            .then((response: any) => {
+                if (response.ok) {
+                    this.switchToMode(ShipmentHeaderMode.NORMAL)
+                    this.props.onUpdate(this.modifications)
+                } else
+                    this.props.onErrorResponse(response)
+            })
+        } else {
+            this.switchToMode(ShipmentHeaderMode.NORMAL)
+        }
+    }
+}
+
 class Shipment extends React.Component {
     props: {    data: ShipmentData,
                 onDelete: Function,
+                onUpdate: Function,
                 onErrorResponse: Function,
                 onItemDelete: Function,
-                onItemUpdate: Function
+                onItemUpdate: Function,
     }
     state: { dropdownCss: string }
 
@@ -257,13 +444,12 @@ class Shipment extends React.Component {
     render() {
         return (
             <div className="w-96 pb-2 border-t-2 border-gray-700">
-                <DropdownButton onExpand={() => this.onExpand()}
-                    onRetract={() => this.onRetract()}/>
-                <span className="font-bold text-lg p-4">{this.props.data.name}</span>
-                <span className="italic">from: {this.props.data.source} / to: {this.props.data.destination}</span>
-                <div className="inline-block float-right">
-                    <DeleteButton onClick={() => this.deleteShipment()}/>
-                </div>
+                <ShipmentHeader data={this.props.data} onExpand={() => this.onExpand()}
+                    onRetract={() => this.onRetract()} onErrorResponse={() =>
+                    this.props.onErrorResponse()}
+                    onDelete={() => this.props.onDelete()}
+                    onUpdate={(modifications: any) =>
+                        this.props.onUpdate(this.props.data.id, modifications)}/>
                 <div className={this.state.dropdownCss}>
                     <table>
                         <thead>
@@ -310,21 +496,6 @@ class Shipment extends React.Component {
         state.dropdownCss = "hidden"
 
         this.setState(state)
-    }
-
-    deleteShipment() {
-        fetch(`/shipments/shipment/existing/${this.props.data.id}`,
-            {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" }
-            }
-        )
-        .then((response: any) => {
-            if (response.ok)
-                this.props.onDelete(this.props.data.id)
-            else
-                this.props.onErrorResponse(response)
-        })
     }
 }
 

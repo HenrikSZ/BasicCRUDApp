@@ -2,7 +2,7 @@
  * Contains the ShipmentController for anything related to shipments
  */
 
-import ShipmentModel, { ClientSideShipment } from "../models/ShipmentModel.js"
+import ShipmentModel, { ShipmentCreateData, ShipmentUpdateData } from "../models/ShipmentModel.js"
 import { Request, Response, NextFunction } from "express"
 import logger from "../logger.js"
 import { ErrorResponse, ErrorType, handleDbError } from "../error_handling.js"
@@ -12,7 +12,8 @@ import ItemAssignmentModel from "../models/ItemAssignmentModel.js"
 declare global {
     namespace Express {
         interface Request {
-            shipment: ClientSideShipment,
+            shipment: ShipmentCreateData,
+            shipmentUpdate: ShipmentUpdateData,
             shipmentId: number,
             itemId: number,
             assignedCount: number
@@ -32,6 +33,26 @@ export default class ShipmentController {
         this.shipmentModel = shipmentModel
         this.itemAssignmentModel = itemAssignmentModel
     }
+
+
+    /**
+     * Sends a 400 code response indicating that some field values were incorrect
+     * 
+     * @param req the request from express.js
+     * @param res the response from express.js
+     */
+    sendInvalidFieldsResponse(req: Request, res: Response) {
+        logger.info(`${req.hostname} tried to use shipment `
+        + `without valid parameters`)
+
+        const errorBody: ErrorResponse = {
+            name: ErrorType.FIELD,
+            message: "Some fields of the new shipment contain invalid values"
+        }
+
+        res.status(400).send(errorBody)
+    }
+
 
     /**
      * Checks whether the body of the request contains a valid shipment
@@ -64,7 +85,7 @@ export default class ShipmentController {
             }
 
             if (allItemsValid) {
-                let shipment: ClientSideShipment = {
+                let shipment: ShipmentCreateData = {
                     name: body.name,
                     source: body.source,
                     destination: body.destination,
@@ -77,15 +98,7 @@ export default class ShipmentController {
             }
         }
 
-        logger.info(`${req.hostname} tried to add shipment d`
-            + `without valid parameters`)
-
-        const errorBody: ErrorResponse = {
-            name: ErrorType.FIELD,
-            message: "Some fields of the new shipment contain invalid values"
-        }
-
-        res.status(400).send(errorBody)
+        this.sendInvalidFieldsResponse(req, res)
     }
 
 
@@ -144,6 +157,48 @@ export default class ShipmentController {
 
 
     /**
+     * Checks whether any given body parameters are valid and put them as shipmentUpdate
+     * in the request.
+     * 
+     * @param req the request from express.js
+     * @param res the respons from express.js
+     * @param next function to the next middleware
+     */
+    updateShipmentMiddleware(req: Request, res: Response, next: NextFunction) {
+        let shipmentUpdate: ShipmentUpdateData = {}
+
+        if (req.body.name) {
+            if (validator.isLength(req.body.name + "", {min: 1})) {
+                shipmentUpdate.name = req.body.name + ""
+            } else {
+                this.sendInvalidFieldsResponse(req, res)
+                return
+            }
+        }
+        if (req.body.source) {
+            if (validator.isLength(req.body.source + "", {min: 1})) {
+                shipmentUpdate.source = req.body.source + ""
+            } else {
+                this.sendInvalidFieldsResponse(req, res)
+                return
+            }
+        }
+        if (req.body.destination) {
+            if (validator.isLength(req.body.destination + "", {min: 1})) {
+                shipmentUpdate.destination = req.body.destination + ""
+            } else {
+                this.sendInvalidFieldsResponse(req, res)
+                return
+            }
+        }
+
+        req.shipmentUpdate = shipmentUpdate
+
+        next()
+    }
+
+
+    /**
      * Reads all shipments.
      * 
      * @param req the request from express.js
@@ -198,6 +253,24 @@ export default class ShipmentController {
 
 
     /**
+     * 
+     * @param req the request from express.js.
+     * Must contain valid shipmentId and shipmentUpdate attributes.
+     * @param res the response from express.js
+     */
+    updateShipment(req: Request, res: Response) {
+        logger.info(`${req.hostname} requested to update a shipment`)
+
+        return this.shipmentModel.updateShipment(req.shipmentId, req.shipmentUpdate)
+        .then(() => {
+            res.send()
+        }, (error) => {
+            handleDbError(error, req, res)
+        })
+    }
+
+
+    /**
      * Deletes a shipment with the id specified in the request.
      * 
      * @param req the request from express.js. Must contain a valid shipmentId attribute.
@@ -225,8 +298,9 @@ export default class ShipmentController {
         logger.info(`${req.hostname} requested to delete shipment `
             + `with id ${req.shipmentId}`)
 
-        return this.itemAssignmentModel
-            .updateShipmentAssignment(req.shipmentId, req.itemId, req.assignedCount)
+        return this.shipmentModel
+            .updateShipmentItem(req.shipmentId, req.itemId,
+                { assigned_count: req.assignedCount })
         .then(() => {
             res.send()
         }, (error) => {

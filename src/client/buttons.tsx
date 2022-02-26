@@ -256,7 +256,7 @@ export class GenericButton extends React.Component {
     render() {
         return (
             <div data-tip={this.props.tooltip}
-                className="p-1 cursor-pointer hover:bg-orange-400 active:bg-slate-500 rounded-md"
+                className="p-1 cursor-pointer active:bg-orange-400 hover:bg-slate-300 rounded-md"
                     onClick={() => this.props.onClick()}>
                 {this.props.children}
             </div>

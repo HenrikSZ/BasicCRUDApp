@@ -20,6 +20,8 @@ router.get("/shipment/existing/:shipmentId", contr.getShipment.bind(contr))
 router.delete("/shipment/existing/:shipmentId", contr.deleteShipment.bind(contr))
 router.put("/shipment/existing/:shipmentId/:itemId",
     contr.assignedCountMiddleware.bind(contr), contr.updateShipmentItem.bind(contr))
+router.put("/shipment/existing/:shipmentId", 
+    contr.updateShipmentMiddleware.bind(contr), contr.updateShipment.bind(contr))
 router.delete("/shipment/existing/:shipmentId/:itemId", contr.deleteShipmentItem.bind(contr))
 
 

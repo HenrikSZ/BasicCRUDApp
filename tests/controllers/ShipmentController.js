@@ -266,6 +266,31 @@ describe("ShipmentController", () => {
             })
         })
     })
+    describe("#updateShipment", () => {
+        it("should update the shipment", () => {
+            let shipmentId = 10
+            let shipmentUpdate = {
+                name: "Test",
+                source: "A",
+                destination: "B"
+            }
+
+            const model = mockShipmentModel()
+            const req = mockReq({ params: {
+                id: shipmentId
+            }})
+            req.shipmentId = shipmentId
+            req.shipmentUpdate = shipmentUpdate
+            const res = mockRes()
+            const contr = new ShipmentController(model)
+
+            return contr.updateShipment(req, res)
+            .then(() => {
+                expect(model.updateShipment).to.have.been.calledWith(shipmentId, shipmentUpdate)
+                expect(res.send).to.have.been.calledOnce
+            })
+        })
+    })
     describe("#exportShipmentsAsCsv", () => {
         it("should send the csv file of exported shipments", () => {
             let resolves = {
