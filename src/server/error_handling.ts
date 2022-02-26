@@ -1,5 +1,5 @@
+import { FastifyReply, FastifyRequest } from "fastify"
 import { QueryError } from "mysql2"
-import express from "express"
 import logger from "./logger.js"
 
 
@@ -53,7 +53,7 @@ export function isCustomError(error: CustomError | QueryError):
 * @returns 0 to return some value if used in promises
 */
 export function handleDbError(error: CustomError | QueryError,
-        req: express.Request, res: express.Response) {
+        req: FastifyRequest, res: FastifyReply) {
     if (isCustomError(error)) {
         res.status(500).send(error.response)
     } else {
@@ -72,7 +72,8 @@ export function handleDbError(error: CustomError | QueryError,
 }
 
 
-function handleInvalidCountError(error: QueryError, res: express.Response, hostname?: string) {
+function handleInvalidCountError(error: QueryError, res: FastifyReply,
+        hostname?: string) {
     if (hostname) {
         logger.error(`${hostname} used an invalid count`)
     } else {
@@ -94,7 +95,7 @@ function handleInvalidCountError(error: QueryError, res: express.Response, hostn
  * @param error Any kind of error
  */
 export function handleUnexpectedError(error: any,
-        req: express.Request, res: express.Response) {
+        req: FastifyRequest, res: FastifyReply) {
     logger.warn(error)
 
     let errorResponse: ErrorResponse = {

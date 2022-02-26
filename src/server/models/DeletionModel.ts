@@ -4,26 +4,20 @@
 
 
 import { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
+import dbPromise from "../db.js"
 import logger from "../logger.js"
 
 
-interface MinimalDeletion extends RowDataPacket {
-    comment: string 
-}
-
-
-interface Deletion extends MinimalDeletion {
-    id: number,
-    created_at: Date,
-    updated_at: Date
+export interface ICreateDeletion {
+    comment: string
 }
 
 
 export default class DeletionModel {
     dbPromise: Pool
 
-    constructor(dbPromise: Pool) {
-        this.dbPromise = dbPromise
+    constructor(_dbPromise: Pool = dbPromise) {
+        this.dbPromise = _dbPromise
     }
 
 
@@ -33,11 +27,11 @@ export default class DeletionModel {
      * @param comment the comment of the deletion.
      * @returns the id of the inserted deletion.
      */
-    insert(comment: string): Promise<number> {
-        logger.debug(`Inserting deletion table with comment "${comment}"`)
+    create(values: ICreateDeletion): Promise<number> {
+        logger.debug(`Inserting deletion table with comment "${values.comment}"`)
 
-        const stmt = "INSERT INTO deletions (comment) VALUES (?)"
-        return this.dbPromise.query(stmt, comment)
+        const stmt = "INSERT INTO deletions SET ?"
+        return this.dbPromise.query(stmt, values)
         .then(([results, fields]) => {
             results = results as OkPacket
             return results.insertId

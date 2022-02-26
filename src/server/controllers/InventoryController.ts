@@ -2,15 +2,18 @@
  * Contains the InventoryController for anything related to the inventory
  */
 
-import express from  "express"
+import { FastifyReply, FastifyRequest } from "fastify"
 import logger from "../logger.js"
 import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError, CustomError, handleUnexpectedError }
     from "../error_handling.js"
-import DeletionModel from "../models/DeletionModel.js"
-import ItemModel from "../models/ItemModel.js"
+import DeletionModel, { ICreateDeletion } from "../models/DeletionModel.js"
+import ItemModel, { ICreateItem, ILikeItem, IUpdateItem } from "../models/ItemModel.js"
 import { stringify } from "csv-stringify/sync"
-import validator from "validator"
 
+
+export interface IAccessItemParameters {
+    item_id: number
+}
 
 /**
  * Anything about the Inventory is controlled here
@@ -20,129 +23,12 @@ export default class InventoryController {
     deletionModel: DeletionModel
 
 
-    constructor(model: ItemModel, deletionModel: DeletionModel) {
+    constructor(model: ItemModel = new ItemModel(),
+            deletionModel: DeletionModel = new DeletionModel()) {
         this.invModel = model
         this.deletionModel = deletionModel
     }
-
     
-    /**
-     * Checks if there is a valid id provided in the url
-     *
-     * @param req the request from express.js
-     * @param res the response from express.js
-     * @param next function to the next middleware
-     */
-    entryIdMiddleware(req: express.Request, res: express.Response,
-        next: express.NextFunction) {
-        if (validator.isInt(req.params.id + "", { min: 1 })) {
-            next()
-        } else {
-            logger.info(`${req.hostname} tried to access inventory`
-                + `without a valid entry id (${req.params.id})`)
-
-            const body: ErrorResponse = {
-                name: ErrorType.FIELD,
-                message: "The id has to be specified as number in the url path"
-            }
-
-            res.status(400).send(body)
-        }
-    }
-
-
-    /**
-     * Checks if the request body contains all valid fields for a new
-     * inventory item
-     *
-     * @param req the request from express.js
-     * @param res the response from express.js
-     * @param next function to the next middleware
-     */
-    newInventoryItemMiddleware(req: express.Request, res: express.Response,
-        next: express.NextFunction) {
-        if (this.isValidNewEntry(req.body)) {
-            next()
-        } else {
-            logger.info(`${req.hostname} sent malformed/missing creation `
-                + `parameters for inventory item`)
-
-            const body: ErrorResponse = {
-                name: ErrorType.FIELD,
-                message: "Missing or malformed json fields"
-            }
-
-            res.status(400).send(body)
-        }
-    }
-
-
-    /**
-     * Checks if the request body contains a comment field
-     *
-     * @param req the request from express.js
-     * @param res the response from express.js
-     * @param next function to the next middleware
-     */
-    deleteCommentMiddleware(req: express.Request, res: express.Response,
-        next: express.NextFunction) {
-        if (req.body.hasOwnProperty("comment")) {
-            next()
-        } else {
-            logger.info(`${req.hostname} requested to delete entry in `
-                + `inventory without a deletion comment`)
-
-            const body: ErrorResponse = {
-                name: ErrorType.FIELD,
-                message: "There has to be a deletion comment for a deletion"
-            }
-
-            res.status(400).send(body)
-        }
-    }
-
-
-    /**
-     * Checks if the request parameters contain a name that should be looked for
-     * 
-     * @param req the request from express.js
-     * @param res the response from express.js
-     * @param next function to the next middleware
-     */
-    getItemLikeMiddleware(req: express.Request, res: express.Response,
-        next: express.NextFunction) {
-        if (typeof req.params.name === "string" && req.params.name.length >= 1) {
-            next()
-        } else {
-            logger.info(`${req.hostname} requested to get items `
-                + `like an empty name`)
-
-            const body: ErrorResponse = {
-                name: ErrorType.FIELD,
-                message: "There has to be at least one character to find items"
-            }
-
-            res.status(400).send(body)
-        }
-    }
-
-
-    /**
-     * Checks if an object contains all properties of a new inventory item
-     * TODO: pull out in separate method
-     *
-     * @param entry the object that should be checked
-     * @returns true if the entry is valid
-     */
-    isValidNewEntry(entry: any) {
-        return (
-            Object.keys(entry).length == 2
-            && entry.hasOwnProperty("name") && entry.hasOwnProperty("count")
-            && entry.name.length !== 0 && validator.isInt(entry.count + "", { min: 0 })
-            && entry.count >= 0
-        )
-    }
-
 
     /**
      * Reads the complete inventory and sends all its fields as a
@@ -151,7 +37,7 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    getInventory(req: express.Request, res: express.Response) {
+    getInventory(req: FastifyRequest, res: FastifyReply) {
         logger.info(`${req.hostname} requested all inventory entries`)
 
         return this.invModel.getAllItems()
@@ -172,24 +58,26 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    getInventoryItem(req: express.Request, res: express.Response) {
+    getInventoryItem(req: FastifyRequest<{
+        Params: IAccessItemParameters
+      }>, res: FastifyReply) {
         logger.info(`${req.hostname} requested inventory entry with `
-            + `id ${req.params.id}`)
+            + `id ${req.params.item_id}`)
 
-        return this.invModel.getItem(Number.parseInt(req.params.id))
+        return this.invModel.getItem(req.params.item_id)
         .then(item => {
             if (item) {
-                logger.info(`Retrieved inventory entry id ${req.params.id} for `
+                logger.info(`Retrieved inventory entry id ${req.params.item_id} for `
                     + `${req.hostname}`)
 
                 res.send(item)
             } else {
                 logger.info(`${req.hostname} requested unavailable inventory `
-                    + `entry id ${req.params.id}`)
+                    + `entry id ${req.params.item_id}`)
 
                 const errorResponse: ErrorResponse = {
                     name: ErrorType.FIELD,
-                    message: `The request inventory entry with id ${req.params.id} `
+                    message: `The request inventory entry with id ${req.params.item_id} `
                         + `is unavailable`
                 }
 
@@ -207,7 +95,7 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    getDeletedInventory(req: express.Request, res: express.Response) {
+    getDeletedInventory(req: FastifyRequest, res: FastifyReply) {
         logger.info(`${req.hostname} requested all deleted inventory entries`)
 
         return this.invModel.getAllDeletedItems()
@@ -229,7 +117,7 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    postNewInventoryItem(req: express.Request, res: express.Response) {
+    postNewInventoryItem(req: FastifyRequest<{Body: ICreateItem}>, res: FastifyReply) {
         logger.info(`${req.hostname} requested to create entry `
                 + `in inventory`)
 
@@ -254,22 +142,21 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    updateInventoryItem(req: express.Request, res: express.Response) {
+    updateInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters, Body: IUpdateItem}>,
+            res: FastifyReply) {
         logger.info(`${req.hostname} requested to update entry `
-                + `${req.params.id} in inventory`)
+                + `${req.params.item_id} in inventory`)
 
-        return this.invModel.updateItem(req.body,
-            Number.parseInt(req.params.id)
-        )
+        return this.invModel.updateItem(req.body, req.params.item_id)
         .then(wasUpdated => {
             if (wasUpdated) {
                 logger.info(`${req.hostname} updated entry with `
-                    + `id ${req.params.id}`)
+                    + `id ${req.params.item_id}`)
 
                 res.send()
             } else {
                 logger.info(`${req.hostname} tried to update non-existent `
-                    + `entry with id ${req.params.id} in inventory`)
+                    + `entry with id ${req.params.item_id} in inventory`)
 
                 const errorResponse: ErrorResponse = {
                     name: ErrorType.FIELD,
@@ -291,15 +178,15 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    restoreInventoryItem(req: express.Request, res: express.Response) {
+    restoreInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters}>, res: FastifyReply) {
         logger.info(`${req.hostname} requested to restore inventory entry `
-            + `id ${req.params.id}`)
+            + `id ${req.params.item_id}`)
 
-        return this.invModel.getDeletionId(Number.parseInt(req.params.id))
+        return this.invModel.getDeletionId(req.params.item_id)
         .then(deletionId => {
             if (deletionId !== -1) {
                 logger.info(`${req.hostname} started to restore entry `
-                    + `id ${req.params.id} in inventory`)
+                    + `id ${req.params.item_id} in inventory`)
 
                 return this.deletionModel.delete(deletionId).then((wasDeleted) => {
                     if (!wasDeleted) {
@@ -314,7 +201,7 @@ export default class InventoryController {
                 })
             } else {
                 logger.info(`${req.hostname} tried to restore entry `
-                    + `id ${req.params.id} in inventory which is not deleted`)
+                    + `id ${req.params.item_id} in inventory which is not deleted`)
 
                 const errorResponse: ErrorResponse = {
                     name: ErrorType.FIELD,
@@ -327,7 +214,7 @@ export default class InventoryController {
         })
         .then(() => {
             logger.info(`${req.hostname} successfully restored entry `
-                    + `id ${req.params.id} in inventory`)
+                    + `id ${req.params.item_id} in inventory`)
 
             res.send()
         }, (error) => {
@@ -347,7 +234,9 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    putExistingInventoryItem(req: express.Request, res: express.Response) {
+    putExistingInventoryItem(
+            req: FastifyRequest<{Params: IAccessItemParameters, Body: IUpdateItem}>,
+            res: FastifyReply) {
         const update = req.body.hasOwnProperty("name")
             || req.body.hasOwnProperty("count")
 
@@ -365,16 +254,18 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the reponse from express.js
      */
-    deleteInventoryItem(req: express.Request, res: express.Response) {
+    deleteInventoryItem(
+            req: FastifyRequest<{Params: IAccessItemParameters, Body: ICreateDeletion}>,
+            res: FastifyReply) {
         logger.info(`${req.hostname} requested to delete inventory entry `
-            + `id ${req.params.id}`)
+            + `id ${req.params.item_id}`)
 
-        return this.invModel.getDeletionId(Number.parseInt(req.params.id))
+        return this.invModel.getDeletionId(req.params.item_id)
         .then(deletionId => {
             if (deletionId === -1) {
                 const body: ErrorResponse = {
                     name: ErrorType.FIELD,
-                    message: `The specified entry with id ${req.params.id} `
+                    message: `The specified entry with id ${req.params.item_id} `
                         + `does not exist`
                 }
 
@@ -382,26 +273,25 @@ export default class InventoryController {
             } else if (deletionId > 0) {
                 const body: ErrorResponse = {
                     name: ErrorType.FIELD,
-                    message: `The specified entry with id ${req.params.id} `
+                    message: `The specified entry with id ${req.params.item_id} `
                         +`is already deleted`
                 }
 
                 throw new CustomError(body)
             }
 
-            return this.deletionModel.insert(req.body.comment)
+            return this.deletionModel.create(req.body)
         })
         .then(insertId => {
             logger.info(`${req.hostname} added a deletion comment for entry `
-                + `with id ${req.params.id} in inventory`)
+                + `with id ${req.params.item_id} in inventory`)
 
-            return this.invModel.updateItem({ deletion_id: insertId },
-                Number.parseInt(req.params.id)
-            )
+            return this.invModel.updateItem(
+                { deletion_id: insertId }, req.params.item_id)
         })
         .then(() => {
             logger.info(`${req.hostname} marked entry with `
-                + `id ${req.params.id} in inventory as deleted`)
+                + `id ${req.params.item_id} in inventory as deleted`)
 
             res.send()
         }, (error) => {
@@ -420,7 +310,7 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-    exportInventoryAsCsv(req: express.Request, res: express.Response) {
+    exportInventoryAsCsv(req: FastifyRequest, res: FastifyReply) {
         logger.info(`${req.hostname} requested csv report of the inventory`)
 
         return this.invModel.getAllItems()
@@ -431,8 +321,8 @@ export default class InventoryController {
             })
         })
         .then((file) => {
-            res.set("Content-Type", "text/csv")
-            res.set("Content-Disposition", "attachment; filename=\"inventory_report.csv\"")
+            res.header("Content-Type", "text/csv")
+            res.header("Content-Disposition", "attachment; filename=\"inventory_report.csv\"")
             res.send(file)
         }, error => {
             handleUnexpectedError(error, req, res)
@@ -445,7 +335,7 @@ export default class InventoryController {
      * @param req the request from express.js
      * @param res the response from express.js
      */
-     exportDeletedInventoryAsCsv(req: express.Request, res: express.Response) {
+     exportDeletedInventoryAsCsv(req: FastifyRequest, res: FastifyReply) {
         logger.info(`${req.hostname} requested csv report of the deleted inventory`)
 
         return this.invModel.getAllDeletedItems()
@@ -456,8 +346,8 @@ export default class InventoryController {
             })
         })
         .then((file) => {
-            res.set("Content-Type", "text/csv")
-            res.set("Content-Disposition", "attachment; filename=\"deleted_inventory_report.csv\"")
+            res.header("Content-Type", "text/csv")
+            res.header("Content-Disposition", "attachment; filename=\"deleted_inventory_report.csv\"")
             res.send(file)
         }, error => {
             handleUnexpectedError(error, req, res)
@@ -469,11 +359,11 @@ export default class InventoryController {
     * @param req the request from express.js.
     * @param res the response from express.js.
     */
-   getItemLike(req: express.Request, res: express.Response) {
+   getItemLike(req: FastifyRequest<{Params: ILikeItem}>, res: FastifyReply) {
        logger.info(`${req.hostname} requested inventory items like `
-           + `${req.params.name} id ${req.params.id}`)
+           + `${req.params.name}`)
        
-       return this.invModel.getItemLike(req.params.name)
+       return this.invModel.getItemLike(req.params)
        .then((items) => {
            res.send(items)
        }, error => {

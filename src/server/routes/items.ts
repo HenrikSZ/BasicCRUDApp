@@ -1,40 +1,130 @@
-import express from "express"
-import ItemModel from "../models/ItemModel.js"
-import DeletionModel from "../models/DeletionModel.js"
-import InventoryController from "../controllers/InventoryController.js"
-import dbPromise from "../db.js"
+import { ICreateItem, ILikeItem, IUpdateItem } from "../models/ItemModel.js"
+import { ICreateDeletion } from "../models/DeletionModel.js"
+import InventoryController, { IAccessItemParameters } from "../controllers/InventoryController.js"
+import { FastifyInstance, FastifyPluginOptions } from "fastify"
 
 
-const router = express.Router()
-const itemModel = new ItemModel(dbPromise)
-const delModel = new DeletionModel(dbPromise)
-const invContr = new InventoryController(itemModel, delModel)
+const createItemBodySchema = {
+    type: "object",
+    properties: {
+        name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 64
+        },
+        count: {
+            type: "integer",
+            minimum: 0
+        }
+    }
+}
 
 
-router.use(express.json())
-
-router.get("/", invContr.getInventory.bind(invContr))
-router.get("/deleted", invContr.getDeletedInventory.bind(invContr))
-router.get("/export", invContr.exportInventoryAsCsv.bind(invContr))
-router.get("/deleted/export", invContr.exportDeletedInventoryAsCsv.bind(invContr))
-
-router.use("/item/new",
-    invContr.newInventoryItemMiddleware.bind(invContr))
-router.post("/item/new",
-    invContr.postNewInventoryItem.bind(invContr))
-
-router.use("/item/existing/:id",
-    invContr.entryIdMiddleware.bind(invContr))
-router.get("/item/existing/:id",
-    invContr.getInventoryItem.bind(invContr))
-router.put("/item/existing/:id",
-    invContr.putExistingInventoryItem.bind(invContr))
-router.delete("/item/existing/:id",
-    invContr.deleteCommentMiddleware.bind(invContr),
-    invContr.deleteInventoryItem.bind(invContr))
-
-router.get("/item/like/:name",
-    invContr.getItemLike.bind(invContr))
+const itemAccessParamsSchema = {
+    type: "object",
+    properties: {
+        item_id: {
+            type: "integer",
+            minimum: 1
+        }
+    }
+}
 
 
-export default router
+const updateItemBodySchema = {
+    type: "object",
+    properties: {
+        name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 64
+        },
+        count_change: {
+            type: "integer"
+        },
+    }
+}
+
+
+const deleteItemBodySchema = {
+    type: "object",
+    properties: {
+        comment: {
+            type: "string",
+            minLength: 1,
+            maxLength: 255
+        },
+    }
+}
+
+
+const getItemLikemBodySchema = {
+    type: "object",
+    properties: {
+        name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 64
+        },
+    }
+}
+
+
+export default function(fastify: FastifyInstance, opts: FastifyPluginOptions, done: Function) {
+    const invContr = new InventoryController()
+
+    fastify.get("/items", (req, rep) => invContr.getInventory(req, rep))
+    fastify.get("/items/deleted",
+        (req, rep) => invContr.getDeletedInventory(req, rep))
+    fastify.get("/items/export",
+        (req, rep) => invContr.exportInventoryAsCsv(req, rep))
+    fastify.get("/items/deleted/export",
+        (req, rep) => invContr.exportDeletedInventoryAsCsv(req, rep))
+
+    fastify.post<{Body: ICreateItem}>(
+        "/items/item/new", {
+            handler: (req, rep) => invContr.postNewInventoryItem(req, rep),
+            schema: {
+                body: createItemBodySchema
+            }
+        }
+    )
+
+    fastify.get<{Params: IAccessItemParameters}>(
+        "/items/item/existing/:item_id", {
+            handler: (req, rep) => invContr.getInventoryItem(req, rep),
+            schema: {
+                params: itemAccessParamsSchema
+            }
+        }
+    )
+    fastify.put<{Params: IAccessItemParameters, Body: IUpdateItem}>(
+        "/items/item/existing/:item_id", {
+            handler: (req, rep) => invContr.putExistingInventoryItem(req, rep),
+            schema: {
+                params: itemAccessParamsSchema,
+                body: updateItemBodySchema
+            }
+        }
+    )
+    fastify.delete<{Params: IAccessItemParameters, Body: ICreateDeletion}>(
+        "/items/item/existing/:item_id", {
+            handler: (req, rep) => invContr.deleteInventoryItem(req, rep),
+            schema: {
+                params: itemAccessParamsSchema,
+                body: deleteItemBodySchema
+            }
+        }
+    )
+
+    fastify.get<{Params: ILikeItem}>(
+        "/items/item/like/:name", {
+            handler: (req, rep) => invContr.getItemLike(req, rep),
+            schema: {
+                params: getItemLikemBodySchema
+            }
+        }
+    )
+
+    done()
+}

@@ -4,16 +4,30 @@
 
 
 import { RowDataPacket, OkPacket, Pool, PoolConnection } from "mysql2/promise"
+import dbPromise from "../db.js"
 import ExternalItemAssignmentModel from "./ExternalItemAssignmentModel.js"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
 
 
-export interface MinimalInventoryItem extends RowDataPacket {
+export interface ICreateItem {
     name: string,
     count: number
 }
 
-export interface InventoryItem extends MinimalInventoryItem {
+export interface IUpdateItem {
+    name?: string,
+    count_change?: number
+    deletion_id?: number
+}
+
+export interface ILikeItem {
+    name: string
+}
+
+
+export interface InventoryItem extends RowDataPacket {
+    name: string,
+    count: number
     id: number,
     deletion_id: number,
     created_at: Date,
@@ -31,10 +45,12 @@ export default class ItemModel {
     externalItemAssignmentModel: ExternalItemAssignmentModel
     dbPromise: Pool
 
-    constructor(dbPromise: Pool) {
-        this.itemAssignmentModel = new ItemAssignmentModel(dbPromise)
-        this.externalItemAssignmentModel = new ExternalItemAssignmentModel(dbPromise)
-        this.dbPromise = dbPromise
+    constructor(_dbPromise: Pool = dbPromise,
+            itemAssignmentModel = new ItemAssignmentModel(_dbPromise),
+            externalItemAssignmentModel = new ExternalItemAssignmentModel(_dbPromise)) {
+        this.itemAssignmentModel = itemAssignmentModel
+        this.externalItemAssignmentModel = externalItemAssignmentModel
+        this.dbPromise = _dbPromise
     }
 
 
@@ -94,10 +110,10 @@ export default class ItemModel {
      * 
      * @param name parts of the name that should be searched for.
      */
-    getItemLike(name: string): Promise<InventoryItem[]> {
+    getItemLike(values: ILikeItem): Promise<InventoryItem[]> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) "
             + "FROM items WHERE name LIKE ? LIMIT 10"
-        return this.dbPromise.query(stmt, "%" + name + "%")
+        return this.dbPromise.query(stmt, "%" + values.name + "%")
         .then(([results, fiels]) => {
             return results as InventoryItem[]
         })
@@ -133,7 +149,7 @@ export default class ItemModel {
      * @param item the basic info of the item.
      * @returns the id of this item.
      */
-    createItem(item: MinimalInventoryItem): Promise<number> {
+    createItem(item: ICreateItem): Promise<number> {
         let itemToInsert = {
             name: item.name
         }
@@ -165,7 +181,7 @@ export default class ItemModel {
      * @param id the id of the item.
      * @returns true if the item could be update, false otherwise.
      */
-    updateItem(values: any, id: number): Promise<Boolean> {
+    updateItem(values: IUpdateItem, id: number): Promise<Boolean> {
         let conn: PoolConnection | null = null
         let modified = false
 

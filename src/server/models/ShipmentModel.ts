@@ -11,14 +11,11 @@ import { stringify } from "csv-stringify/sync"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
 import dbPromise from "../db.js"
  
- 
-interface MinimalShipment {
+
+export interface ICreateShipment extends RowDataPacket {
     name: string,
     source: string,
-    destination: string
-}
-
-export interface ShipmentCreateData extends MinimalShipment {
+    destination: string,
     items: { id: number, count: number }[]
 }
  
@@ -30,13 +27,13 @@ interface Shipment {
     items?: InventoryItem[]
 }
 
-export interface ShipmentUpdateData {
+export interface IUpdateShipment {
     name?: string,
     source?: string,
     destination?: string,
 }
 
-interface ShipmentItemUpdateData {
+export interface IUpdateShipmentItem {
     assigned_count?: number
 }
 
@@ -136,13 +133,7 @@ export default class ShipmentModel {
      * @param shipment the basic info of the shipment.
      * @returns the id of this shipment.
      */
-    createShipment(shipment: ShipmentCreateData): Promise<number> {
-        let insertShipment = {
-            name: shipment.name,
-            source: shipment.source,
-            destination: shipment.destination
-        }
-
+    createShipment(values: ICreateShipment): Promise<number> {
         let shipmentId = 0
         let conn: PoolConnection | null = null
 
@@ -153,7 +144,7 @@ export default class ShipmentModel {
         })
         .then(() => {
             let stmt = "INSERT INTO shipments SET ?"
-            return conn.query(stmt, insertShipment)
+            return conn.query(stmt, values)
         })
         .then(([results, fields]) => {
             results = results as OkPacket
@@ -161,7 +152,7 @@ export default class ShipmentModel {
 
             let promises = []
 
-            for (let item of shipment.items) {
+            for (let item of values.items) {
                 let promise = this.assignmentModel
                     .create(item.id, item.count, shipmentId, undefined, conn)
 
@@ -191,7 +182,7 @@ export default class ShipmentModel {
      *  Can be an empty object (nothing happens).
      * @returns true if a shipment was updated, false otherwise.
      */
-    updateShipment(id: number, values: ShipmentUpdateData): Promise<Boolean> {
+    updateShipment(id: number, values: IUpdateShipment): Promise<Boolean> {
         if (Object.keys(values).length == 0) {
             return Promise.resolve(false)
         }
@@ -242,7 +233,7 @@ export default class ShipmentModel {
      * @returns true if an item could be updated, false otherwise
      */
     updateShipmentItem(shipmentId: number, itemId: number,
-            values: ShipmentItemUpdateData) {
+            values: IUpdateShipmentItem) {
         return this.assignmentModel
             .updateShipmentAssignment(shipmentId, itemId, values.assigned_count)
     }
