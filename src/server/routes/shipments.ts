@@ -8,6 +8,8 @@ const router = express.Router()
 const model = new ShipmentModel(dbPromise)
 const contr = new ShipmentController(model)
 
+router.use(express.json())
+
 router.get("/", contr.getAllShipments.bind(contr))
 router.get("/export", contr.exportShipmentsAsCsv.bind(contr))
 

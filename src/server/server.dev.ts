@@ -23,18 +23,21 @@ const __dirname = path.dirname(__filename)
 import dotenv from "dotenv"
 dotenv.config()
 
-import express from "express"
-import bodyParser from "body-parser"
+import Fastify from "fastify"
+import ExpressPlugin from "fastify-express"
+import FastifyStatic from "fastify-static"
+
 
 import itemsRouter from "./routes/items.js"
 import shipmentsRouter from "./routes/shipments.js"
 import logger from "./logger.js"
 
 
-const app = express()
+const app = Fastify({ logger: true })
+// @ts-ignore
+await app.register(ExpressPlugin)
 const compiler = webpack(config as Configuration)
 
-app.use(bodyParser.json())
 app.use("/items", itemsRouter)
 app.use("/shipments", shipmentsRouter)
 
@@ -50,6 +53,7 @@ app.get('/', (req, res) => {
 })
 
 const port = process.env.PORT
-app.listen(port, () => {
-    logger.info(`Started web server listening on port ${port}`)
-})
+// @ts-ignore
+await app.listen(port)
+logger.info(`Started web server listening on port ${port}`)
+

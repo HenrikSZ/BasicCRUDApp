@@ -11,6 +11,8 @@ const delModel = new DeletionModel(dbPromise)
 const invContr = new InventoryController(itemModel, delModel)
 
 
+router.use(express.json())
+
 router.get("/", invContr.getInventory.bind(invContr))
 router.get("/deleted", invContr.getDeletedInventory.bind(invContr))
 router.get("/export", invContr.exportInventoryAsCsv.bind(invContr))
