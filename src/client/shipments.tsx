@@ -2,7 +2,7 @@ import React, { ChangeEvent } from "react"
 
 import "./index.css"
 
-import { ConfirmationButton, DangerButton, DropdownButton, ExportButton, MinusButton, PlusButton, RibbonButton } from "./buttons"
+import { BackButton, ConfirmationButton, DeleteButton, DropdownButton, EditButton, ExportButton, MinusButton, PlusButton, ReloadButton, RibbonButton, SaveButton } from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItemData, MutableInventoryItemData } from "./items"
 
@@ -191,15 +191,14 @@ class ShipmentTable extends React.Component {
             <React.StrictMode>
                 <Section>
                     <div>
-                        <span className="text-xl font-bold">Shipments</span>
-                        <div className="ml-4 float-right">
-                            <ConfirmationButton onClick={() =>
-                                this.props.onReloadRequest()}>
-                                Reload
-                            </ConfirmationButton>
-                            <ExportButton link="/shipments">
-                                Export as CSV
-                            </ExportButton>
+                        <div className="flex flex-row">
+                            <div className="text-xl font-bold">Shipments</div>
+                            <div className="ml-auto pl-1 pr-1">
+                                <ExportButton link="/shipments"/>
+                            </div>
+                            <div className="pr-1 pl-1">
+                                <ReloadButton onClick={() => this.props.onReloadRequest()}/>
+                            </div>
                         </div>
                         <div className="mt-4">
                             {
@@ -263,9 +262,7 @@ class Shipment extends React.Component {
                 <span className="font-bold text-lg p-4">{this.props.data.name}</span>
                 <span className="italic">from: {this.props.data.source} / to: {this.props.data.destination}</span>
                 <div className="inline-block float-right">
-                    <DangerButton onClick={() => this.deleteShipment()}>
-                        Delete
-                    </DangerButton>
+                    <DeleteButton onClick={() => this.deleteShipment()}/>
                 </div>
                 <div className={this.state.dropdownCss}>
                     <table>
@@ -277,6 +274,8 @@ class Shipment extends React.Component {
                                 <th className="text-left pr-2">
                                     Count
                                 </th>
+                                <th></th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -386,14 +385,10 @@ class ShipmentItem extends React.Component {
                                 Number.parseInt(evt.target.value)}/>
                 </td>
                 <td>
-                    <ConfirmationButton onClick={() => this.saveEdits()}>
-                        Save
-                    </ConfirmationButton>
+                    <BackButton onClick={() => this.switchToMode(ShipmentItemMode.NORMAL)}/>
                 </td>
                 <td>
-                    <DangerButton onClick={() => this.switchToMode(ShipmentItemMode.NORMAL)}>
-                        Discard
-                    </DangerButton>
+                    <SaveButton onClick={() => this.saveEdits()}/>
                 </td>
             </tr>
         )
@@ -408,15 +403,11 @@ class ShipmentItem extends React.Component {
                 <td className="border-2 border-gray-700 p-2">
                     {this.props.data.assigned_count}
                 </td>
-                <td>
-                    <ConfirmationButton onClick={() => this.switchToMode(ShipmentItemMode.EDIT)}>
-                        Edit
-                    </ConfirmationButton>
+                <td className="border-2 border-gray-700 p-2">
+                    <EditButton onClick={() => this.switchToMode(ShipmentItemMode.EDIT)}/>
                 </td>
-                <td>
-                    <DangerButton onClick={() => this.deleteShipmentItem()}>
-                        Delete
-                    </DangerButton>
+                <td className="border-2 border-gray-700 p-2">
+                    <DeleteButton onClick={() => this.deleteShipmentItem()}/>
                 </td>
             </tr>
         )

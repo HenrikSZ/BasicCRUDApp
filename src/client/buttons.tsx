@@ -1,6 +1,13 @@
 import React, { ReactChild } from "react"
+import { CgExport } from "react-icons/cg"
+import { IoReload } from "react-icons/io5"
+import { FiEdit2, FiSave } from "react-icons/fi"
+import { RiDeleteBin5Line } from "react-icons/ri"
+import { GrUndo } from "react-icons/gr" 
+import { MdOutlineRestoreFromTrash } from "react-icons/md"
 
 import "./index.css"
+import ReactTooltip from "react-tooltip"
 
 
 export class RibbonButton extends React.Component {
@@ -133,22 +140,131 @@ export class DropdownButton extends React.Component {
 
 export class ExportButton extends React.Component {
     props: {
-        link: string,
+        link: string
+    }
+
+    render() {
+        return (
+            <GenericButton onClick={() => this.exportCsv()} tooltip="Export as CSV">
+                <CgExport size="1.75em"/>
+            </GenericButton>
+        )
+    }
+        
+    exportCsv() {
+        let frame = document.getElementById("download-frame") as HTMLIFrameElement
+        frame.src = this.props.link + "/export"
+    }
+}
+
+
+export class ReloadButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return (
+            <GenericButton onClick={() => this.props.onClick()} tooltip="Reload">
+                <IoReload size="1.75em"/>
+            </GenericButton>
+        )
+    }
+}
+
+
+export class EditButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return (
+            <GenericButton onClick={this.props.onClick} tooltip="Edit">
+                <FiEdit2 size="1.75em"/>
+            </GenericButton>
+        )
+    }
+}
+
+
+export class DeleteButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return (
+            <GenericButton onClick={this.props.onClick} tooltip="Delete">
+                <RiDeleteBin5Line size="1.75em"/>
+            </GenericButton>
+        )
+    }
+}
+
+
+export class BackButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return (
+            <GenericButton onClick={this.props.onClick} tooltip="Back">
+                <GrUndo size="1.75em"/>
+            </GenericButton>
+        )
+    }
+}
+
+
+export class SaveButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return (
+            <GenericButton onClick={this.props.onClick} tooltip="Save">
+                <FiSave size="1.75em"/>
+            </GenericButton>
+        )
+    }
+}
+
+export class RestoreButton extends React.Component {
+    props: {
+        onClick: Function
+    }
+
+    render() {
+        return (
+            <GenericButton onClick={this.props.onClick} tooltip="Restore">
+                <MdOutlineRestoreFromTrash size="1.75em"/>
+            </GenericButton>
+        )
+    }
+}
+
+export class GenericButton extends React.Component {
+    props: {
+        onClick: Function,
+        tooltip: string,
         children: React.ReactChild | React.ReactChild[]
     }
 
     render() {
         return (
-            <ConfirmationButton onClick={() => this.exportCsv()}>
+            <div data-tip={this.props.tooltip}
+                className="p-1 cursor-pointer hover:bg-orange-400 active:bg-slate-500 rounded-md"
+                    onClick={() => this.props.onClick()}>
                 {this.props.children}
-            </ConfirmationButton>
+            </div>
         )
     }
-    
 
-    exportCsv() {
-        let frame = document.getElementById("download-frame") as HTMLIFrameElement
-        frame.src = this.props.link + "/export"
+    componentDidUpdate() {
+        ReactTooltip.rebuild()
     }
 }
 

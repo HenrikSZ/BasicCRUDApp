@@ -2,8 +2,17 @@ import React from "react"
 
 import "./index.css"
 
-import { ConfirmationButton, DangerButton, ExportButton, RibbonButton } from "./buttons"
+import { ConfirmationButton,
+    DangerButton,
+    DeleteButton,
+    EditButton,
+    ExportButton,
+    ReloadButton,
+    RibbonButton,
+    BackButton, 
+    SaveButton} from "./buttons"
 import { Section } from "./wrappers"
+import ReactTooltip from "react-tooltip"
 
 
 enum InventoryMode {
@@ -236,7 +245,7 @@ export class ItemCreator extends React.Component {
                             </td>
                             <td>
                                 <ConfirmationButton onClick={() => this.saveNew()}>
-                                    Add
+                                    Create
                                 </ConfirmationButton>
                             </td>
                         </tr>
@@ -278,14 +287,14 @@ export class InventoryTable extends React.Component {
         return (
             <React.StrictMode>
                 <Section>
-                    <span className="text-xl font-bold">Items</span>
-                    <div className="ml-4 float-right">
-                        <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
-                            Reload
-                        </ConfirmationButton>
-                        <ExportButton link="/items">
-                            Export as CSV
-                        </ExportButton>
+                    <div className="flex flex-row">
+                        <div className="text-xl font-bold">Items</div>
+                        <div className="ml-auto pr-1 pl-1">
+                            <ExportButton link="/items"/>
+                        </div>
+                        <div className="pr-1 pl-1">
+                            <ReloadButton onClick={() => this.props.onReloadRequest()}/>
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -301,8 +310,10 @@ export class InventoryTable extends React.Component {
                             {
                                 this.props.entries.map((item) => {
                                     return <InventoryItem data={item} key={item.id}
-                                        onDelete={(id: number) => this.props.onItemDelete(id)}
-                                        onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
+                                        onDelete={(id: number) =>
+                                            this.props.onItemDelete(id)}
+                                        onErrorResponse={(response: any) =>
+                                            this.props.onErrorResponse(response)}/>
                                 })
                             }
                         </tbody>
@@ -368,14 +379,10 @@ export class InventoryItem extends React.Component {
                     </div>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <ConfirmationButton onClick={() => this.switchToMode(InventoryItemMode.EDIT)}>
-                        Edit
-                    </ConfirmationButton>
+                    <EditButton onClick={() => this.switchToMode(InventoryItemMode.EDIT)}/>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <DangerButton onClick={() => this.switchToMode(InventoryItemMode.DELETE)}>
-                        Delete
-                    </DangerButton>
+                    <DeleteButton onClick={() => this.switchToMode(InventoryItemMode.DELETE)}/>
                 </td>
             </tr>
         )
@@ -396,14 +403,10 @@ export class InventoryItem extends React.Component {
                             Number.parseInt(evt.target.value) - this.state.data.count}/>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <ConfirmationButton onClick={() => this.saveEdits()}>
-                        Save
-                    </ConfirmationButton>
+                    <BackButton onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}/>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <DangerButton onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>
-                        Discard
-                    </DangerButton>
+                    <SaveButton onClick={() => this.saveEdits()}/>
                 </td>
             </tr>
         )
@@ -420,17 +423,18 @@ export class InventoryItem extends React.Component {
                         onChange={evt => this.deletion_comment = evt.target.value}/>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <ConfirmationButton onClick={() => this.deleteItem()}>
-                        Delete
-                    </ConfirmationButton>
+                    <BackButton onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}/>
                 </td>
                 <td className="border-2 border-gray-700 p-2">
-                    <DangerButton onClick={() => this.switchToMode(InventoryItemMode.NORMAL)}>
-                       Discard
-                    </DangerButton>
+                    <DeleteButton onClick={() => this.deleteItem()}/>
                 </td>
             </tr>
         )
+    }
+
+    componentDidUpdate() {
+        ReactTooltip.hide()
+        ReactTooltip.rebuild()
     }
 
     switchToMode(mode: InventoryItemMode) {
@@ -513,14 +517,14 @@ export class DeletedInventoryTable extends React.Component {
             <React.StrictMode>
                 <Section>
                     <div>
-                        <span className="text-xl font-bold">Deleted Items</span>
-                        <div className="ml-4 float-right">
-                            <ConfirmationButton onClick={() => this.props.onReloadRequest()}>
-                                Reload
-                            </ConfirmationButton>
-                            <ExportButton link="/items/deleted">
-                                Export as CSV
-                            </ExportButton>
+                        <div className="flex flex-row">
+                            <div className="text-xl font-bold">Deleted Items</div>
+                            <div className="ml-auto pr-1 pl-1">
+                                <ExportButton link="/items/deleted"/>
+                            </div>
+                            <div className="pr-1 pl-1">
+                               <ReloadButton onClick={() => this.props.onReloadRequest()}/>
+                            </div>
                         </div>
                         <table className="table-data-any">
                             <thead>

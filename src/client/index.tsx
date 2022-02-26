@@ -1,5 +1,6 @@
 import ReactDOM from "react-dom"
 import React from "react"
+import ReactTooltip from "react-tooltip"
 
 import "./index.css"
 import { ItemView } from "./items"
@@ -49,6 +50,7 @@ class App extends React.Component {
     render() {
         return (
             <React.StrictMode>
+                <ReactTooltip effect="solid" offset={{top: -5}}/>
                 <div className="pl-2 pt-2 flex flex-row">
                     <nav className="float-left mt-16 mr-6">
                         <SideRibbonButton 
