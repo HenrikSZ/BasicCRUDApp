@@ -15,8 +15,11 @@ dotenv.config()
 import Fastify from "fastify"
 
 // @ts-ignore
-import hotModuleReplacement from "fastify-webpack-hmr"
+import webpackDevMiddleware from "webpack-dev-middleware"
+// @ts-ignore
+import webpackHotMiddleware from "webpack-hot-middleware"
 
+import middie from "middie"
 
 import itemRoutes from "./routes/items.js"
 import shipmentRoutes from "./routes/shipments.js"
@@ -29,7 +32,21 @@ const compiler = webpack(config)
 // @ts-ignore
 await app.register(itemRoutes) // @ts-ignore
 await app.register(shipmentRoutes) // @ts-ignore
-await app.register(hotModuleReplacement, { compiler })
+await app.register(middie)
+const dev = webpackDevMiddleware(compiler)
+const hot = webpackHotMiddleware(compiler)
+app.use(dev)
+app.use(hot)
+
+app.decorate('webpack',
+    {
+        compiler,
+        dev,
+        hot
+    })
+    .addHook('onClose', (app, next) => {
+        dev.close(() => next)
+    })
 
 const port = process.env.PORT
 // @ts-ignore

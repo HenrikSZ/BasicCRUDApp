@@ -74,7 +74,7 @@ export class ItemView extends React.Component {
                             onClick={() =>
                                 this.switchToMode(InventoryMode.NORMAL)}
                             isActive={this.state.mode == InventoryMode.NORMAL}>
-                        Normal
+                        All
                     </RibbonButton>
                     <RibbonButton 
                             onClick={() =>

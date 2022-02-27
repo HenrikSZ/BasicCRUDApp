@@ -64,7 +64,7 @@ export class ShipmentView extends React.Component {
                     <RibbonButton 
                             onClick={() => this.switchToMode(ShipmentViewMode.NORMAL)}
                             isActive={this.state.mode == ShipmentViewMode.NORMAL}>
-                        Normal
+                        All
                     </RibbonButton>
                 </div>
                 {
