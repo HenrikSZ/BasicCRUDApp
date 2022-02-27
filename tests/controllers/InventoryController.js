@@ -1,7 +1,8 @@
 import chai from "chai"
 import sinon from "sinon"
 import sinon_chai from "sinon-chai"
-import { mockReq, mockRes } from "sinon-express-mock"
+import mockReq from "../mocks/fastify/request.js"
+import mockRes from "../mocks/fastify/reply.js"
 import InventoryController from "../../dist/controllers/InventoryController.js"
 import mockDeletionModel from "../mocks/models/DeletionModel.js"
 import mockInventoryModel from "../mocks/models/InventoryModel.js"
@@ -11,7 +12,7 @@ const expect = chai.expect
 
 describe("InventoryController", () => {
     describe("#getInventory", () => {
-        it("should send a result containing the whole inventory", () => {
+        it("should send a result containing the whole inventory", async () => {
             let allItems = [
                 {
                     name: "Chair",
@@ -34,15 +35,13 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
             
-            return invController.getInventory(req, res)
-            .then(() => {
-                expect(res.send).to.be.calledWith(allItems)
-            })
+            await invController.getInventory(req, res)
+            expect(res.send).to.be.calledWith(allItems)
         })
     })
 
     describe("#getInventoryItem", () => {
-        it("should send a result containing the exact item", () => {
+        it("should send a result containing the exact item", async () => {
             let chair = {
                 name: "Chair",
                 count: 5,
@@ -57,18 +56,16 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: 2
+                    item_id: 2
                 }
             })
             let res = mockRes()
             
-            return invController.getInventoryItem(req, res)
-            .then(() => {
-                expect(res.send).to.have.been.calledWith(chair)
-                expect(mockModel.getItem).to.have.been.calledWith(2)
-            })
+            await invController.getInventoryItem(req, res)
+            expect(res.send).to.have.been.calledWith(chair)
+            expect(mockModel.getItem).to.have.been.calledWith(2)
         })
-        it("should send an error if the item is not available", () => {
+        it("should send an error if the item is not available", async () => {
             let mockModel = mockInventoryModel()
             let invController = new InventoryController(
                 mockModel, mockDeletionModel()
@@ -76,22 +73,20 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: 3
+                    item_id: 3
                 }
             })
             let res = mockRes()
             
-            return invController.getInventoryItem(req, res)
-            .then(() => {
-                expect(res.status).to.have.been.calledWith(400)
-                expect(res.status).to.have.been.calledBefore(res.send)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.getInventoryItem(req, res)
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.calledOnce
         })
     })
 
     describe("#getDeletedInventory", () => {
-        it("should send a result containing the deleted inventory", () => {
+        it("should send a result containing the deleted inventory", async () => {
             let deletedItems = [
                 {
                     name: "Chair",
@@ -116,15 +111,13 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
             
-            return invController.getDeletedInventory(req, res)
-            .then(() => {
-                expect(res.send).to.be.calledWith(deletedItems)
-            })
+            await invController.getDeletedInventory(req, res)
+            expect(res.send).to.be.calledWith(deletedItems)
         })
     })
 
     describe("#postNewInventoryItem", () => {
-        it("should insert the new item into the database", () => {
+        it("should insert the new item into the database", async () => {
             let insertId = 5
             let item = {
                 name: "Chair",
@@ -143,12 +136,10 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            return invController.postNewInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.createItem).to.have.been.calledWith(item)
-            })
+            await invController.postNewInventoryItem(req, res)
+            expect(mockModel.createItem).to.have.been.calledWith(item)
         })
-        it("should return new inventory item with a status code 0f 201", () => {
+        it("should return new inventory item with a status code 0f 201", async () => {
             let insertId = 5
             let item = {
                 name: "Chair",
@@ -170,17 +161,15 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            return invController.postNewInventoryItem(req, res)
-            .then(() => {
-                expect(res.status).to.have.been.calledWith(201)
-                expect(res.status).to.have.been.calledBefore(res.send)
-                expect(res.send).to.have.been.calledWith(insertedItem)
-            })
+            await invController.postNewInventoryItem(req, res)
+            expect(res.status).to.have.been.calledWith(201)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.calledWith(insertedItem)
         })
     })
 
     describe("#updateInventoryItem", () => {
-        it("should update the item", () => {
+        it("should update the item", async () => {
             let id = 5
             let item = {
                 name: "Chair",
@@ -197,17 +186,15 @@ describe("InventoryController", () => {
             let req = mockReq({
                 body: item,
                 params: {
-                    id: id
+                    item_id: id
                 }
             })
             let res = mockRes()
             
-            return invController.updateInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.updateItem).to.have.been.calledWith(item, id)
-            })
+            await invController.updateInventoryItem(req, res)
+            expect(mockModel.updateItem).to.have.been.calledWith(item, id)
         })
-        it("should fail with error 400 when id invalid", () => {
+        it("should fail with error 400 when id invalid", async () => {
             let id = 5
             let item = {
                 name: "Chair",
@@ -224,22 +211,20 @@ describe("InventoryController", () => {
             let req = mockReq({
                 body: item,
                 params: {
-                    id: id
+                    item_id: id
                 }
             })
             let res = mockRes()
             
-            return invController.updateInventoryItem(req, res)
-            .then(() => {
-                expect(res.status).to.have.been.calledWith(400)
-                expect(res.status).to.have.been.calledBefore(res.send)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.updateInventoryItem(req, res)
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.calledOnce
         })
     })
 
     describe("#restoreInventoryItem", () => {
-        it("should restore an deleted entry with a valid id", () => {
+        it("should restore an deleted entry with a valid id", async () => {
             let itemId = 5
             let deletionId = 8
 
@@ -255,19 +240,17 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: itemId
+                    item_id: itemId
                 }
             })
             let res = mockRes()
             
-            return invController.restoreInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
-                expect(mockDelModel.delete).to.have.been.calledWith(deletionId)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.restoreInventoryItem(req, res)
+            expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
+            expect(mockDelModel.delete).to.have.been.calledWith(deletionId)
+            expect(res.send).to.have.been.calledOnce
         })
-        it("should fail with error 400 when trying to restore not deleted item", () => {
+        it("should fail with error 400 when trying to restore not deleted item", async () => {
             let itemId = 5
             let deletionId = -1
 
@@ -283,21 +266,19 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: itemId
+                    item_id: itemId
                 }
             })
             let res = mockRes()
             
-            return invController.restoreInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
-                expect(mockDelModel.delete).to.not.have.been.calledWith(deletionId)
-                expect(res.status).to.have.been.calledWith(400)
-                expect(res.status).to.have.been.calledBefore(res.send)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.restoreInventoryItem(req, res)
+            expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
+            expect(mockDelModel.delete).to.not.have.been.calledWith(deletionId)
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.calledOnce
         })
-        it("should fail with error 400 when trying to restore not existing item", () => {
+        it("should fail with error 400 when trying to restore not existing item", async () => {
             let itemId = -1
             let deletionId = -1
 
@@ -313,19 +294,17 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: itemId
+                    item_id: itemId
                 }
             })
             let res = mockRes()
             
-            return invController.restoreInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
-                expect(mockDelModel.delete).to.not.have.been.called
-                expect(res.status).to.have.been.calledWith(400)
-                expect(res.status).to.have.been.calledBefore(res.send)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.restoreInventoryItem(req, res)
+            expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
+            expect(mockDelModel.delete).to.not.have.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.calledOnce
         })
     })
 
@@ -341,7 +320,7 @@ describe("InventoryController", () => {
             let req = mockReq({
                 body: {},
                 params: {
-                    id: id
+                    item_id: id
                 }
             })
             let res = mockRes()
@@ -364,7 +343,7 @@ describe("InventoryController", () => {
                     name: "Desk"
                 },
                 params: {
-                    id: id
+                    item_id: id
                 }
             })
             let res = mockRes()
@@ -377,7 +356,7 @@ describe("InventoryController", () => {
     })
 
     describe("#deleteInventoryItem", () => {
-        it("should delete an item if it is existing", () => {
+        it("should delete an item if it is existing", async () => {
             let id = 10
             let pastDeletionId = 0
             let deletionId = 11
@@ -397,7 +376,7 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: id
+                    item_id: id
                 },
                 body: {
                     comment: deletionComment
@@ -405,14 +384,12 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            return invController.deleteInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.getDeletionId).to.have.been.calledWith(id)
-                expect(mockDelModel.insert).to.have.been.calledWith(deletionComment)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.deleteInventoryItem(req, res)
+            expect(mockModel.getDeletionId).to.have.been.calledWith(id)
+            expect(mockDelModel.create).to.have.been.calledWith({ comment: deletionComment})
+            expect(res.send).to.have.been.calledOnce
         })
-        it("should fail with error 400 when trying to delete already deleted item", () => {
+        it("should fail with error 400 when trying to delete already deleted item", async () => {
             let id = 10
             let pastDeletionId = 9
             let deletionId = 11
@@ -432,7 +409,7 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: id
+                    item_id: id
                 },
                 body: {
                     comment: deletionComment
@@ -440,16 +417,14 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            return invController.deleteInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.getDeletionId).to.have.been.calledWith(id)
-                expect(mockDelModel.insert).to.not.have.been.called
-                expect(res.status).to.have.been.calledWith(400)
-                expect(res.status).to.have.been.calledBefore(res.send)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.deleteInventoryItem(req, res)
+            expect(mockModel.getDeletionId).to.have.been.calledWith(id)
+            expect(mockDelModel.create).to.not.have.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.calledOnce
         })
-        it("should fail with error 400 when trying non-existing item", () => {
+        it("should fail with error 400 when trying non-existing item", async () => {
             let id = 10
             let pastDeletionId = -1
             let deletionId = 11
@@ -469,7 +444,7 @@ describe("InventoryController", () => {
 
             let req = mockReq({
                 params: {
-                    id: id
+                    item_id: id
                 },
                 body: {
                     comment: deletionComment
@@ -477,19 +452,17 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            return invController.deleteInventoryItem(req, res)
-            .then(() => {
-                expect(mockModel.getDeletionId).to.have.been.calledWith(id)
-                expect(mockDelModel.insert).to.not.have.been.called
-                expect(res.status).to.have.been.calledWith(400)
-                expect(res.status).to.have.been.calledBefore(res.send)
-                expect(res.send).to.have.been.calledOnce
-            })
+            await invController.deleteInventoryItem(req, res)
+            expect(mockModel.getDeletionId).to.have.been.calledWith(id)
+            expect(mockDelModel.create).to.not.have.been.called
+            expect(res.status).to.have.been.calledWith(400)
+            expect(res.status).to.have.been.calledBefore(res.send)
+            expect(res.send).to.have.been.calledOnce
         })
     })
 
     describe("#exportInventoryAsCsv", () => {
-        it("should return the full csv string when given full", (done) => {
+        it("should return the full csv string when given full", async () => {
             let data = {
                 name: "Chair",
                 count: 5,
@@ -506,19 +479,10 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
 
-            invContr.exportInventoryAsCsv(req, res)
-            .then(() => {
-                try {
-                    expect(res.send).to.have.been.calledWith(expected)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
-            }, error => {
-                done(error)
-            })
+            await invContr.exportInventoryAsCsv(req, res)
+            expect(res.send).to.have.been.calledWith(expected)
         })
-        it("should return selected columns", (done) => {
+        it("should return selected columns", async () => {
             let data = {
                 name: "Chair",
                 count: 5,
@@ -536,22 +500,13 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
 
-            invContr.exportInventoryAsCsv(req, res)
-            .then(() => {
-                try {
-                    expect(res.send).to.have.been.calledWith(expected)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
-            }, error => {
-                done(error)
-            })
+            await invContr.exportInventoryAsCsv(req, res)
+            expect(res.send).to.have.been.calledWith(expected)
         })
     })
 
     describe("#exportDeletedInventoryAsCsv", () => {
-        it("should return the full csv string when given full", (done) => {
+        it("should return the full csv string when given full", async () => {
             let data = {
                 name: "Chair",
                 count: 5,
@@ -569,19 +524,10 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
 
-            invContr.exportDeletedInventoryAsCsv(req, res)
-            .then(() => {
-                try {
-                    expect(res.send).to.have.been.calledWith(expected)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
-            }, error => {
-                done(error)
-            })
+            await invContr.exportDeletedInventoryAsCsv(req, res)
+            expect(res.send).to.have.been.calledWith(expected)
         })
-        it("should return selected columns", (done) => {
+        it("should return selected columns", async () => {
             let data = {
                 name: "Chair",
                 count: 5,
@@ -600,70 +546,8 @@ describe("InventoryController", () => {
             let req = mockReq()
             let res = mockRes()
 
-            invContr.exportDeletedInventoryAsCsv(req, res)
-            .then(() => {
-                try {
-                    expect(res.send).to.have.been.calledWith(expected)
-                    done()
-                } catch (err) {
-                    done(err)
-                }
-            }, error => {
-                done(error)
-            })
-        })
-    })
-
-    describe("#isValidNewEntry", () => {
-        it("should return true with a normal entry", () => {
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            let validEntry = { name: "Walter", count: 1 }
-            expect(invController.isValidNewEntry(validEntry)).to.equal(true)
-        })
-        it("should return true with a count of 0", () => {
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            let validEntry = { name: "Alfred", count: 0 }
-            expect(invController.isValidNewEntry(validEntry)).to.equal(true)
-        })
-        it("should return true with a name with one character", () => {
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            let validEntry = { name: "A", count: 1 }
-            expect(invController.isValidNewEntry(validEntry)).to.equal(true)
-        })
-
-        it("should return false with no fields", () => {
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            let invalidEntry = {}
-            expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
-        })
-        it("should return false with an invalid name", () => {
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            let invalidEntry = { name: "", count: 1}
-            expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
-        })
-        it("should return false with an invalid count", () => {
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            let invalidEntry = { name: "A", count: -1 }
-            expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
-        })
-        it("should return false with an invalid option", () => {
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            let invalidEntry = { name: "B", count: 0, tester: "no" }
-            expect(invController.isValidNewEntry(invalidEntry)).to.equal(false)
+            await invContr.exportDeletedInventoryAsCsv(req, res)
+            expect(res.send).to.have.been.calledWith(expected)
         })
     })
 })

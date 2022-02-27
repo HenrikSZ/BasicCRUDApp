@@ -3,8 +3,8 @@ import sinon from "sinon"
  
 export default function mock(values = {}) {
     return {
-        insert: sinon.mock().resolves(values.insertId),
-        delete: sinon.mock().resolves(values.wasDeleted)
+        create: sinon.stub().resolves(values.insertId),
+        delete: sinon.stub().resolves(values.wasDeleted)
     }
 }
  

@@ -59,13 +59,12 @@ export default class ItemModel {
      * 
      * @returns all items in the items.
      */
-    getAllItems(): Promise<InventoryItem[]> {
+    async getAllItems(): Promise<InventoryItem[]> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) AS count "
             + "FROM items WHERE deletion_id IS NULL"
-        return this.dbPromise.query(stmt)
-        .then(([results, fields]) => {
-            return results as any
-        })
+
+        const [results, fields] = await this.dbPromise.query(stmt)
+        return results as InventoryItem[]
     }
 
     /**
@@ -73,15 +72,14 @@ export default class ItemModel {
      * 
      * @returns all deleted items with their deletion comment.
      */
-    getAllDeletedItems(): Promise<DeletedInventoryItem[]> {
+    async getAllDeletedItems(): Promise<DeletedInventoryItem[]> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id), "
             + "deletions.comment FROM items INNER JOIN deletions "
             + "ON items.deletion_id = deletions.id "
             + "WHERE deletion_id IS NOT NULL"
-        return this.dbPromise.query(stmt)
-        .then(([results, fields]) => {
-            return results as any
-        })
+
+        const [results, fields] = await this.dbPromise.query(stmt)
+        return results as DeletedInventoryItem[]
     }
 
 
@@ -91,17 +89,16 @@ export default class ItemModel {
      * @param id the id of the item that should be read.
      * @returns the item identified by the id, if it exists. Otherwise null.
      */
-    getItem(id: number): Promise<InventoryItem> {
+    async getItem(id: number): Promise<InventoryItem> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id)"
-        return this.dbPromise.query(stmt, id)
-        .then(([results, fields]) => {
-            results = results as InventoryItem[]
 
-            if (results.length !== 0)
-                return results[0] as InventoryItem
-            else
-                return null
-        })
+        let [results, fields] = await this.dbPromise.query(stmt, id)
+        results = results as InventoryItem[]
+
+        if (results.length !== 0)
+            return results[0] as InventoryItem
+        else
+            return null
     }
 
 
@@ -110,13 +107,12 @@ export default class ItemModel {
      * 
      * @param name parts of the name that should be searched for.
      */
-    getItemLike(values: ILikeItem): Promise<InventoryItem[]> {
+    async getItemLike(values: ILikeItem): Promise<InventoryItem[]> {
         const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) "
             + "FROM items WHERE name LIKE ? LIMIT 10"
-        return this.dbPromise.query(stmt, "%" + values.name + "%")
-        .then(([results, fiels]) => {
-            return results as InventoryItem[]
-        })
+
+        const [results, fiels] = await this.dbPromise.query(stmt, "%" + values.name + "%")
+        return results as InventoryItem[]
     }
 
 
@@ -127,19 +123,18 @@ export default class ItemModel {
      * @returns -1 if the item does not exist, 0 when it is not deleted,
      * the deletion_id if it exists and is deleted.
      */
-    getDeletionId(id: number): Promise<number> {
+    async getDeletionId(id: number): Promise<number> {
         const stmt = "SELECT deletion_id FROM items WHERE id = ?"
-        return this.dbPromise.query(stmt, id)
-        .then(([results, fields]) => {
-            results = results as InventoryItem[]
 
-            if (results.length !== 1)
-                return -1
-            else if (!results[0].deletion_id)
-                return 0
-            else
-                return results[0].deletion_id
-        })
+        let [results, fields] = await this.dbPromise.query(stmt, id)
+        results = results as InventoryItem[]
+
+        if (results.length !== 1)
+            return -1
+        else if (!results[0].deletion_id)
+            return 0
+        else
+            return results[0].deletion_id
     }
 
 
@@ -149,28 +144,20 @@ export default class ItemModel {
      * @param item the basic info of the item.
      * @returns the id of this item.
      */
-    createItem(item: ICreateItem): Promise<number> {
+    async createItem(item: ICreateItem): Promise<number> {
         let itemToInsert = {
             name: item.name
         }
 
-        let insertId = 0
+        const stmt = "INSERT INTO items SET ?"
+        let [results, fields] = await this.dbPromise.query(stmt, itemToInsert)
+        results = results as OkPacket
 
-        let stmt = "INSERT INTO items SET ?"
-        return this.dbPromise.query(stmt, itemToInsert)
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            insertId = results.insertId
-            
-            return this.externalItemAssignmentModel.create()
-        })
-        .then(id => {
-            return this.itemAssignmentModel
-                .create(insertId, item.count, undefined, id)
-        })
-        .then(() => {
-            return insertId
-        })
+        let insertId = results.insertId
+        const id = await this.externalItemAssignmentModel.create()
+        await this.itemAssignmentModel
+            .create(insertId, item.count, undefined, id)
+        return insertId
     }
 
 
@@ -181,58 +168,51 @@ export default class ItemModel {
      * @param id the id of the item.
      * @returns true if the item could be update, false otherwise.
      */
-    updateItem(values: IUpdateItem, id: number): Promise<Boolean> {
-        let conn: PoolConnection | null = null
+    async updateItem(values: IUpdateItem, id: number): Promise<Boolean> {
         let modified = false
 
-        return this.dbPromise.getConnection()
-        .then(connection => {
-            conn = connection
-            conn.beginTransaction()
-        })
-        .then(() => {
+        let connection = null
+        try {
+            connection = await this.dbPromise.getConnection()
+            await connection.beginTransaction()
+
             if (values.count_change) {
-                return this.externalItemAssignmentModel.create()
-                .then(externalAssignmentId => {
-                    return this.itemAssignmentModel
-                        .create(id, values.count_change, undefined, externalAssignmentId, conn)
-                })
-                .then(mod => {
-                    if (mod) modified = true
-                })
+                const externalAssignmentId = await this.externalItemAssignmentModel.create()
+
+                if (await this.itemAssignmentModel.create(
+                        id, values.count_change, undefined, externalAssignmentId, connection))
+                    modified = true
             }
-        })
-       .then(() => {
             if (typeof values.name === "string") {
                 const stmt = "UPDATE items SET ? WHERE id = ?"
 
-                return conn.query(stmt, [{name: values.name}, id])
-                .then(([results, fiels]) => {
+                let [results, fields] = await connection.query(stmt, [{name: values.name}, id])
                     results = results as OkPacket
+
                     if (results.affectedRows > 0)
                         modified = true
-                })
             }
             else if (typeof values.deletion_id === "number") {
                 const stmt = "UPDATE items SET ? WHERE id = ?"
 
-                return conn.query(stmt, [{deletion_id: values.deletion_id}, id])
-                .then(([results, fiels]) => {
-                    results = results as OkPacket
-                    if (results.affectedRows > 0)
-                        modified = true
-                })
+                let [results, fields] = await connection.query(stmt, [{deletion_id: values.deletion_id}, id])
+                results = results as OkPacket
+
+                if (results.affectedRows > 0)
+                    modified = true
             }
-        })
-        .then(() => {
-            conn.commit()
-            conn.release()
+
+            connection.commit()
+            connection.release()
+        
             return modified
-        })
-        .catch((error) => {
-            conn.rollback()
-            conn.release()
-            return Promise.reject(error)
-        })
+        } catch (error) {
+            if (connection) {
+                connection.rollback()
+                connection.release()
+            }
+
+            throw error
+        }
     }
 }

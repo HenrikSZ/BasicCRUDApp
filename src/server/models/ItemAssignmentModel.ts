@@ -35,7 +35,7 @@ export default class ItemAssignmentModel {
      * @param assignedCount the amount of items that should be assigned.
      * @returns the id of the inserted assignment.
      */
-    create(itemId: number, assignedCount: number,
+    async create(itemId: number, assignedCount: number,
             shipmentId?: number,
             externalItemAssignmentId?: number,
             dbPromise: Pool | PoolConnection = this.dbPromise): Promise<number> {
@@ -45,12 +45,11 @@ export default class ItemAssignmentModel {
         const stmt = "INSERT INTO item_assignments "
             + "(item_id, assigned_count, shipment_id, external_assignment_id) "
             + "VALUES (?, ?, ?, ?)"
-        return dbPromise.query(stmt,
+        let [results, fields] = await dbPromise.query(stmt,
             [itemId, assignedCount, shipmentId, externalItemAssignmentId])
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            return results.insertId
-        })
+        results = results as OkPacket
+
+        return results.insertId
     }
     
     /**
@@ -59,15 +58,14 @@ export default class ItemAssignmentModel {
      * @param id the id of the assignment.
      * @returns true if an assignment was deleted, false otherwise.
      */
-    delete(id: number): Promise<Boolean> {
+    async delete(id: number): Promise<Boolean> {
         logger.debug(`Deleting from assignments table with id "${id}"`)
 
         const stmt = "DELETE FROM item_assignments WHERE id = ?"
-        return this.dbPromise.query(stmt, id)
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            return results.affectedRows > 0
-        })
+        let [results, fields] = await this.dbPromise.query(stmt, id)
+        results = results as OkPacket
+
+        return results.affectedRows > 0
     }
 
 
@@ -79,17 +77,18 @@ export default class ItemAssignmentModel {
      * @param assignedCount the new count this item should have
      * @returns true if an assignment could be updated, false otherwise
      */
-    updateShipmentAssignment(shipmentId: number, itemId: number, assignedCount: number) {
+    async updateShipmentAssignment(shipmentId: number, itemId: number, assignedCount: number) {
         logger.debug(`Updating in assignments table with `
             + `shipment_id ${shipmentId} and item_id ${itemId} to count ${assignedCount}`)
 
         const stmt = "UPDATE item_assignments SET assigned_count = ? "
             + "WHERE shipment_id = ? AND item_id = ?"
-        return this.dbPromise.query(stmt, [assignedCount, shipmentId, itemId])
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            return results.affectedRows > 0
-        })
+
+        let [results, fields] = await this.dbPromise.query(stmt,
+            [assignedCount, shipmentId, itemId])
+        results = results as OkPacket
+        
+        return results.affectedRows > 0
     }
 
 
@@ -100,17 +99,16 @@ export default class ItemAssignmentModel {
      * @param itemId the id of the item to be deleted
      * @returns true if an assignment could be deleted, false otherwise
      */
-    deleteShipmentAssignment(shipmentId: number, itemId: number) {
+    async deleteShipmentAssignment(shipmentId: number, itemId: number) {
         logger.debug(`Deleting from assignments table with `
             + `shipment_id ${shipmentId} and item_id ${itemId}`)
 
         const stmt = "DELETE FROM item_assignments "
             + "WHERE shipment_id = ? AND item_id = ?"
-        return this.dbPromise.query(stmt, [shipmentId, itemId])
-        .then(([results, fields]) => {
-            results = results as OkPacket
-            return results.affectedRows > 0
-        })
+        let [results, fields] = await this.dbPromise.query(stmt, [shipmentId, itemId])
+        results = results as OkPacket
+        
+        return results.affectedRows > 0
     }
 }
  

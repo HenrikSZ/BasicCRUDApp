@@ -38,17 +38,17 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param rep the reply from Fastify
      */
-    getInventory(req: FastifyRequest, rep: FastifyReply) {
+    async getInventory(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested all inventory entries`)
 
-        return this.invModel.getAllItems()
-        .then(results => {
+        try {
+            const results = await this.invModel.getAllItems()
             logger.info(`${req.hostname} requested all entries`)
 
             rep.send(results)
-        }, (error) => {
+        } catch (error) {
             handleDbError(error, req, rep)
-        })
+        }
     }
 
 
@@ -59,14 +59,14 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param rep the reply from Fastify
      */
-    getInventoryItem(req: FastifyRequest<{
+    async getInventoryItem(req: FastifyRequest<{
         Params: IAccessItemParameters
       }>, rep: FastifyReply) {
         logger.info(`${req.hostname} requested inventory entry with `
             + `id ${req.params.item_id}`)
 
-        return this.invModel.getItem(req.params.item_id)
-        .then(item => {
+        try {
+            const item = await this.invModel.getItem(req.params.item_id)
             if (item) {
                 logger.info(`Retrieved inventory entry id ${req.params.item_id} for `
                     + `${req.hostname}`)
@@ -84,9 +84,9 @@ export default class InventoryController {
 
                 rep.status(400).send(errorResponse)
             }
-        }, (error) => {
+        } catch (error) {
             handleDbError(error, req, rep)
-        })
+        }
     }
 
     /**
@@ -96,18 +96,18 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param rep the reply from Fastify
      */
-    getDeletedInventory(req: FastifyRequest, rep: FastifyReply) {
+    async getDeletedInventory(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested all deleted inventory entries`)
 
-        return this.invModel.getAllDeletedItems()
-        .then(results => {
+        try {
+            const results = await this.invModel.getAllDeletedItems()
             logger.info(`Retrieved all deleted inventory entries for `
                 + `${req.hostname}`)
 
             rep.send(results)
-        }, (error) => {
+        } catch (error) {
             handleDbError(error, req, rep)
-        })
+        }
     }
 
     /**
@@ -117,12 +117,11 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param res the reply from Fastify
      */
-    postNewInventoryItem(req: FastifyRequest<{Body: ICreateItem}>, res: FastifyReply) {
+    async postNewInventoryItem(req: FastifyRequest<{Body: ICreateItem}>, res: FastifyReply) {
         logger.info(`${req.hostname} requested to create entry `
                 + `in inventory`)
-
-        return this.invModel.createItem(req.body)
-        .then(insertId => {
+        try {
+            const insertId = await this.invModel.createItem(req.body)
             logger.info(`${req.hostname} created entry with `
                 + `id ${insertId} in inventory`)
 
@@ -131,9 +130,9 @@ export default class InventoryController {
                 count: req.body.count,
                 id: insertId
             })
-        }, (error) => {
+        } catch (error) {
             handleDbError(error, req, res)
-        })
+        }
     }
 
     /**
@@ -142,13 +141,13 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param rep the reply from Fastify
      */
-    updateInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters, Body: IUpdateItem}>,
+    async updateInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters,
+            Body: IUpdateItem}>,
             rep: FastifyReply) {
         logger.info(`${req.hostname} requested to update entry `
                 + `${req.params.item_id} in inventory`)
-
-        return this.invModel.updateItem(req.body, req.params.item_id)
-        .then(wasUpdated => {
+        try {
+            const wasUpdated = await this.invModel.updateItem(req.body, req.params.item_id)
             if (wasUpdated) {
                 logger.info(`${req.hostname} updated entry with `
                     + `id ${req.params.item_id}`)
@@ -166,9 +165,9 @@ export default class InventoryController {
 
                 rep.status(400).send(errorResponse)
             }
-        }, (error) => {
+        } catch (error) {
             handleDbError(error, req, rep)
-        })
+        }
     }
 
     /**
@@ -178,28 +177,27 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param res the reply from Fastify
      */
-    restoreInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters}>,
+    async restoreInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters}>,
             rep: FastifyReply) {
         logger.info(`${req.hostname} requested to restore inventory entry `
             + `id ${req.params.item_id}`)
-
-        return this.invModel.getDeletionId(req.params.item_id)
-        .then(deletionId => {
+        
+        try {
+            const deletionId = await this.invModel.getDeletionId(req.params.item_id)
             if (deletionId !== -1) {
                 logger.info(`${req.hostname} started to restore entry `
                     + `id ${req.params.item_id} in inventory`)
 
-                return this.deletionModel.delete(deletionId).then((wasDeleted) => {
-                    if (!wasDeleted) {
-                        const errorResponse: ErrorResponse = {
-                            name: ErrorType.FIELD,
-                            message: "The deletion comment with the specified "
-                                + "deletion id does not exist"
-                        }
-        
-                        throw new CustomError(errorResponse)
+                const wasDeleted = await this.deletionModel.delete(deletionId)
+                if (!wasDeleted) {
+                    const errorResponse: ErrorResponse = {
+                        name: ErrorType.FIELD,
+                        message: "The deletion comment with the specified "
+                            + "deletion id does not exist"
                     }
-                })
+    
+                    throw new CustomError(errorResponse)
+                }
             } else {
                 logger.info(`${req.hostname} tried to restore entry `
                     + `id ${req.params.item_id} in inventory which is not deleted`)
@@ -212,19 +210,18 @@ export default class InventoryController {
 
                 throw new CustomError(errorResponse)
             }
-        })
-        .then(() => {
             logger.info(`${req.hostname} successfully restored entry `
                     + `id ${req.params.item_id} in inventory`)
 
             rep.send()
-        }, (error) => {
+        }
+        catch (error) {
             if (isCustomError(error)) {
                 rep.status(400).send(error.response)
             } else {
                 handleDbError(error, req, rep)
             }
-        })
+        }
     }
 
     /**
@@ -235,16 +232,16 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param res the reply from Fastify
      */
-    putExistingInventoryItem(
+    async putExistingInventoryItem(
             req: FastifyRequest<{Params: IAccessItemParameters, Body: IUpdateItem}>,
             rep: FastifyReply) {
         const update = req.body.hasOwnProperty("name")
             || req.body.hasOwnProperty("count")
 
         if (update) {
-            return this.updateInventoryItem(req, rep)
+            await this.updateInventoryItem(req, rep)
         } else {
-            return this.restoreInventoryItem(req, rep)
+            await this.restoreInventoryItem(req, rep)
         }
     }
 
@@ -255,14 +252,15 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param res the reponse from Fastify
      */
-    deleteInventoryItem(
+    async deleteInventoryItem(
             req: FastifyRequest<{Params: IAccessItemParameters, Body: ICreateDeletion}>,
             rep: FastifyReply) {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.item_id}`)
-
-        return this.invModel.getDeletionId(req.params.item_id)
-        .then(deletionId => {
+        
+        try {
+            const deletionId = await this.invModel.getDeletionId(req.params.item_id)
+        
             if (deletionId === -1) {
                 const body: ErrorResponse = {
                     name: ErrorType.FIELD,
@@ -281,27 +279,23 @@ export default class InventoryController {
                 throw new CustomError(body)
             }
 
-            return this.deletionModel.create(req.body)
-        })
-        .then(insertId => {
+            const insertId = await this.deletionModel.create(req.body)
             logger.info(`${req.hostname} added a deletion comment for entry `
                 + `with id ${req.params.item_id} in inventory`)
 
-            return this.invModel.updateItem(
+            await this.invModel.updateItem(
                 { deletion_id: insertId }, req.params.item_id)
-        })
-        .then(() => {
             logger.info(`${req.hostname} marked entry with `
                 + `id ${req.params.item_id} in inventory as deleted`)
 
             rep.send()
-        }, (error) => {
+        } catch (error) {
             if (isCustomError(error)) {
                 rep.status(400).send(error.response)
             } else {
                 handleDbError(error, req, rep)
             }
-        })
+        }
     }
 
 
@@ -311,23 +305,22 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param rep the reply from Fastify
      */
-    exportInventoryAsCsv(req: FastifyRequest, rep: FastifyReply) {
+    async exportInventoryAsCsv(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested csv report of the inventory`)
 
-        return this.invModel.getAllItems()
-        .then(items => {
-            return stringify(items, {
+        try {
+            const items = await this.invModel.getAllItems()
+            const file = stringify(items, {
                 header: true,
                 columns: ["id", "name", "count"]
             })
-        })
-        .then((file) => {
+
             rep.header("Content-Type", "text/csv")
             rep.header("Content-Disposition", "attachment; filename=\"inventory_report.csv\"")
             rep.send(file)
-        }, error => {
+        } catch (error) {
             handleUnexpectedError(error, req, rep)
-        })
+        }
     }
 
     /**
@@ -336,23 +329,21 @@ export default class InventoryController {
      * @param req the request from Fastify
      * @param rep the reply from Fastify
      */
-     exportDeletedInventoryAsCsv(req: FastifyRequest, rep: FastifyReply) {
+    async exportDeletedInventoryAsCsv(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested csv report of the deleted inventory`)
 
-        return this.invModel.getAllDeletedItems()
-        .then(items => {
-            return stringify(items, {
+        try {
+            const items = await this.invModel.getAllDeletedItems()
+            const file = stringify(items, {
                 header: true,
                 columns: ["id", "name", "count", "comment"]
             })
-        })
-        .then((file) => {
             rep.header("Content-Type", "text/csv")
             rep.header("Content-Disposition", "attachment; filename=\"deleted_inventory_report.csv\"")
             rep.send(file)
-        }, error => {
+        } catch (error) {
             handleUnexpectedError(error, req, rep)
-        })
+        }
     }
 
     /** Returns items that have a part of that in their name
@@ -360,15 +351,15 @@ export default class InventoryController {
     * @param req the request from Fastify.
     * @param res the reply from Fastify.
     */
-   getItemLike(req: FastifyRequest<{Params: ILikeItem}>, res: FastifyReply) {
-       logger.info(`${req.hostname} requested inventory items like `
-           + `${req.params.name}`)
-       
-       return this.invModel.getItemLike(req.params)
-       .then((items) => {
-           res.send(items)
-       }, error => {
-           handleDbError(error, req, res)
-       })
+    async getItemLike(req: FastifyRequest<{Params: ILikeItem}>, res: FastifyReply) {
+        logger.info(`${req.hostname} requested inventory items like `
+            + `${req.params.name}`)
+
+        try {
+            const items = this.invModel.getItemLike(req.params)
+            res.send(items)
+        } catch (error) {
+            handleDbError(error, req, res)
+        }
     }
 }
