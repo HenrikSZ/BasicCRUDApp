@@ -34,17 +34,17 @@ export default class ShipmentController {
     /**
      * Reads all shipments.
      * 
-     * @param req the FastifyRequest from express.js
-     * @param res the respons from express.js
+     * @param req the request from Fastify
+     * @param res the response from Fastify
      */
-    getAllShipments(req: FastifyRequest, res: FastifyReply) {
+    getAllShipments(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested all shipments`)
 
         return this.shipmentModel.getAllShipments()
         .then(results => {
-            res.send(results)
+            rep.send(results)
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
@@ -52,55 +52,55 @@ export default class ShipmentController {
     /**
      * Reads one shipment specified by its id.
      * 
-     * @param req the FastifyRequest from express.js. Must contain a valid shipmentId as attribute
-     * @param res the FastifyReply from express.js
+     * @param req the request from Fastify
+     * @param res the reply from Fastify
      */
     getShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested shipment with id ${req.params.shipment_id}`)
 
         return this.shipmentModel.getShipment(req.params.shipment_id)
         .then(results => {
-            res.send(results)
+            rep.send(results)
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
 
     /**
-     * Creates a shipment from parameters in the FastifyRequest body.
+     * Creates a shipment from parameters in the request body.
      * 
-     * @param req the FastifyRequest from express.js. Must containt a valid shipment attribute.
-     * @param res the responss from express.js
+     * @param req the request from Fastify
+     * @param res the reply from Fastify
      */
-    createShipment(req: FastifyRequest<{Body: ICreateShipment}>, res: FastifyReply) {
+    createShipment(req: FastifyRequest<{Body: ICreateShipment}>, rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested to create a shipment`)
 
         return this.shipmentModel.createShipment(req.body)
         .then(() => {
-            res.send()
+            rep.send()
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
 
     /**
+     * Updates one shipment from the parameters in the request body.
      * 
-     * @param req the FastifyRequest from express.js.
-     * Must contain valid shipmentId and shipmentUpdate attributes.
-     * @param res the FastifyReply from express.js
+     * @param req the request from Fastify
+     * @param res the reply from Fastify
      */
     updateShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested to update a shipment`)
 
         return this.shipmentModel.updateShipment(req.params.shipment_id, req.body)
         .then(() => {
-            res.send()
+            rep.send()
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
@@ -108,31 +108,31 @@ export default class ShipmentController {
     /**
      * Deletes a shipment with the id specified in the FastifyRequest.
      * 
-     * @param req the FastifyRequest from express.js. Must contain a valid shipmentId attribute.
-     * @param res the FastifyReply from express.js
+     * @param req the request from Fastify
+     * @param res the reply from Fastify
      */
     deleteShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested to delete shipment `
          + `with id ${req.params.shipment_id}`)
 
         return this.shipmentModel.deleteShipment(req.params.shipment_id)
         .then(() => {
-            res.send()
+            rep.send()
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
+
     /**
      * 
-     * @param req the FastifyRequest from express.js. Muston containt valid shipmentId
-     * and itemId, and assignedCount attributes.
-     * @param res the resonse from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
     updateShipmentItem(req: FastifyRequest<{Params: IAccessShipmentItemParameters,
             Body: IUpdateShipmentItem}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested to delete shipment `
             + `with id ${req.params.shipment_id}`)
 
@@ -140,21 +140,21 @@ export default class ShipmentController {
             .updateShipmentItem(req.params.shipment_id, req.params.item_id,
                 req.body)
         .then(() => {
-            res.send()
+            rep.send()
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
+
 
     /**
      * Deletes a shipment with the id specified in the FastifyRequest.
      * 
-     * @param req the FastifyRequest from express.js. Must contain valid shipmentId
-     * and itemId attributes.
-     * @param res the FastifyReply from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
      deleteShipmentItem(req: FastifyRequest<{Params: IAccessShipmentItemParameters}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested to delete shipment `
             + `with id ${req.params.shipment_id}`)
 
@@ -162,9 +162,9 @@ export default class ShipmentController {
             .deleteShipmentAssignment(req.params.shipment_id,
                 req.params.item_id)
         .then(() => {
-            res.send()
+            rep.send()
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
@@ -172,19 +172,19 @@ export default class ShipmentController {
     /**
      * Sends the shipments table as a CSV file.
      * 
-     * @param req the FastifyRequest from express.js
-     * @param res the FastifyReply from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
-    exportShipmentsAsCsv(req: FastifyRequest, res: FastifyReply) {
+    exportShipmentsAsCsv(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} FastifyRequested shipments table as CSV export`)
 
         return this.shipmentModel.exportAllShipmentsAsCsv()
         .then(file => {
-            res.header("Content-Type", "text/csv")
-            res.header("Content-Disposition", "attachment; filename=\"shipments_report.csv\"")
-            res.send(file)
+            rep.header("Content-Type", "text/csv")
+            rep.header("Content-Disposition", "attachment; filename=\"shipments_report.csv\"")
+            rep.send(file)
         }, error => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 }

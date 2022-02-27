@@ -4,13 +4,14 @@
 
 
 import { Pool, OkPacket } from "mysql2/promise"
+import dbPromise from "../db"
 
 
 export default class ExternalItemAssignmentModel {
     dbPromise: Pool
 
-    constructor(dbPromise: Pool) {
-        this.dbPromise = dbPromise
+    constructor(_dbPromise: Pool = dbPromise) {
+        this.dbPromise = _dbPromise
     }
 
 

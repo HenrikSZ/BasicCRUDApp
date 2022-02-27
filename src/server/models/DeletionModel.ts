@@ -3,7 +3,7 @@
  */
 
 
-import { OkPacket, Pool, RowDataPacket } from "mysql2/promise"
+import { OkPacket, Pool } from "mysql2/promise"
 import dbPromise from "../db.js"
 import logger from "../logger.js"
 

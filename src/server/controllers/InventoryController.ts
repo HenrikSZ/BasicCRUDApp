@@ -4,7 +4,8 @@
 
 import { FastifyReply, FastifyRequest } from "fastify"
 import logger from "../logger.js"
-import { ErrorType, ErrorResponse, handleDbError, CustomError as ClientRequestError, isCustomError, CustomError, handleUnexpectedError }
+import { ErrorType, ErrorResponse, handleDbError,
+        isCustomError, CustomError, handleUnexpectedError }
     from "../error_handling.js"
 import DeletionModel, { ICreateDeletion } from "../models/DeletionModel.js"
 import ItemModel, { ICreateItem, ILikeItem, IUpdateItem } from "../models/ItemModel.js"
@@ -32,21 +33,21 @@ export default class InventoryController {
 
     /**
      * Reads the complete inventory and sends all its fields as a
-     * json array
+     * json array.
      *
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
-    getInventory(req: FastifyRequest, res: FastifyReply) {
+    getInventory(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested all inventory entries`)
 
         return this.invModel.getAllItems()
         .then(results => {
             logger.info(`${req.hostname} requested all entries`)
 
-            res.send(results)
+            rep.send(results)
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
@@ -55,12 +56,12 @@ export default class InventoryController {
      * Reads one item specified from the id in the request parameters (url)
      * from the inventory and sends it as a json object
      *
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
     getInventoryItem(req: FastifyRequest<{
         Params: IAccessItemParameters
-      }>, res: FastifyReply) {
+      }>, rep: FastifyReply) {
         logger.info(`${req.hostname} requested inventory entry with `
             + `id ${req.params.item_id}`)
 
@@ -70,7 +71,7 @@ export default class InventoryController {
                 logger.info(`Retrieved inventory entry id ${req.params.item_id} for `
                     + `${req.hostname}`)
 
-                res.send(item)
+                rep.send(item)
             } else {
                 logger.info(`${req.hostname} requested unavailable inventory `
                     + `entry id ${req.params.item_id}`)
@@ -81,10 +82,10 @@ export default class InventoryController {
                         + `is unavailable`
                 }
 
-                res.status(400).send(errorResponse)
+                rep.status(400).send(errorResponse)
             }
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
@@ -92,10 +93,10 @@ export default class InventoryController {
      * Reads all delete entries from the inventory and sends all their fields as a
      * json array
      *
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
-    getDeletedInventory(req: FastifyRequest, res: FastifyReply) {
+    getDeletedInventory(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested all deleted inventory entries`)
 
         return this.invModel.getAllDeletedItems()
@@ -103,19 +104,18 @@ export default class InventoryController {
             logger.info(`Retrieved all deleted inventory entries for `
                 + `${req.hostname}`)
 
-            res.send(results)
+            rep.send(results)
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
     /**
      * Creates a new inventory item from the fields specified in the
      * request body.
-     * TODO: Correctly implement item count initiation.
      *
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param res the reply from Fastify
      */
     postNewInventoryItem(req: FastifyRequest<{Body: ICreateItem}>, res: FastifyReply) {
         logger.info(`${req.hostname} requested to create entry `
@@ -139,11 +139,11 @@ export default class InventoryController {
     /**
      * Updates an inventory item according to the fields in the request body
      *
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
     updateInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters, Body: IUpdateItem}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         logger.info(`${req.hostname} requested to update entry `
                 + `${req.params.item_id} in inventory`)
 
@@ -153,7 +153,7 @@ export default class InventoryController {
                 logger.info(`${req.hostname} updated entry with `
                     + `id ${req.params.item_id}`)
 
-                res.send()
+                rep.send()
             } else {
                 logger.info(`${req.hostname} tried to update non-existent `
                     + `entry with id ${req.params.item_id} in inventory`)
@@ -164,10 +164,10 @@ export default class InventoryController {
                         + "in the inventory"
                 }
 
-                res.status(400).send(errorResponse)
+                rep.status(400).send(errorResponse)
             }
         }, (error) => {
-            handleDbError(error, req, res)
+            handleDbError(error, req, rep)
         })
     }
 
@@ -175,10 +175,11 @@ export default class InventoryController {
      * Restores a delete inventory item that has the id specified in the request
      * parameters (url)
      *
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param res the reply from Fastify
      */
-    restoreInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters}>, res: FastifyReply) {
+    restoreInventoryItem(req: FastifyRequest<{Params: IAccessItemParameters}>,
+            rep: FastifyReply) {
         logger.info(`${req.hostname} requested to restore inventory entry `
             + `id ${req.params.item_id}`)
 
@@ -196,7 +197,7 @@ export default class InventoryController {
                                 + "deletion id does not exist"
                         }
         
-                        throw new ClientRequestError(errorResponse)
+                        throw new CustomError(errorResponse)
                     }
                 })
             } else {
@@ -209,19 +210,19 @@ export default class InventoryController {
                         + "the deleted entries"
                 }
 
-                throw new ClientRequestError(errorResponse)
+                throw new CustomError(errorResponse)
             }
         })
         .then(() => {
             logger.info(`${req.hostname} successfully restored entry `
                     + `id ${req.params.item_id} in inventory`)
 
-            res.send()
+            rep.send()
         }, (error) => {
             if (isCustomError(error)) {
-                res.status(400).send(error.response)
+                rep.status(400).send(error.response)
             } else {
-                handleDbError(error, req, res)
+                handleDbError(error, req, rep)
             }
         })
     }
@@ -231,19 +232,19 @@ export default class InventoryController {
      * Only if it is empty, it is tried to be restored
      * Otherwise it is tried to be updated
      *
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param res the reply from Fastify
      */
     putExistingInventoryItem(
             req: FastifyRequest<{Params: IAccessItemParameters, Body: IUpdateItem}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         const update = req.body.hasOwnProperty("name")
             || req.body.hasOwnProperty("count")
 
         if (update) {
-            return this.updateInventoryItem(req, res)
+            return this.updateInventoryItem(req, rep)
         } else {
-            return this.restoreInventoryItem(req, res)
+            return this.restoreInventoryItem(req, rep)
         }
     }
 
@@ -251,12 +252,12 @@ export default class InventoryController {
      * Deletes an inventory item with a comment set as field in the
      * request body
      *
-     * @param req the request from express.js
-     * @param res the reponse from express.js
+     * @param req the request from Fastify
+     * @param res the reponse from Fastify
      */
     deleteInventoryItem(
             req: FastifyRequest<{Params: IAccessItemParameters, Body: ICreateDeletion}>,
-            res: FastifyReply) {
+            rep: FastifyReply) {
         logger.info(`${req.hostname} requested to delete inventory entry `
             + `id ${req.params.item_id}`)
 
@@ -293,12 +294,12 @@ export default class InventoryController {
             logger.info(`${req.hostname} marked entry with `
                 + `id ${req.params.item_id} in inventory as deleted`)
 
-            res.send()
+            rep.send()
         }, (error) => {
             if (isCustomError(error)) {
-                res.status(400).send(error.response)
+                rep.status(400).send(error.response)
             } else {
-                handleDbError(error, req, res)
+                handleDbError(error, req, rep)
             }
         })
     }
@@ -307,10 +308,10 @@ export default class InventoryController {
     /**
      * Exports the inventory table as csv.
      * 
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
-    exportInventoryAsCsv(req: FastifyRequest, res: FastifyReply) {
+    exportInventoryAsCsv(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested csv report of the inventory`)
 
         return this.invModel.getAllItems()
@@ -321,21 +322,21 @@ export default class InventoryController {
             })
         })
         .then((file) => {
-            res.header("Content-Type", "text/csv")
-            res.header("Content-Disposition", "attachment; filename=\"inventory_report.csv\"")
-            res.send(file)
+            rep.header("Content-Type", "text/csv")
+            rep.header("Content-Disposition", "attachment; filename=\"inventory_report.csv\"")
+            rep.send(file)
         }, error => {
-            handleUnexpectedError(error, req, res)
+            handleUnexpectedError(error, req, rep)
         })
     }
 
     /**
      * Exports the inventory table as csv.
      * 
-     * @param req the request from express.js
-     * @param res the response from express.js
+     * @param req the request from Fastify
+     * @param rep the reply from Fastify
      */
-     exportDeletedInventoryAsCsv(req: FastifyRequest, res: FastifyReply) {
+     exportDeletedInventoryAsCsv(req: FastifyRequest, rep: FastifyReply) {
         logger.info(`${req.hostname} requested csv report of the deleted inventory`)
 
         return this.invModel.getAllDeletedItems()
@@ -346,18 +347,18 @@ export default class InventoryController {
             })
         })
         .then((file) => {
-            res.header("Content-Type", "text/csv")
-            res.header("Content-Disposition", "attachment; filename=\"deleted_inventory_report.csv\"")
-            res.send(file)
+            rep.header("Content-Type", "text/csv")
+            rep.header("Content-Disposition", "attachment; filename=\"deleted_inventory_report.csv\"")
+            rep.send(file)
         }, error => {
-            handleUnexpectedError(error, req, res)
+            handleUnexpectedError(error, req, rep)
         })
     }
 
     /** Returns items that have a part of that in their name
     * 
-    * @param req the request from express.js.
-    * @param res the response from express.js.
+    * @param req the request from Fastify.
+    * @param res the reply from Fastify.
     */
    getItemLike(req: FastifyRequest<{Params: ILikeItem}>, res: FastifyReply) {
        logger.info(`${req.hostname} requested inventory items like `
