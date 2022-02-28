@@ -106,11 +106,14 @@ export default class ShipmentModel {
      */
     async getShipment(id: number): Promise<Shipment> {
         let stmt = "SELECT id, name, source, destination FROM shipments WHERE id = ?"
-        let shipment: Shipment | null = null
 
         try {
             let [results, fields] = await this.dbPromise.query(stmt, id)
-            shipment = (results as RowDataPacket)[0] as Shipment
+
+            results = results as RowDataPacket[]
+            if (results.length == 0) return null
+
+            let shipment = results[0] as Shipment
             stmt = "SELECT item_assignments.shipment_id, items.name, "
                 + "item_assignments.assigned_count AS assigned_count, "
                 + "items.id "

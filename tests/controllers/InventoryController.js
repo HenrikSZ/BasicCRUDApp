@@ -78,10 +78,8 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            await invController.getInventoryItem(req, res)
-            expect(res.status).to.have.been.calledWith(400)
-            expect(res.status).to.have.been.calledBefore(res.send)
-            expect(res.send).to.have.been.calledOnce
+            await expect(invController.getInventoryItem(req, res)).to.be
+                .rejectedWith("An invalid parameter was passed in for field item_id")
         })
     })
 
@@ -216,10 +214,8 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            await invController.updateInventoryItem(req, res)
-            expect(res.status).to.have.been.calledWith(400)
-            expect(res.status).to.have.been.calledBefore(res.send)
-            expect(res.send).to.have.been.calledOnce
+            await expect(invController.updateInventoryItem(req, res)).to.be
+            .rejectedWith("An invalid parameter was passed in for field item_id")
         })
     })
 
@@ -271,12 +267,10 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            await invController.restoreInventoryItem(req, res)
+            await expect(invController.restoreInventoryItem(req, res)).to.be
+                .rejectedWith("An invalid parameter was passed in for field item_id")
             expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
             expect(mockDelModel.delete).to.not.have.been.calledWith(deletionId)
-            expect(res.status).to.have.been.calledWith(400)
-            expect(res.status).to.have.been.calledBefore(res.send)
-            expect(res.send).to.have.been.calledOnce
         })
         it("should fail with error 400 when trying to restore not existing item", async () => {
             let itemId = -1
@@ -299,12 +293,10 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
             
-            await invController.restoreInventoryItem(req, res)
+            await expect(invController.restoreInventoryItem(req, res)).to.be
+                .rejectedWith("An invalid parameter was passed in for field item_id")
             expect(mockModel.getDeletionId).to.have.been.calledWith(itemId)
             expect(mockDelModel.delete).to.not.have.been.called
-            expect(res.status).to.have.been.calledWith(400)
-            expect(res.status).to.have.been.calledBefore(res.send)
-            expect(res.send).to.have.been.calledOnce
         })
     })
 
@@ -417,12 +409,10 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            await invController.deleteInventoryItem(req, res)
+            await expect(invController.deleteInventoryItem(req, res)).to.be
+                .rejectedWith("An invalid parameter was passed in for field item_id")
             expect(mockModel.getDeletionId).to.have.been.calledWith(id)
             expect(mockDelModel.create).to.not.have.been.called
-            expect(res.status).to.have.been.calledWith(400)
-            expect(res.status).to.have.been.calledBefore(res.send)
-            expect(res.send).to.have.been.calledOnce
         })
         it("should fail with error 400 when trying non-existing item", async () => {
             let id = 10
@@ -452,12 +442,10 @@ describe("InventoryController", () => {
             })
             let res = mockRes()
 
-            await invController.deleteInventoryItem(req, res)
+            await expect(invController.deleteInventoryItem(req, res)).to.be
+                .rejectedWith("An invalid parameter was passed in for field item_id")
             expect(mockModel.getDeletionId).to.have.been.calledWith(id)
             expect(mockDelModel.create).to.not.have.been.called
-            expect(res.status).to.have.been.calledWith(400)
-            expect(res.status).to.have.been.calledBefore(res.send)
-            expect(res.send).to.have.been.calledOnce
         })
     })
 

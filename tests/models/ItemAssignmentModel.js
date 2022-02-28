@@ -142,7 +142,7 @@ describe("ItemAssignmentModel", () => {
             await expect(
                 model.create(id, count, undefined, ids.externalItemAssignmentIds[0]))
                 .to.be.eventually
-                .rejectedWith("Assigned item count larger than available item count")
+                .rejectedWith("An invalid parameter was passed in for field Assigned count too high")
         })
         it("should not create if assignment is too high", () => {
             let count = -10, id = -1
@@ -179,7 +179,7 @@ describe("ItemAssignmentModel", () => {
             const model = new ItemAssignmentModel(dbPromise)
 
             await expect(model.delete(ids[0])).to.eventually.be
-                .rejectedWith("Assigned item count larger than available item count")
+                .rejectedWith("An invalid parameter was passed in for field Assigned count too high")
         })
         it("should not delete anything when trying to delete too much", () => {
             return createAssignments()

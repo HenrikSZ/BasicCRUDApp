@@ -94,6 +94,23 @@ describe("ShipmentController", () => {
             expect(model.getShipment).to.have.been.calledWith(shipmentId)
             expect(res.send).to.have.been.calledWith(shipment)
         })
+        it("should reject with FieldError if shipment does not exist", async () => {
+            let shipmentId = 10
+            const shipment = getShipmentsFromDatabase()[0]
+            const model = mockShipmentModel({ shipment: null })
+            const req = mockReq({ 
+                params: {
+                    shipment_id: shipmentId + 1
+                },
+                body: shipment
+            })
+            const res = mockRes()
+            const contr = new ShipmentController(model)
+
+            await expect(contr.getShipment(req, res)).to.be
+                .rejectedWith("An invalid parameter was passed in for field shipment_id")
+            expect(model.getShipment).to.have.been.calledWith(shipmentId + 1)
+        })
     })
     describe("#updateShipment", () => {
         it("should update the shipment", async () => {
@@ -104,7 +121,9 @@ describe("ShipmentController", () => {
                 destination: "B"
             }
 
-            const model = mockShipmentModel()
+            const model = mockShipmentModel({
+                shipment: true
+            })
             const req = mockReq({
                 params: {
                     shipment_id: shipmentId
@@ -117,6 +136,31 @@ describe("ShipmentController", () => {
             await contr.updateShipment(req, res)
             expect(model.updateShipment).to.have.been.calledWith(shipmentId, shipmentUpdate)
             expect(res.send).to.have.been.calledOnce
+        })
+        it("should reject with FieldError if shipment does not exist", async () => {
+            let shipmentId = 10
+            let shipmentUpdate = {
+                name: "Test",
+                source: "A",
+                destination: "B"
+            }
+
+            const model = mockShipmentModel({
+                shipment: false
+            })
+            const req = mockReq({
+                params: {
+                    shipment_id: shipmentId + 1
+                }, 
+                body: shipmentUpdate
+            })
+            const res = mockRes()
+            const contr = new ShipmentController(model)
+
+            await expect(contr.updateShipment(req, res)).to.be
+                .rejectedWith("An invalid parameter was passed in for field shipment_id")
+            expect(model.updateShipment).to.have.been.calledWith(shipmentId + 1, shipmentUpdate)
+            expect(res.send).to.not.have.been.called
         })
     })
     describe("#exportShipmentsAsCsv", () => {

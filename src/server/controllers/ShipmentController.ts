@@ -57,7 +57,11 @@ export default class ShipmentController {
         req.log.info(`${req.hostname} requested shipment with id ${req.params.shipment_id}`)
 
         const shipment = await this.shipmentModel.getShipment(req.params.shipment_id)
-        rep.send(shipment)
+        if (shipment) {
+            rep.send(shipment)
+        } else {
+            throw new FieldError("shipment_id")
+        }
     }
 
 
