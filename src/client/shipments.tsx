@@ -447,7 +447,7 @@ class Shipment extends React.Component {
                 <ShipmentHeader data={this.props.data} onExpand={() => this.onExpand()}
                     onRetract={() => this.onRetract()} onErrorResponse={() =>
                     this.props.onErrorResponse()}
-                    onDelete={() => this.props.onDelete()}
+                    onDelete={() => this.props.onDelete(this.props.data.id)}
                     onUpdate={(modifications: any) =>
                         this.props.onUpdate(this.props.data.id, modifications)}/>
                 <div className={this.state.dropdownCss}>

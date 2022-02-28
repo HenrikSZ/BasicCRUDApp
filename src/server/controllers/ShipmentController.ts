@@ -39,7 +39,7 @@ export default class ShipmentController {
      * @param res the response from Fastify
      */
     async getAllShipments(req: FastifyRequest, rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested all shipments`)
+        req.log.info(`${req.hostname} requested all shipments`)
         
         const shipments = await this.shipmentModel.getAllShipments()
         rep.send(shipments)
@@ -54,7 +54,7 @@ export default class ShipmentController {
      */
     async getShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
             rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested shipment with id ${req.params.shipment_id}`)
+        req.log.info(`${req.hostname} requested shipment with id ${req.params.shipment_id}`)
 
         const shipment = await this.shipmentModel.getShipment(req.params.shipment_id)
         rep.send(shipment)
@@ -68,7 +68,7 @@ export default class ShipmentController {
      * @param res the reply from Fastify
      */
     async createShipment(req: FastifyRequest<{Body: ICreateShipment}>, rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested to create a shipment`)
+        req.log.info(`${req.hostname} requested to create a shipment`)
 
         await this.shipmentModel.createShipment(req.body)
         rep.send()
@@ -83,15 +83,14 @@ export default class ShipmentController {
      */
     async updateShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
             rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested to update a shipment`)
+        req.log.info(`${req.hostname} requested to update a shipment`)
 
         let wasUpdated = await this.shipmentModel.updateShipment(
             req.params.shipment_id, req.body)
         if (wasUpdated) {
             rep.send()
         } else {
-            throw new FieldError(`The shipment with id ${req.params.shipment_id} `
-                    + `cannot be found`)
+            throw new FieldError("shipment_id")
         }
     }
 
@@ -104,8 +103,8 @@ export default class ShipmentController {
      */
     async deleteShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
             rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested to delete shipment `
-         + `with id ${req.params.shipment_id}`)
+        req.log.info(`${req.hostname} requested to delete shipment `
+            + `with id ${req.params.shipment_id}`)
 
         await this.shipmentModel.deleteShipment(req.params.shipment_id)
         rep.send()
@@ -120,7 +119,7 @@ export default class ShipmentController {
     async updateShipmentItem(req: FastifyRequest<{Params: IAccessShipmentItemParameters,
             Body: IUpdateShipmentItem}>,
             rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested to delete shipment `
+        req.log.info(`${req.hostname} requested to delete shipment `
             + `with id ${req.params.shipment_id}`)
         
         await this.shipmentModel.updateShipmentItem(req.params.shipment_id,
@@ -137,7 +136,7 @@ export default class ShipmentController {
      */
     async deleteShipmentItem(req: FastifyRequest<{Params: IAccessShipmentItemParameters}>,
             rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested to delete shipment `
+        req.log.info(`${req.hostname} requested to delete shipment `
             + `with id ${req.params.shipment_id}`)
 
         await this.itemAssignmentModel.deleteShipmentAssignment(
@@ -153,7 +152,7 @@ export default class ShipmentController {
      * @param rep the reply from Fastify
      */
     async exportShipmentsAsCsv(req: FastifyRequest, rep: FastifyReply) {
-        req.log.info(`${req.hostname} FastifyRequested shipments table as CSV export`)
+        req.log.info(`${req.hostname} requested shipments table as CSV export`)
         
         const file = await this.shipmentModel.exportAllShipmentsAsCsv()
         rep.header("Content-Type", "text/csv")

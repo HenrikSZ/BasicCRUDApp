@@ -40,8 +40,6 @@ export default class InventoryController {
         req.log.info(`${req.hostname} requested all inventory entries`)
 
         const results = await this.invModel.getAllItems()
-        req.log.info(`${req.hostname} requested all entries`)
-
         rep.send(results)
     }
 
@@ -61,18 +59,15 @@ export default class InventoryController {
 
         const item = await this.invModel.getItem(req.params.item_id)
         if (item) {
-            req.log.info(`Retrieved inventory entry id ${req.params.item_id} for `
-                + `${req.hostname}`)
-
             rep.send(item)
         } else {
             req.log.info(`${req.hostname} requested unavailable inventory `
                 + `entry id ${req.params.item_id}`)
 
-            throw new FieldError(`The request inventory entry with id ${req.params.item_id} `
-                    + `is unavailable`)
+            throw new FieldError("item_id")
         }
     }
+
 
     /**
      * Reads all delete entries from the inventory and sends all their fields as a
@@ -85,11 +80,9 @@ export default class InventoryController {
         req.log.info(`${req.hostname} requested all deleted inventory entries`)
 
         const results = await this.invModel.getAllDeletedItems()
-        req.log.info(`Retrieved all deleted inventory entries for `
-            + `${req.hostname}`)
-
         rep.send(results)
     }
+
 
     /**
      * Creates a new inventory item from the fields specified in the
@@ -99,9 +92,6 @@ export default class InventoryController {
      * @param res the reply from Fastify
      */
     async postNewInventoryItem(req: FastifyRequest<{Body: ICreateItem}>, res: FastifyReply) {
-        req.log.info(`${req.hostname} requested to create entry `
-                + `in inventory`)
-
         const insertId = await this.invModel.createItem(req.body)
         req.log.info(`${req.hostname} created entry with `
             + `id ${insertId} in inventory`)
@@ -113,6 +103,7 @@ export default class InventoryController {
         })
     }
 
+    
     /**
      * Updates an inventory item according to the fields in the request body
      *
@@ -127,18 +118,15 @@ export default class InventoryController {
 
         const wasUpdated = await this.invModel.updateItem(req.body, req.params.item_id)
         if (wasUpdated) {
-            req.log.info(`${req.hostname} updated entry with `
-                + `id ${req.params.item_id}`)
-
             rep.send()
         } else {
             req.log.info(`${req.hostname} tried to update non-existent `
                 + `entry with id ${req.params.item_id} in inventory`)
 
-            throw new FieldError("The entry with the specified id is not "
-                    + "in the inventory")
+            throw new FieldError("item_id")
         }
     }
+
 
     /**
      * Restores a delete inventory item that has the id specified in the request
@@ -154,26 +142,21 @@ export default class InventoryController {
         
         const deletionId = await this.invModel.getDeletionId(req.params.item_id)
         if (deletionId !== -1) {
-            req.log.info(`${req.hostname} started to restore entry `
-                + `id ${req.params.item_id} in inventory`)
-
             const wasDeleted = await this.deletionModel.delete(deletionId)
-            if (!wasDeleted) {
-                throw new FieldError("The deletion comment with the specified "
-                        + "deletion id does not exist")
+
+            if (wasDeleted) {
+                rep.send()
+            } else {
+                throw new FieldError("item_id")
             }
         } else {
             req.log.info(`${req.hostname} tried to restore entry `
                 + `id ${req.params.item_id} in inventory which is not deleted`)
 
-            throw new FieldError("The entry with the specified id is not in "
-                    + "the deleted entries")
+           throw new FieldError("item_id")
         }
-        req.log.info(`${req.hostname} successfully restored entry `
-                + `id ${req.params.item_id} in inventory`)
-
-        rep.send()
     }
+
 
     /**
      * Either updates or restores an inventory item depending on the request body
@@ -196,6 +179,7 @@ export default class InventoryController {
         }
     }
 
+
     /**
      * Deletes an inventory item with a comment set as field in the
      * request body
@@ -211,24 +195,14 @@ export default class InventoryController {
         
         const deletionId = await this.invModel.getDeletionId(req.params.item_id)
     
-        if (deletionId === -1) {
-            throw new FieldError(`The specified entry with id ${req.params.item_id} `
-                    + `does not exist`)
-        } else if (deletionId > 0) {
-            throw new FieldError(`The specified entry with id ${req.params.item_id} `
-                    +`is already deleted`)
+        if (deletionId === -1 || deletionId > 0) {
+           throw new FieldError("item_id")
+        } else {
+            const insertId = await this.deletionModel.create(req.body)
+            await this.invModel.updateItem(
+                { deletion_id: insertId }, req.params.item_id)
+            rep.send()
         }
-
-        const insertId = await this.deletionModel.create(req.body)
-        req.log.info(`${req.hostname} added a deletion comment for entry `
-            + `with id ${req.params.item_id} in inventory`)
-
-        await this.invModel.updateItem(
-            { deletion_id: insertId }, req.params.item_id)
-        req.log.info(`${req.hostname} marked entry with `
-            + `id ${req.params.item_id} in inventory as deleted`)
-
-        rep.send()
     }
 
 
@@ -252,6 +226,7 @@ export default class InventoryController {
         rep.send(file)
     }
 
+
     /**
      * Exports the inventory table as csv.
      * 
@@ -270,6 +245,7 @@ export default class InventoryController {
         rep.header("Content-Disposition", "attachment; filename=\"deleted_inventory_report.csv\"")
         rep.send(file)
     }
+
 
     /** Returns items that have a part of that in their name
     * 

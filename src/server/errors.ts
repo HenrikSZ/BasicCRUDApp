@@ -1,11 +1,7 @@
-import { FastifyReply } from "fastify"
+import { FastifyError, FastifyReply } from "fastify"
 import { FastifyRequest } from "fastify"
+import createError from "fastify-error"
 import { QueryError } from "mysql2"
-
-
-function isSafeError(error: Error): error is SafeError {
-    return Boolean((error as SafeError).safeMessage)
-}
 
 
 function isQueryError(error: Error): error is QueryError {
@@ -13,41 +9,30 @@ function isQueryError(error: Error): error is QueryError {
 }
 
 
-class SafeError extends Error {
-    safeMessage: string
-    statusCode: number
-
-    constructor(message: string, safeMessage: string, statusCode: number = 500) {
-        super(message)
-        this.statusCode = statusCode
-        this.safeMessage = safeMessage
-    }
+function isFastifyError(error: Error): error is FastifyError {
+    return Boolean((error as FastifyError).statusCode)
 }
 
 
-export class FieldError extends SafeError {
-    constructor(message: string, safeMessage: string = message,
-            statusCode: number = 400) {
-        super(message, safeMessage, statusCode)
-        this.name = this.constructor.name
-    }
-}
+export const DatabaseError = createError(
+    "BCA_DATABASE_ERROR",
+    "An error occured while communicating with the database",
+    500
+)
 
 
-export class DatabaseError extends SafeError {
-    constructor(message: string, safeMessage: string = message,
-            statusCode: number = 500) {
-        super(message, safeMessage, statusCode)
-        this.name = this.constructor.name
-    }
-}
+export const FieldError = createError(
+    "BCA_FIELD_ERROR",
+    "An invalid parameter was passed in for field %s",
+    400
+)
 
 
 export function handleError(error: Error, req: FastifyRequest, rep: FastifyReply) {
-    if (isSafeError(error)) {
-        rep.status(error.statusCode).send({
+    if (isFastifyError(error)) {
+        rep.status(error.statusCode ?? 500).send({
             name: error.name,
-            message: error.safeMessage
+            message: error.message
         })
     } else {
         rep.status(500).send({ 
@@ -62,7 +47,7 @@ export function handleDbError(error: Error) {
     if (isQueryError(error)) {
         switch (error.sqlState) {
             case "55001":
-                throw new DatabaseError("Assigned count too high")
+                throw new FieldError("Assigned count too high")
             default:
                 throw new DatabaseError("unspecified")
         }
