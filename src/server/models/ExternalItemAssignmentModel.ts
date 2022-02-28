@@ -5,6 +5,7 @@
 
 import { Pool, OkPacket } from "mysql2/promise"
 import dbPromise from "../db.js"
+import { handleDbError } from "../errors.js"
 
 
 export default class ExternalItemAssignmentModel {
@@ -21,12 +22,15 @@ export default class ExternalItemAssignmentModel {
      * @returns the id of the inserted ExternalItemAssignment
      */
     async create(): Promise<number> {
-        const stmt = "INSERT INTO external_item_assignments VALUES()"
+        try {
+            const stmt = "INSERT INTO external_item_assignments VALUES()"
+            let [results, fields] = await this.dbPromise.query(stmt)
 
-        let [results, fields] = await this.dbPromise.query(stmt)
-        results = results as OkPacket
-        
-        return results.insertId
+            results = results as OkPacket
+            return results.insertId
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -37,11 +41,14 @@ export default class ExternalItemAssignmentModel {
      * @returns true if an ExternalItemAssignment could be deleted
      */
     async delete(id: number): Promise<Boolean> {
-        const stmt = "DELETE FROM external_item_assignments WHERE id = ?"
+        try {
+            const stmt = "DELETE FROM external_item_assignments WHERE id = ?"
+            let [results, fields] = await this.dbPromise.query(stmt, id)
 
-        let [results, fields] = await this.dbPromise.query(stmt, id)
-        results = results as OkPacket
-
-        return results.affectedRows > 0
+            results = results as OkPacket
+            return results.affectedRows > 0
+        } catch(error) {
+            handleDbError(error)
+        }
     }
 }

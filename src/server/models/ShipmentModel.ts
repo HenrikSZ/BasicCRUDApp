@@ -10,6 +10,7 @@ import { InventoryItem } from "./ItemModel.js"
 import { stringify } from "csv-stringify/sync"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
 import dbPromise from "../db.js"
+import { handleDbError } from "../errors.js"
  
 
 export interface ICreateShipment extends RowDataPacket {
@@ -59,37 +60,41 @@ export default class ShipmentModel {
      * @returns all shipments in the database.
      */
     async getAllShipments(): Promise<Shipment[]> {
-        let stmt = "SELECT id, name, source, destination FROM shipments "
+        try {
+             let stmt = "SELECT id, name, source, destination FROM shipments "
             + "ORDER BY id"
-        let shipments: Shipment[] | null = null
+            let shipments: Shipment[] | null = null
 
-        let [results, fields] = await this.dbPromise.query(stmt)
-        shipments = (results as Shipment[]).map(s => {
-            let shipment = { ...s }
-            shipment.items = []
-            return shipment
-        })
+            let [results, fields] = await this.dbPromise.query(stmt)
+            shipments = (results as Shipment[]).map(s => {
+                let shipment = { ...s }
+                shipment.items = []
+                return shipment
+            })
 
-        stmt = "SELECT item_assignments.shipment_id, "
-            + "items.name, item_assignments.assigned_count AS assigned_count, "
-            + "items.id "
-            + "FROM item_assignments "
-            + "INNER JOIN items ON "
-            + "item_assignments.item_id = items.id "
-            + "WHERE shipment_id IS NOT NULL "
-            + "ORDER BY shipment_id";
+            stmt = "SELECT item_assignments.shipment_id, "
+                + "items.name, item_assignments.assigned_count AS assigned_count, "
+                + "items.id "
+                + "FROM item_assignments "
+                + "INNER JOIN items ON "
+                + "item_assignments.item_id = items.id "
+                + "WHERE shipment_id IS NOT NULL "
+                + "ORDER BY shipment_id";
 
-        [results, fields] = await this.dbPromise.query(stmt)
-        let shipment_index = 0
-        for (let item of results as MappedInventoryItem[]) {
-            while (shipments[shipment_index].id !== item.shipment_id) {
-                shipment_index++
+            [results, fields] = await this.dbPromise.query(stmt)
+            let shipment_index = 0
+            for (let item of results as MappedInventoryItem[]) {
+                while (shipments[shipment_index].id !== item.shipment_id) {
+                    shipment_index++
+                }
+
+                shipments[shipment_index].items.push(item as InventoryItem)
             }
 
-            shipments[shipment_index].items.push(item as InventoryItem)
+            return shipments
+        } catch (error) {
+            handleDbError(error)
         }
-
-        return shipments
     }
 
 
@@ -103,23 +108,27 @@ export default class ShipmentModel {
         let stmt = "SELECT id, name, source, destination FROM shipments WHERE id = ?"
         let shipment: Shipment | null = null
 
-        let [results, fields] = await this.dbPromise.query(stmt, id)
-        shipment = (results as RowDataPacket)[0] as Shipment
-        stmt = "SELECT item_assignments.shipment_id, items.name, "
-            + "item_assignments.assigned_count AS assigned_count, "
-            + "items.id "
-            + "FROM item_assignments "
-            + "INNER JOIN items ON "
-            + "item_assignments.item_id = items.id "
-            + "WHERE item_assignments.shipment_id = ?";
+        try {
+            let [results, fields] = await this.dbPromise.query(stmt, id)
+            shipment = (results as RowDataPacket)[0] as Shipment
+            stmt = "SELECT item_assignments.shipment_id, items.name, "
+                + "item_assignments.assigned_count AS assigned_count, "
+                + "items.id "
+                + "FROM item_assignments "
+                + "INNER JOIN items ON "
+                + "item_assignments.item_id = items.id "
+                + "WHERE item_assignments.shipment_id = ?";
 
-        [results, fields] = await this.dbPromise.query(stmt, id)
-        shipment.items = []
-        for (let item of results as InventoryItem[]) {
-            shipment.items.push(item)
+            [results, fields] = await this.dbPromise.query(stmt, id)
+            shipment.items = []
+            for (let item of results as InventoryItem[]) {
+                shipment.items.push(item)
+            }
+
+            return shipment
+        } catch (error) {
+            handleDbError(error)
         }
-
-        return shipment
     }
 
 
@@ -155,9 +164,10 @@ export default class ShipmentModel {
             if (connection) {
                 await connection.rollback()
             }   
-            throw error
+            
+            handleDbError(error)
         } finally {
-            connection.release()
+            if (connection) connection.release()
         }
     }
 
@@ -175,12 +185,16 @@ export default class ShipmentModel {
             return Promise.resolve(false)
         }
 
-        const stmt = "UPDATE shipments SET ? WHERE id = ?"
+        try {
+            const stmt = "UPDATE shipments SET ? WHERE id = ?"
 
-        let [results, fields] = await this.dbPromise.query(stmt, [values, id])
-        results = results as OkPacket
+            let [results, fields] = await this.dbPromise.query(stmt, [values, id])
 
-        return results.affectedRows > 0
+            results = results as OkPacket
+            return results.affectedRows > 0
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -191,12 +205,15 @@ export default class ShipmentModel {
      * @returns true if a shipment was deleted, false otherwise.
      */    
     async deleteShipment(id: number): Promise<Boolean> {
-        const stmt = "DELETE FROM shipments WHERE id = ?"
+        try {
+            const stmt = "DELETE FROM shipments WHERE id = ?"
+            let [results, fields] = await this.dbPromise.query(stmt, id)
 
-        let [results, fields] = await this.dbPromise.query(stmt, id)
-        results = results as OkPacket
-
-        return results.affectedRows > 0
+            results = results as OkPacket
+            return results.affectedRows > 0
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -208,7 +225,11 @@ export default class ShipmentModel {
      * @returns true if an assignment could be deleted, false otherwise
      */
     async deleteShipmentItem(shipmentId: number, itemId: number) {
-        await this.assignmentModel.deleteShipmentAssignment(shipmentId, itemId)
+        try {
+            await this.assignmentModel.deleteShipmentAssignment(shipmentId, itemId)
+        } catch (error) {
+            handleDbError(error)
+        } 
     }
 
 
@@ -222,8 +243,12 @@ export default class ShipmentModel {
      */
     async updateShipmentItem(shipmentId: number, itemId: number,
             values: IUpdateShipmentItem) {
-        await this.assignmentModel.updateShipmentAssignment(
-            shipmentId, itemId, values.assigned_count)
+        try {
+            await this.assignmentModel.updateShipmentAssignment(
+                shipmentId, itemId, values.assigned_count)
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -234,20 +259,24 @@ export default class ShipmentModel {
      * @returns a string in CSV format containing the fields.
      */
     async exportAllShipmentsAsCsv() {
-        const stmt = "SELECT shipments.name AS shipment, "
-            + "shipments.source, shipments.destination, "
-            + "items.name AS item_name, item_assignments.assigned_count AS count "
-            + "FROM item_assignments "
-            + "INNER JOIN shipments ON "
-            + "shipments.id = item_assignments.shipment_id "
-            + "INNER JOIN items ON "
-            + "items.id = item_assignments.item_id "
-            + "ORDER BY shipments.id, items.id"
+        try {
+             const stmt = "SELECT shipments.name AS shipment, "
+                + "shipments.source, shipments.destination, "
+                + "items.name AS item_name, item_assignments.assigned_count AS count "
+                + "FROM item_assignments "
+                + "INNER JOIN shipments ON "
+                + "shipments.id = item_assignments.shipment_id "
+                + "INNER JOIN items ON "
+                + "items.id = item_assignments.item_id "
+                + "ORDER BY shipments.id, items.id"
 
-        const [items, fields] = await this.dbPromise.query(stmt)
-        return stringify(items as RowDataPacket[], {
-            header: true,
-            columns: ["shipment", "source", "destination", "item_name", "count"]
-        })
+            const [items, fields] = await this.dbPromise.query(stmt)
+            return stringify(items as RowDataPacket[], {
+                header: true,
+                columns: ["shipment", "source", "destination", "item_name", "count"]
+            })
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 }

@@ -23,10 +23,11 @@ import middie from "middie"
 
 import itemRoutes from "./routes/items.js"
 import shipmentRoutes from "./routes/shipments.js"
-import logger from "./logger.js"
+import { handleError } from './errors.js'
 
 
 const app = Fastify({ logger: true })
+app.setErrorHandler(handleError)
 const compiler = webpack(config)
 
 // @ts-ignore
@@ -51,5 +52,5 @@ app.decorate('webpack',
 const port = process.env.PORT
 // @ts-ignore
 await app.listen(port)
-logger.info(`Started web server listening on port ${port}`)
+app.log.info(`Started web server listening on port ${port}`)
 

@@ -2,11 +2,12 @@
  * Contains the ShipmentController for anything related to shipments
  */
 
-import ShipmentModel, { ICreateShipment, IUpdateShipmentItem } from "../models/ShipmentModel.js"
 import { FastifyRequest, FastifyReply } from "fastify"
-import logger from "../logger.js"
-import { ErrorResponse, ErrorType, handleDbError } from "../error_handling.js"
+
+import ShipmentModel, { ICreateShipment, IUpdateShipmentItem } from "../models/ShipmentModel.js"
 import ItemAssignmentModel from "../models/ItemAssignmentModel.js"
+import { FieldError } from "../errors.js"
+
 
 export interface IAccessShipmentParameters {
     shipment_id: number
@@ -38,13 +39,10 @@ export default class ShipmentController {
      * @param res the response from Fastify
      */
     async getAllShipments(req: FastifyRequest, rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested all shipments`)
-        try { 
-            const shipments = await this.shipmentModel.getAllShipments()
-            rep.send(shipments)
-        } catch (error) {
-            handleDbError(error, req, rep)
-        }
+        req.log.info(`${req.hostname} FastifyRequested all shipments`)
+        
+        const shipments = await this.shipmentModel.getAllShipments()
+        rep.send(shipments)
     }
 
 
@@ -56,14 +54,10 @@ export default class ShipmentController {
      */
     async getShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
             rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested shipment with id ${req.params.shipment_id}`)
+        req.log.info(`${req.hostname} FastifyRequested shipment with id ${req.params.shipment_id}`)
 
-        try {
-            const shipment = await this.shipmentModel.getShipment(req.params.shipment_id)
-            rep.send(shipment)
-        } catch (error) {
-            handleDbError(error, req, rep)
-        }
+        const shipment = await this.shipmentModel.getShipment(req.params.shipment_id)
+        rep.send(shipment)
     }
 
 
@@ -74,14 +68,10 @@ export default class ShipmentController {
      * @param res the reply from Fastify
      */
     async createShipment(req: FastifyRequest<{Body: ICreateShipment}>, rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested to create a shipment`)
+        req.log.info(`${req.hostname} FastifyRequested to create a shipment`)
 
-        try {
-            await this.shipmentModel.createShipment(req.body)
-            rep.send()
-        } catch (error) {
-            handleDbError(error, req, rep)
-        }
+        await this.shipmentModel.createShipment(req.body)
+        rep.send()
     }
 
 
@@ -93,23 +83,15 @@ export default class ShipmentController {
      */
     async updateShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
             rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested to update a shipment`)
+        req.log.info(`${req.hostname} FastifyRequested to update a shipment`)
 
-        try {
-            let wasUpdated = await this.shipmentModel.updateShipment(
-                req.params.shipment_id, req.body)
-            if (wasUpdated) {
-                rep.send()
-            } else {
-                let errorResponse: ErrorResponse = {
-                    name: ErrorType.FIELD,
-                    message: `The shipment with id ${req.params.shipment_id} `
-                        + `cannot be found`
-                }
-                rep.status(400).send(errorResponse)
-            }
-        } catch (error) {
-            handleDbError(error, req, rep)
+        let wasUpdated = await this.shipmentModel.updateShipment(
+            req.params.shipment_id, req.body)
+        if (wasUpdated) {
+            rep.send()
+        } else {
+            throw new FieldError(`The shipment with id ${req.params.shipment_id} `
+                    + `cannot be found`)
         }
     }
 
@@ -122,15 +104,11 @@ export default class ShipmentController {
      */
     async deleteShipment(req: FastifyRequest<{Params: IAccessShipmentParameters}>,
             rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested to delete shipment `
+        req.log.info(`${req.hostname} FastifyRequested to delete shipment `
          + `with id ${req.params.shipment_id}`)
 
-        try {
-            await this.shipmentModel.deleteShipment(req.params.shipment_id)
-            rep.send()
-        } catch (error) {
-            handleDbError(error, req, rep)
-        }
+        await this.shipmentModel.deleteShipment(req.params.shipment_id)
+        rep.send()
     }
 
 
@@ -142,16 +120,12 @@ export default class ShipmentController {
     async updateShipmentItem(req: FastifyRequest<{Params: IAccessShipmentItemParameters,
             Body: IUpdateShipmentItem}>,
             rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested to delete shipment `
+        req.log.info(`${req.hostname} FastifyRequested to delete shipment `
             + `with id ${req.params.shipment_id}`)
         
-        try {
-            await this.shipmentModel.updateShipmentItem(req.params.shipment_id,
-                req.params.item_id, req.body)
-            rep.send()
-        } catch (error) {
-            handleDbError(error, req, rep)
-        }
+        await this.shipmentModel.updateShipmentItem(req.params.shipment_id,
+            req.params.item_id, req.body)
+        rep.send()
     }
 
 
@@ -163,15 +137,12 @@ export default class ShipmentController {
      */
     async deleteShipmentItem(req: FastifyRequest<{Params: IAccessShipmentItemParameters}>,
             rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested to delete shipment `
+        req.log.info(`${req.hostname} FastifyRequested to delete shipment `
             + `with id ${req.params.shipment_id}`)
-        try {
-            await this.itemAssignmentModel.deleteShipmentAssignment(
-                req.params.shipment_id, req.params.item_id)
-            rep.send()
-        } catch (error) {
-            handleDbError(error, req, rep)
-        }
+
+        await this.itemAssignmentModel.deleteShipmentAssignment(
+            req.params.shipment_id, req.params.item_id)
+        rep.send()
     }
 
 
@@ -182,15 +153,11 @@ export default class ShipmentController {
      * @param rep the reply from Fastify
      */
     async exportShipmentsAsCsv(req: FastifyRequest, rep: FastifyReply) {
-        logger.info(`${req.hostname} FastifyRequested shipments table as CSV export`)
+        req.log.info(`${req.hostname} FastifyRequested shipments table as CSV export`)
         
-        try {
-            const file = await this.shipmentModel.exportAllShipmentsAsCsv()
-            rep.header("Content-Type", "text/csv")
-            rep.header("Content-Disposition", "attachment; filename=\"shipments_report.csv\"")
-            rep.send(file)
-        } catch (error) {
-            handleDbError(error, req, rep)
-        }
+        const file = await this.shipmentModel.exportAllShipmentsAsCsv()
+        rep.header("Content-Type", "text/csv")
+        rep.header("Content-Disposition", "attachment; filename=\"shipments_report.csv\"")
+        rep.send(file)
     }
 }

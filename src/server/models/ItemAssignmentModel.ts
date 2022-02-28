@@ -6,7 +6,7 @@
 import { OkPacket, RowDataPacket } from "mysql2"
 import { Pool, PoolConnection } from "mysql2/promise"
 import dbPromise from "../db.js"
-import logger from "../logger.js"
+import { handleDbError } from "../errors.js"
  
  
 interface MinimalDeletion extends RowDataPacket {
@@ -39,17 +39,18 @@ export default class ItemAssignmentModel {
             shipmentId?: number,
             externalItemAssignmentId?: number,
             dbPromise: Pool | PoolConnection = this.dbPromise): Promise<number> {
-        logger.debug(`Inserting assignment of ${assignedCount} `
-            +`for item "${itemId}"`)
-
-        const stmt = "INSERT INTO item_assignments "
+        try {
+            const stmt = "INSERT INTO item_assignments "
             + "(item_id, assigned_count, shipment_id, external_assignment_id) "
             + "VALUES (?, ?, ?, ?)"
-        let [results, fields] = await dbPromise.query(stmt,
-            [itemId, assignedCount, shipmentId, externalItemAssignmentId])
-        results = results as OkPacket
+            let [results, fields] = await dbPromise.query(stmt,
+                [itemId, assignedCount, shipmentId, externalItemAssignmentId])
 
-        return results.insertId
+                results = results as OkPacket
+                return results.insertId
+        } catch (error) {
+            handleDbError(error)
+        }
     }
     
     /**
@@ -59,13 +60,15 @@ export default class ItemAssignmentModel {
      * @returns true if an assignment was deleted, false otherwise.
      */
     async delete(id: number): Promise<Boolean> {
-        logger.debug(`Deleting from assignments table with id "${id}"`)
+        try {
+            const stmt = "DELETE FROM item_assignments WHERE id = ?"
+            let [results, fields] = await this.dbPromise.query(stmt, id)
 
-        const stmt = "DELETE FROM item_assignments WHERE id = ?"
-        let [results, fields] = await this.dbPromise.query(stmt, id)
-        results = results as OkPacket
-
-        return results.affectedRows > 0
+            results = results as OkPacket
+            return results.affectedRows > 0
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -77,18 +80,19 @@ export default class ItemAssignmentModel {
      * @param assignedCount the new count this item should have
      * @returns true if an assignment could be updated, false otherwise
      */
-    async updateShipmentAssignment(shipmentId: number, itemId: number, assignedCount: number) {
-        logger.debug(`Updating in assignments table with `
-            + `shipment_id ${shipmentId} and item_id ${itemId} to count ${assignedCount}`)
-
-        const stmt = "UPDATE item_assignments SET assigned_count = ? "
-            + "WHERE shipment_id = ? AND item_id = ?"
-
-        let [results, fields] = await this.dbPromise.query(stmt,
-            [assignedCount, shipmentId, itemId])
-        results = results as OkPacket
-        
-        return results.affectedRows > 0
+    async updateShipmentAssignment(shipmentId: number, itemId: number,
+            assignedCount: number) {
+        try {
+            const stmt = "UPDATE item_assignments SET assigned_count = ? "
+                + "WHERE shipment_id = ? AND item_id = ?"
+            let [results, fields] = await this.dbPromise.query(stmt,
+                [assignedCount, shipmentId, itemId])
+                
+            results = results as OkPacket
+            return results.affectedRows > 0
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -100,15 +104,16 @@ export default class ItemAssignmentModel {
      * @returns true if an assignment could be deleted, false otherwise
      */
     async deleteShipmentAssignment(shipmentId: number, itemId: number) {
-        logger.debug(`Deleting from assignments table with `
-            + `shipment_id ${shipmentId} and item_id ${itemId}`)
+        try {
+            const stmt = "DELETE FROM item_assignments "
+                + "WHERE shipment_id = ? AND item_id = ?"
+            let [results, fields] = await this.dbPromise.query(stmt, [shipmentId, itemId])
 
-        const stmt = "DELETE FROM item_assignments "
-            + "WHERE shipment_id = ? AND item_id = ?"
-        let [results, fields] = await this.dbPromise.query(stmt, [shipmentId, itemId])
-        results = results as OkPacket
-        
-        return results.affectedRows > 0
+            results = results as OkPacket
+            return results.affectedRows > 0
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 }
  

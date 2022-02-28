@@ -22,8 +22,7 @@
     "react-tooltip": "^4.2.21",
     "validator": "^13.7.0",
     "webpack-dev-middleware": "^5.3.1",
-    "webpack-hot-middleware": "^2.25.1",
-    "winston": "^3.6.0"
+    "webpack-hot-middleware": "^2.25.1"
   },
   "devDependencies": {
     "@babel/core": "^7.17.2",

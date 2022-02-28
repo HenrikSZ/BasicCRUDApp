@@ -5,6 +5,7 @@
 
 import { RowDataPacket, OkPacket, Pool, PoolConnection } from "mysql2/promise"
 import dbPromise from "../db.js"
+import { handleDbError } from "../errors.js"
 import ExternalItemAssignmentModel from "./ExternalItemAssignmentModel.js"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
 
@@ -60,11 +61,15 @@ export default class ItemModel {
      * @returns all items in the items.
      */
     async getAllItems(): Promise<InventoryItem[]> {
-        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) AS count "
-            + "FROM items WHERE deletion_id IS NULL"
+        try {
+            const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) AS count "
+                + "FROM items WHERE deletion_id IS NULL"
+            const [results, fields] = await this.dbPromise.query(stmt)
 
-        const [results, fields] = await this.dbPromise.query(stmt)
-        return results as InventoryItem[]
+            return results as InventoryItem[]
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
     /**
@@ -73,13 +78,17 @@ export default class ItemModel {
      * @returns all deleted items with their deletion comment.
      */
     async getAllDeletedItems(): Promise<DeletedInventoryItem[]> {
-        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id), "
-            + "deletions.comment FROM items INNER JOIN deletions "
-            + "ON items.deletion_id = deletions.id "
-            + "WHERE deletion_id IS NOT NULL"
+        try {
+             const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id), "
+                + "deletions.comment FROM items INNER JOIN deletions "
+                + "ON items.deletion_id = deletions.id "
+                + "WHERE deletion_id IS NOT NULL"
+            const [results, fields] = await this.dbPromise.query(stmt)
 
-        const [results, fields] = await this.dbPromise.query(stmt)
-        return results as DeletedInventoryItem[]
+            return results as DeletedInventoryItem[]
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -90,15 +99,18 @@ export default class ItemModel {
      * @returns the item identified by the id, if it exists. Otherwise null.
      */
     async getItem(id: number): Promise<InventoryItem> {
-        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id)"
+        try {
+            const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id)"
+            let [results, fields] = await this.dbPromise.query(stmt, id)
 
-        let [results, fields] = await this.dbPromise.query(stmt, id)
-        results = results as InventoryItem[]
-
-        if (results.length !== 0)
-            return results[0] as InventoryItem
-        else
-            return null
+            results = results as InventoryItem[]
+            if (results.length !== 0)
+                return results[0] as InventoryItem
+            else
+                return null
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -108,11 +120,14 @@ export default class ItemModel {
      * @param name parts of the name that should be searched for.
      */
     async getItemLike(values: ILikeItem): Promise<InventoryItem[]> {
-        const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) "
-            + "FROM items WHERE name LIKE ? LIMIT 10"
-
-        const [results, fiels] = await this.dbPromise.query(stmt, "%" + values.name + "%")
-        return results as InventoryItem[]
+        try {
+            const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) "
+                + "FROM items WHERE name LIKE ? LIMIT 10"
+            const [results, fiels] = await this.dbPromise.query(stmt, "%" + values.name + "%")
+            return results as InventoryItem[]
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -124,17 +139,20 @@ export default class ItemModel {
      * the deletion_id if it exists and is deleted.
      */
     async getDeletionId(id: number): Promise<number> {
-        const stmt = "SELECT deletion_id FROM items WHERE id = ?"
+        try {
+            const stmt = "SELECT deletion_id FROM items WHERE id = ?"
+            let [results, fields] = await this.dbPromise.query(stmt, id)
 
-        let [results, fields] = await this.dbPromise.query(stmt, id)
-        results = results as InventoryItem[]
-
-        if (results.length !== 1)
-            return -1
-        else if (!results[0].deletion_id)
-            return 0
-        else
-            return results[0].deletion_id
+            results = results as InventoryItem[]
+            if (results.length !== 1)
+                return -1
+            else if (!results[0].deletion_id)
+                return 0
+            else
+                return results[0].deletion_id
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -148,16 +166,19 @@ export default class ItemModel {
         let itemToInsert = {
             name: item.name
         }
+        try {
+            const stmt = "INSERT INTO items SET ?"
+            let [results, fields] = await this.dbPromise.query(stmt, itemToInsert)
+            results = results as OkPacket
 
-        const stmt = "INSERT INTO items SET ?"
-        let [results, fields] = await this.dbPromise.query(stmt, itemToInsert)
-        results = results as OkPacket
-
-        let insertId = results.insertId
-        const id = await this.externalItemAssignmentModel.create()
-        await this.itemAssignmentModel
-            .create(insertId, item.count, undefined, id)
-        return insertId
+            let insertId = results.insertId
+            const id = await this.externalItemAssignmentModel.create()
+            await this.itemAssignmentModel
+                .create(insertId, item.count, undefined, id)
+            return insertId
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 
 
@@ -202,17 +223,17 @@ export default class ItemModel {
                     modified = true
             }
 
-            connection.commit()
-            connection.release()
+            await connection.commit()
         
             return modified
         } catch (error) {
             if (connection) {
-                connection.rollback()
-                connection.release()
+                await connection.rollback()
             }
 
-            throw error
+            handleDbError(error)
+        } finally {
+            if (connection) connection.release()
         }
     }
 }

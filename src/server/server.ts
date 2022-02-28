@@ -9,22 +9,20 @@ import dotenv from "dotenv"
 dotenv.config()
 
 import Fastify from "fastify"
-import ExpressPlugin from "fastify-express"
 import FastifyStatic from "fastify-static"
-
 
 import itemRoutes from "./routes/items.js"
 import shipmentRoutes from "./routes/shipments.js"
-import logger from "./logger.js"
+import { handleError } from "./errors.js"
 
 
-const app = Fastify()
-await app.register(ExpressPlugin)
+const app = Fastify({ logger: true })
+app.setErrorHandler(handleError)
 await app.register(FastifyStatic)
 
-app.register(itemRoutes)
-app.register(shipmentRoutes)
+await app.register(itemRoutes)
+await app.register(shipmentRoutes)
 
 const port = process.env.PORT
 await app.listen(port)
-logger.info(`Started web server listening on port ${port}`)
+app.log.info(`Started web server listening on port ${port}`)
