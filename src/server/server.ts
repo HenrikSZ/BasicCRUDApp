@@ -16,7 +16,12 @@ import shipmentRoutes from "./routes/shipments.js"
 import { handleError } from "./errors.js"
 
 
-const app = Fastify({ logger: true })
+const app = Fastify({
+    logger: {
+        level: process.env.LOG_LEVEL ?? "info",
+        file: process.env.LOG_FILE ?? "basiccrudapp.log"
+    }
+})
 app.setErrorHandler(handleError)
 await app.register(FastifyStatic)
 
@@ -25,4 +30,3 @@ await app.register(shipmentRoutes)
 
 const port = process.env.PORT
 await app.listen(port)
-app.log.info(`Started web server listening on port ${port}`)
