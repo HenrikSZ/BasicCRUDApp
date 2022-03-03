@@ -1,7 +1,0 @@
-{
-    "migrationPattern": "migrations/*",
-    "driver": "mysql",
-    "database": "basiccrud_test",
-    "username": "basiccrud",
-    "password": "]X5+~5;j9d64,~_{?&%)"
-}
