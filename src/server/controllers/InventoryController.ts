@@ -159,28 +159,6 @@ export default class InventoryController {
 
 
     /**
-     * Either updates or restores an inventory item depending on the request body
-     * Only if it is empty, it is tried to be restored
-     * Otherwise it is tried to be updated
-     *
-     * @param req the request from Fastify
-     * @param res the reply from Fastify
-     */
-    async putExistingInventoryItem(
-            req: FastifyRequest<{Params: IAccessItemParameters, Body: IUpdateItem}>,
-            rep: FastifyReply) {
-        const update = req.body.hasOwnProperty("name")
-            || req.body.hasOwnProperty("count")
-
-        if (update) {
-            await this.updateInventoryItem(req, rep)
-        } else {
-            await this.restoreInventoryItem(req, rep)
-        }
-    }
-
-
-    /**
      * Deletes an inventory item with a comment set as field in the
      * request body
      *

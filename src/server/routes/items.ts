@@ -100,10 +100,18 @@ export default function(fastify: FastifyInstance, opts: FastifyPluginOptions, do
     )
     fastify.put<{Params: IAccessItemParameters, Body: IUpdateItem}>(
         "/items/item/existing/:item_id", {
-            handler: (req, rep) => invContr.putExistingInventoryItem(req, rep),
+            handler: (req, rep) => invContr.updateInventoryItem(req, rep),
             schema: {
                 params: itemAccessParamsSchema,
                 body: updateItemBodySchema
+            }
+        }
+    )
+    fastify.put<{Params: IAccessItemParameters}>(
+        "/items/item/deleted/:item_id", {
+            handler: (req, rep) => invContr.restoreInventoryItem(req, rep),
+            schema: {
+                params: itemAccessParamsSchema
             }
         }
     )

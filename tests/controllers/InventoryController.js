@@ -300,53 +300,6 @@ describe("InventoryController", () => {
         })
     })
 
-    describe("#putExistingInventoryItem", () => {
-        it("should restore an item when no properties are provided", () => {
-            let id = 10
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            invController.updateInventoryItem = sinon.spy()
-            invController.restoreInventoryItem = sinon.spy()
-    
-            let req = mockReq({
-                body: {},
-                params: {
-                    item_id: id
-                }
-            })
-            let res = mockRes()
-    
-            invController.putExistingInventoryItem(req, res)
-    
-            expect(invController.updateInventoryItem).to.not.have.been.called
-            expect(invController.restoreInventoryItem).have.been.calledWith(req, res)
-        })
-        it("should update and item when some properties are provided", () => {
-            let id = 10
-            let invController = new InventoryController(
-                mockInventoryModel(), mockDeletionModel()
-            )
-            invController.updateInventoryItem = sinon.spy()
-            invController.restoreInventoryItem = sinon.spy()
-    
-            let req = mockReq({
-                body: {
-                    name: "Desk"
-                },
-                params: {
-                    item_id: id
-                }
-            })
-            let res = mockRes()
-    
-            invController.putExistingInventoryItem(req, res)
-    
-            expect(invController.updateInventoryItem).to.have.been.calledWith(req, res)
-            expect(invController.restoreInventoryItem).not.to.have.been.called
-        })
-    })
-
     describe("#deleteInventoryItem", () => {
         it("should delete an item if it is existing", async () => {
             let id = 10

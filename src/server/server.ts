@@ -10,6 +10,8 @@ dotenv.config()
 
 import Fastify from "fastify"
 import FastifyStatic from "fastify-static"
+import path, { dirname } from "path"
+import { fileURLToPath } from 'url'
 
 import itemRoutes from "./routes/items.js"
 import shipmentRoutes from "./routes/shipments.js"
@@ -23,10 +25,13 @@ const app = Fastify({
     }
 })
 app.setErrorHandler(handleError)
-await app.register(FastifyStatic)
 
 await app.register(itemRoutes)
 await app.register(shipmentRoutes)
+
+await app.register(FastifyStatic, {
+    root: path.join(dirname(fileURLToPath(import.meta.url)), 'public'),
+})
 
 const port = process.env.PORT
 await app.listen(port)

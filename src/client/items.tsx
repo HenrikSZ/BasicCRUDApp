@@ -596,7 +596,7 @@ class DeletedInventoryItem extends React.Component {
     }
 
     restore() {
-        fetch(`/items/item/existing/${this.props.data.id}`,
+        fetch(`/items/item/deleted/${this.props.data.id}`,
             {
                 method: "PUT"
             }
