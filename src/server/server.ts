@@ -4,29 +4,35 @@
  * dotenv at the top so that environment variables are set when needed
  */
 
-import path from "path"
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 import dotenv from "dotenv"
 dotenv.config()
 
-import express from "express"
-import bodyParser from "body-parser"
+import Fastify from "fastify"
+import FastifyStatic from "fastify-static"
+import path, { dirname } from "path"
+import { fileURLToPath } from 'url'
 
-import inventory from "./routes/inventory.js"
-import logger from "./logger.js"
+import itemRoutes from "./routes/items.js"
+import shipmentRoutes from "./routes/shipments.js"
+import { handleError } from "./errors.js"
 
 
-const app = express()
+const app = Fastify({
+    logger: {
+        level: process.env.LOG_LEVEL ?? "info",
+        file: process.env.LOG_FILE ?? "basiccrudapp.log"
+    }
+})
+app.setErrorHandler(handleError)
 
-app.use(bodyParser.json())
-app.use("/inventory", inventory)
-app.use(express.static(path.resolve(__dirname, "public")))
+await app.register(itemRoutes)
+await app.register(shipmentRoutes)
+
+await app.register(FastifyStatic, {
+    root: path.join(dirname(fileURLToPath(import.meta.url)), 'public'),
+})
 
 const port = process.env.PORT
-app.listen(port, () => {
-    logger.info(`Started web server listening on port ${port}`)
-})
+const host = process.env.HOST ?? "0.0.0.0"
+await app.listen(port, host)

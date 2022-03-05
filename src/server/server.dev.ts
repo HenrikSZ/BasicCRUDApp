@@ -4,50 +4,57 @@
  * dotenv at the top so that environment variables are set when needed
  */
 
-import path from "path"
-import { fileURLToPath } from 'url'
 import webpack from 'webpack'
-import webpackDevMiddleware, { Configuration } from 'webpack-dev-middleware'
-
-// @ts-ignore
-import webpackHotMiddleware from "webpack-hot-middleware"
 
 // @ts-ignore
 import config from '../webpack.dev.config.js'
 
-
-// @ts-ignore
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
 import dotenv from "dotenv"
 dotenv.config()
 
-import express from "express"
-import bodyParser from "body-parser"
+import Fastify from "fastify"
 
-import inventory from "./routes/inventory.js"
-import logger from "./logger.js"
-
-
-const app = express()
-const compiler = webpack(config as Configuration)
-
-app.use(bodyParser.json())
-app.use("/inventory", inventory)
-
-app.use(webpackDevMiddleware(compiler, {
-    publicPath: config.output.publicPath
-}))
 // @ts-ignore
-app.use(webpackHotMiddleware(compiler))
-app.get('/', (req, res) => {
-    compiler.outputFileSystem.readFile("/index.html", (err, result) => {
-        res.send(result)
-    })
+import webpackDevMiddleware from "webpack-dev-middleware"
+// @ts-ignore
+import webpackHotMiddleware from "webpack-hot-middleware"
+
+import middie from "middie"
+
+import itemRoutes from "./routes/items.js"
+import shipmentRoutes from "./routes/shipments.js"
+import { handleError } from './errors.js'
+
+
+const app = Fastify({
+    logger: {
+        level: process.env.LOG_LEVEL ?? "info",
+        file: process.env.LOG_FILE ?? "basiccrudapp.log"
+    }
 })
+app.setErrorHandler(handleError)
+const compiler = webpack(config)
+
+// @ts-ignore
+await app.register(itemRoutes) // @ts-ignore
+await app.register(shipmentRoutes) // @ts-ignore
+await app.register(middie)
+const dev = webpackDevMiddleware(compiler)
+const hot = webpackHotMiddleware(compiler)
+app.use(dev)
+app.use(hot)
+
+app.decorate('webpack',
+    {
+        compiler,
+        dev,
+        hot
+    })
+    .addHook('onClose', (app, next) => {
+        dev.close(() => next)
+    })
 
 const port = process.env.PORT
-app.listen(port, () => {
-    logger.info(`Started web server listening on port ${port}`)
-})
+const host = process.env.HOST ?? "0.0.0.0"
+// @ts-ignore
+await app.listen(port, host)

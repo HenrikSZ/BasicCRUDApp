@@ -3,55 +3,58 @@
  */
 
 
-import { OkPacket, RowDataPacket } from "mysql2"
+import { OkPacket, Pool } from "mysql2/promise"
 import dbPromise from "../db.js"
-import logger from "../logger.js"
+import { handleDbError } from "../errors.js"
 
 
-interface MinimalDeletion extends RowDataPacket {
-    comment: string 
-}
-
-
-interface Deletion extends MinimalDeletion {
-    id: number,
-    created_at: Date,
-    updated_at: Date
+export interface ICreateDeletion {
+    comment: string
 }
 
 
 export default class DeletionModel {
+    dbPromise: Pool
+
+    constructor(_dbPromise: Pool = dbPromise) {
+        this.dbPromise = _dbPromise
+    }
+
+
     /**
      * Inserts a deletion notice into the deletions.
      * 
      * @param comment the comment of the deletion.
      * @returns the id of the inserted deletion.
      */
-    insert(comment: string): Promise<number> {
-        logger.debug(`Inserting deletion table with comment "${comment}"`)
-
-        const stmt = "INSERT INTO deletions (comment) VALUES (?)"
-        return dbPromise.query(stmt, comment)
-        .then(([results, fields]) => {
+    async create(values: ICreateDeletion): Promise<number> {
+        try {
+            const stmt = "INSERT INTO deletions SET ?"
+            let[results, fields] = await this.dbPromise.query(stmt, values)
+            
             results = results as OkPacket
             return results.insertId
-        })
+        } catch (error) {
+            handleDbError(error)
+        }
     }
     
+
     /**
      * Deletes a deletion notice from the deletions.
      * 
      * @param id the id of deletion.
      * @returns true if a deletion was deleted, false otherwise.
      */
-    delete(id: number): Promise<Boolean> {
-        logger.debug(`Deleting from deletion table with id "${id}"`)
-
-        const stmt = "DELETE FROM deletions WHERE id = ?"
-        return dbPromise.query(stmt, id)
-        .then(([results, fields]) => {
+    async delete(id: number): Promise<Boolean> {
+        try {
+            const stmt = "DELETE FROM deletions WHERE id = ?"
+            let [results, fields] = await this.dbPromise.query(stmt, id)
+            
             results = results as OkPacket
             return results.affectedRows > 0
-        })
+        } catch (error) {
+            handleDbError(error)
+        }
     }
 }

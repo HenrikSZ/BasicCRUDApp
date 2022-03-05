@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-        "module": "es2020",
+        "module": "es2022",
         "esModuleInterop": true,
-        "target": "es6",
+        "target": "es2017",
         "noImplicitAny": true,
         "moduleResolution": "node",
         "sourceMap": true,
@@ -17,7 +17,7 @@
         }
     },
     "include": [
-        "src/server/*"
+        "src/server/**/*"
     ],
     "exclude": [
         "src/server/server.dev.ts"

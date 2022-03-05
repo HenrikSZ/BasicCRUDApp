@@ -1,8 +1,11 @@
 import ReactDOM from "react-dom"
 import React from "react"
+import ReactTooltip from "react-tooltip"
 
 import "./index.css"
-import { Inventory } from "./inventory"
+import { ItemView } from "./items"
+import { ShipmentView } from "./shipments"
+import { SideRibbonButton } from "./buttons"
 
 
 
@@ -12,7 +15,8 @@ if(module.hot) {
 
 
 enum AppMode {
-    INVENTORY
+    INVENTORY,
+    SHIPMENTS
 }
 
 interface ErrorMessage {
@@ -46,18 +50,36 @@ class App extends React.Component {
     render() {
         return (
             <React.StrictMode>
-                {
-                    this.state.errors.map((error, index) => {
-                        return <ErrorBox errorMessage={error} key={index} id={index}
-                            onDismissal={(id: number) => this.removeErrorMessage(id)}/>
-                    })
-                }
-                {
-                    (this.state.mode == AppMode.INVENTORY) ? (
-                        <Inventory onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
-                    ) : null
-                }
-               
+                <ReactTooltip effect="solid" offset={{top: -5}}/>
+                <div className="pl-2 pt-2 flex flex-row">
+                    <nav className="float-left mt-16 mr-6">
+                        <SideRibbonButton 
+                                isActive={this.state.mode == AppMode.INVENTORY}
+                                onClick={() => this.switchToMode(AppMode.INVENTORY)}>
+                            Inventory
+                        </SideRibbonButton>
+                        <SideRibbonButton 
+                                isActive={this.state.mode == AppMode.SHIPMENTS}
+                                onClick={() => this.switchToMode(AppMode.SHIPMENTS)}>
+                            Shipments
+                        </SideRibbonButton>
+                    </nav>
+                    <div className="float-left">
+                        {
+                            this.state.errors.map((error, index) => {
+                                return <ErrorBox errorMessage={error} key={index} id={index}
+                                    onDismissal={(id: number) => this.removeErrorMessage(id)}/>
+                            })
+                        }
+                        {
+                            (this.state.mode == AppMode.INVENTORY) ? (
+                                <ItemView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
+                            ) : (
+                                <ShipmentView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
+                            )
+                        }
+                    </div>
+                </div>
             </React.StrictMode>
         )
     }
@@ -89,13 +111,13 @@ class ErrorBox extends React.Component {
 
     render() {
         return (
-            <div className="w-10/12 bg-red-300 m-2">
+            <div className="bg-red-300 m-2">
                 <button className="text-red-700 font-bold text-xl p-2 pt-1 pb-1"
                     onClick={() => this.props.onDismissal(this.props.id)}>
                     X
                 </button>
                 <span className="m-1">
-                    <span className="font-bold text-red-700">
+                    <span className="font-bold text-red-700 mr-4">
                         {this.props.errorMessage.name}
                     </span>
                     <span>

@@ -8,7 +8,7 @@ export class Section extends React.Component {
 
     render() {
         return (
-            <div className="m-4 p-4 border-2 border-gray-400 rounded-md max-w-max">
+            <div className="m-4 p-4 border-2 border-gray-400 rounded-md max-w-max min-w-min">
                 {this.props.children}
             </div>
         )
