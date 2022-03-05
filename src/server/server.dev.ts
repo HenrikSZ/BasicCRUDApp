@@ -55,5 +55,6 @@ app.decorate('webpack',
     })
 
 const port = process.env.PORT
+const host = process.env.HOST ?? "0.0.0.0"
 // @ts-ignore
-await app.listen(port)
+await app.listen(port, host)

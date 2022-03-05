@@ -34,4 +34,5 @@ await app.register(FastifyStatic, {
 })
 
 const port = process.env.PORT
-await app.listen(port)
+const host = process.env.HOST ?? "0.0.0.0"
+await app.listen(port, host)
