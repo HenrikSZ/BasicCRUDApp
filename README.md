@@ -13,6 +13,10 @@ with Mocha, Chai and Sinon. Database migration is done with a node script
 utilizing postgrator. Plain SQL migration code is found in migrations.
 
 
+# Changelog
+Any notes about changes can be found in CHANGELOG.md
+
+
 # Requirements
 - EITHER: docker, docker-compose
 - OR: node.js with npm, mysql/mariadb
