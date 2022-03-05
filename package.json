@@ -13,7 +13,6 @@
     "fastify-error": "^1.0.0",
     "fastify-static": "^4.5.0",
     "middie": "^6.0.0",
-    "mysql": "^2.18.1",
     "mysql2": "^2.3.3",
     "postgrator": "^7.0.0",
     "react": "^17.0.2",
