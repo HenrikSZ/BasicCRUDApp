@@ -5,6 +5,14 @@ Coding a basic web app implementing CRUD principles. It also
 implements deletion with comment and undeletion features.
 
 
+# Overview
+CRUD interface for items and shipments of items, parts of which supports
+deletion with comment and restore. Frontend is written in React with classes
+and backend is Fastify with mysql2 as database interface. Testing is achieved
+with Mocha, Chai and Sinon. Database migration is done with a node script
+utilizing postgrator. Plain SQL migration code is found in migrations.
+
+
 # Requirements
 - EITHER: docker, docker-compose
 - OR: node.js with npm, mysql/mariadb
@@ -23,8 +31,47 @@ implements deletion with comment and undeletion features.
 - Set all fields in .env to an existing empty database
 - run: npm ci
 - run: npm run build:prod
-- run: npm run migrate up all
+- run: npm run migrate
 - run: npm run start:prod
+
+
+# Package scripts
+
+## lint
+Lints all files with eslint.
+
+## build:dev
+Builds the project in development mode.
+
+## build:prod
+Builds the project in production mode.
+
+## start:dev
+Starts the project in development mode. Will build the project beforehand.
+Any changes in frontend code will cause a webpack rebuild.
+
+## start:prod
+Starts the project in production mode. Will NOT build anything, so you would have
+to call build:prod beforehand.
+
+## migrate <version>
+Migrates the database specified in .env to the most recent version, or <version>
+if specified.
+
+## migrate:test <version>
+Same thing as migrate, but for the test database whose parameters are prefixed with TEST_
+in .env.
+
+## migrate-start
+First migrates the production database to the most recent version and then starts the project.
+This script is used by the docker version.
+
+## test
+Builds and tests the project with its own testsuite. It is required that the TEST_ settings
+in .env point to a valid database which has been migrated to the current version with migrate-test.
+
+## test-only
+Does not build the project, but just runs the testsuite.
 
 
 # Database Summary

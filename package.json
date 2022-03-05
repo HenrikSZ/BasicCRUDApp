@@ -59,12 +59,12 @@
     "build:prod": "tsc && webpack --mode production",
     "start:dev": "npm run build:dev && node dist/server.dev.js",
     "start:prod": "node .",
-    "pretest": "npm run build:dev",
-    "test": "npm run test-only",
-    "test-only": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js",
     "migrate": "node migrate.js",
     "migrate:test": "node migrate-test.js",
-    "migrate-start": "npm run migrate && npm run start:prod"
+    "migrate-start": "npm run migrate && npm run start:prod",
+    "pretest": "npm run build:dev",
+    "test": "npm run test-only",
+    "test-only": "node ./node_modules/mocha/bin/mocha ./tests/**/*.js"
   },
   "author": "Henrik Zimmermann",
   "license": "",
