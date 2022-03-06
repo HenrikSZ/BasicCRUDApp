@@ -4,8 +4,10 @@ import "./index.css"
 
 import { BackButton, ConfirmationButton, DeleteButton, DropdownButton, EditButton, ExportButton, MinusButton, PlusButton, ReloadButton, RibbonButton, SaveButton } from "./buttons"
 import { Section } from "./wrappers"
-import { InventoryItemData, MutableInventoryItemData } from "./items"
+import { InventoryItemData } from "./items"
 import ReactTooltip from "react-tooltip"
+import { ShipmentAPI } from "./api/shipments"
+import { ItemAPI } from "./api/items"
 
 
 enum ShipmentViewMode {
@@ -113,7 +115,7 @@ export class ShipmentView extends React.Component {
     }
 
     loadEntries() {
-        return fetch("/shipments")
+        ShipmentAPI.getShipments()
         .then((response: any) => {
             if (response.ok)
                 return response.json()
@@ -379,11 +381,7 @@ class ShipmentHeader extends React.Component {
     }
 
     deleteShipment() {
-        fetch(`/shipments/shipment/existing/${this.props.data.id}`,
-            {
-                method: "DELETE",
-            }
-        )
+        ShipmentAPI.deleteShipment(this.props.data.id)
         .then((response: any) => {
             if (response.ok)
                 this.props.onDelete(this.props.data.id)
@@ -398,13 +396,7 @@ class ShipmentHeader extends React.Component {
             || this.modifications.name !== this.props.data.destination
 
         if (modified) {
-            fetch(`/shipments/shipment/existing/${this.props.data.id}`,
-                {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(this.modifications),
-                }
-            )
+            ShipmentAPI.updateShipment(this.props.data.id, this.modifications)
             .then((response: any) => {
                 if (response.ok) {
                     this.switchToMode(ShipmentHeaderMode.NORMAL)
@@ -592,11 +584,7 @@ class ShipmentItem extends React.Component {
     }
 
     deleteShipmentItem() {
-        fetch(`/shipments/shipment/existing/${this.props.shipmentId}/${this.props.data.id}`,
-            {
-                method: "DELETE"
-            }
-        )
+        ShipmentAPI.deleteShipmentItem(this.props.shipmentId, this.props.data.id)
         .then((response: any) => {
             if (response.ok)
                 this.props.onDelete(this.props.data.id)
@@ -609,13 +597,8 @@ class ShipmentItem extends React.Component {
         let modified = this.modifications.assigned_count !== this.props.data.count
 
         if (modified) {
-            fetch(`/shipments/shipment/existing/${this.props.shipmentId}/${this.props.data.id}`,
-                {
-                    method: "PUT",
-                    body: JSON.stringify(this.modifications),
-                    headers: { "Content-Type": "application/json" }
-                }
-            )
+            ShipmentAPI.updateShipmentItem(this.props.shipmentId,
+                this.props.data.id, this.modifications)
             .then((response: any) => {
                 if (response.ok) {
                     this.props.onUpdate(this.props.data.id, this.modifications)
@@ -743,13 +726,7 @@ class ShipmentCreator extends React.Component {
     }
 
     saveNew() {
-        fetch("/shipments/shipment/new",
-            {
-                method: "PUT",
-                body: JSON.stringify(this.state.newValues),
-                headers: { 'Content-Type': 'application/json' }
-            }
-        )
+        ShipmentAPI.createShipment(this.state.newValues)
         .then(response => {
             if (response.ok) {
                 this.props.onItemCreate()
@@ -893,7 +870,7 @@ class ItemPicker extends React.Component {
             return
         }
 
-        fetch("/items/item/like/" + name)
+        ItemAPI.getItemLike(name)
         .then(response => {
             if (response.ok)
                 return response.json()

@@ -13,6 +13,7 @@ import { ConfirmationButton,
     SaveButton} from "./buttons"
 import { Section } from "./wrappers"
 import ReactTooltip from "react-tooltip"
+import { ItemAPI } from "./api/items"
 
 
 enum InventoryMode {
@@ -147,7 +148,7 @@ export class ItemView extends React.Component {
     }
 
     loadDeletedEntries() {
-        return fetch("/items/deleted")
+        ItemAPI.getDeletedItems()
         .then((response) => {
             if (response.ok)
                 return response.json()
@@ -165,7 +166,7 @@ export class ItemView extends React.Component {
     }
 
     loadEntries() {
-        return fetch("/items")
+        return ItemAPI.getItems()
         .then((response: any) => {
             if (response.ok)
                 return response.json()
@@ -257,13 +258,7 @@ export class ItemCreator extends React.Component {
 
     saveNew() {
         if (this.newValues.name && this.newValues.count) {
-            fetch("/items/item/new",
-                { 
-                    method: "POST",
-                    body: JSON.stringify(this.newValues),
-                    headers: { 'Content-Type': 'application/json' }
-                }
-            )
+            ItemAPI.createItem(this.newValues)
             .then((response: any) => {
                 if (response.ok)
                     this.props.onItemCreation()
@@ -453,13 +448,7 @@ export class InventoryItem extends React.Component {
         }
 
         if (modified) {
-            fetch(`/items/item/existing/${this.state.data.id}`,
-                { 
-                    method: "PUT",
-                    body: JSON.stringify(this.modifications),
-                    headers: { 'Content-Type': 'application/json' }
-                }
-            )
+            ItemAPI.updateItem(this.props.data.id, this.modifications)
             .then((response: any) => {
                 if (response.ok) {
                     let state = {...this.state}
@@ -478,13 +467,7 @@ export class InventoryItem extends React.Component {
     }
 
     deleteItem() {
-        fetch(`/items/item/existing/${this.state.data.id}`,
-            {
-                method: "DELETE",
-                body: JSON.stringify({ comment: this.deletion_comment }),
-                headers: { "Content-Type": "application/json" }
-            }
-        )
+        ItemAPI.deleteItem(this.state.data.id, this.deletion_comment)
         .then((response: any) => {
             if (response.ok)
                 this.props.onDelete(this.state.data.id)
@@ -596,11 +579,7 @@ class DeletedInventoryItem extends React.Component {
     }
 
     restore() {
-        fetch(`/items/item/deleted/${this.props.data.id}`,
-            {
-                method: "PUT"
-            }
-        )
+        ItemAPI.restoreItem(this.props.data.id)
         .then((response: any) => {
             if (response.ok)
                 this.props.onDelete(this.props.data.id)
