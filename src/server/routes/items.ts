@@ -1,4 +1,4 @@
-import { ICreateItem, ILikeItem, IUpdateItem } from "../models/ItemModel.js"
+import { ICreateItem, ILikeItem, IUpdateItem } from "../../types/items"
 import { ICreateDeletion } from "../models/DeletionModel.js"
 import InventoryController, { IAccessItemParameters } from "../controllers/InventoryController.js"
 import { FastifyInstance, FastifyPluginOptions } from "fastify"

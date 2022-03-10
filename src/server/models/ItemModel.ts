@@ -3,42 +3,12 @@
  */
 
 
-import { RowDataPacket, OkPacket, Pool, PoolConnection } from "mysql2/promise"
+import { OkPacket, Pool } from "mysql2/promise"
 import dbPromise from "../db.js"
 import { handleDbError } from "../errors.js"
 import ExternalItemAssignmentModel from "./ExternalItemAssignmentModel.js"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
-
-
-export interface ICreateItem {
-    name: string,
-    count: number
-}
-
-export interface IUpdateItem {
-    name?: string,
-    count_change?: number
-    deletion_id?: number
-}
-
-export interface ILikeItem {
-    name: string
-}
-
-
-export interface InventoryItem extends RowDataPacket {
-    name: string,
-    count: number
-    id: number,
-    deletion_id: number,
-    created_at: Date,
-    updated_at: Date
-}
-
-
-interface DeletedInventoryItem extends InventoryItem {
-    comment: string
-}
+import { ICreateItem, IUpdateItem, InventoryItem, DeletedInventoryItem, ILikeItem } from "../../types/items"
 
 
 export default class ItemModel {

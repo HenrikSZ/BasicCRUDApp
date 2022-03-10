@@ -3,7 +3,6 @@ import React from "react"
 import "./index.css"
 
 import { ConfirmationButton,
-    DangerButton,
     DeleteButton,
     EditButton,
     ExportButton,
@@ -14,6 +13,8 @@ import { ConfirmationButton,
 import { Section } from "./wrappers"
 import ReactTooltip from "react-tooltip"
 import { ItemAPI } from "./api/items"
+import { InventoryItem, DeletedInventoryItem, IUpdateItem, ICreateItem }
+    from  "../types/items"
 
 
 enum InventoryMode {
@@ -28,30 +29,12 @@ export enum InventoryItemMode  {
     DELETE
 }
 
-export interface MutableInventoryItemData {
-    name: string,
-    count: number
-}
-
-interface ChangeInventoryItemData {
-    name: string,
-    count_change: number
-}
-
-export interface InventoryItemData extends MutableInventoryItemData {
-    id: number
-}
-
-export interface DeletedInventoryItemData extends InventoryItemData {
-    comment: string
-}
-
 
 export class ItemView extends React.Component {
     state: {
         mode: InventoryMode,
-        entries: Array<InventoryItemData>,
-        deletedEntries: Array<DeletedInventoryItemData>
+        entries: InventoryItem[],
+        deletedEntries: DeletedInventoryItem[]
     }
     props: {
         onErrorResponse: Function
@@ -132,8 +115,8 @@ export class ItemView extends React.Component {
     componentDidUpdate(prevProps: Readonly<{}>,
             prevState: Readonly<{
                 mode: InventoryMode,
-                entries: InventoryItemData[],
-                deletedEntries: DeletedInventoryItemData[]
+                entries: InventoryItem[],
+                deletedEntries: DeletedInventoryItem[]
             }>
         ) {
         if (prevState.mode != this.state.mode) {
@@ -204,7 +187,7 @@ export class ItemView extends React.Component {
 
 
 export class ItemCreator extends React.Component {
-    newValues: MutableInventoryItemData
+    newValues: ICreateItem
     props: {onItemCreation: Function, onErrorResponse: Function}
 
     constructor(props: {onItemCreation: Function, onError: Function}) {
@@ -242,7 +225,8 @@ export class ItemCreator extends React.Component {
                                 <input className="border-2 rounded-lg border-gray-700"
                                     type="number" placeholder="1"
                                     onChange={evt =>
-                                        this.newValues.count = Number.parseInt(evt.target.value)}/>
+                                        this.newValues.count =
+                                        Number.parseInt(evt.target.value)}/>
                             </td>
                             <td>
                                 <ConfirmationButton onClick={() => this.saveNew()}>
@@ -272,7 +256,7 @@ export class ItemCreator extends React.Component {
 
 export class InventoryTable extends React.Component {
     props: {
-        entries: Array<InventoryItemData>,
+        entries: Array<InventoryItem>,
         onReloadRequest: Function,
         onItemDelete: Function,
         onErrorResponse: Function
@@ -304,7 +288,7 @@ export class InventoryTable extends React.Component {
                         <tbody>
                             {
                                 this.props.entries.map((item) => {
-                                    return <InventoryItem data={item} key={item.id}
+                                    return <InventoryItemView data={item} key={item.id}
                                         onDelete={(id: number) =>
                                             this.props.onItemDelete(id)}
                                         onErrorResponse={(response: any) =>
@@ -327,14 +311,14 @@ export class InventoryTable extends React.Component {
 }
 
 
-export class InventoryItem extends React.Component {
-    modifications: ChangeInventoryItemData
+export class InventoryItemView extends React.Component {
+    modifications: IUpdateItem
     deletion_comment: string
-    state: { mode: InventoryItemMode, data: InventoryItemData }
-    props:  { data: InventoryItemData, onDelete: Function, onErrorResponse: Function }
+    state: { mode: InventoryItemMode, data: InventoryItem }
+    props:  { data: InventoryItem, onDelete: Function, onErrorResponse: Function }
 
 
-    constructor(props:  { data: InventoryItemData, onDelete: Function, onErrorResponse: Function }) {
+    constructor(props:  { data: InventoryItem, onDelete: Function, onErrorResponse: Function }) {
         super(props)
 
         this.state = {
@@ -480,14 +464,14 @@ export class InventoryItem extends React.Component {
 
 export class DeletedInventoryTable extends React.Component {
     props: {
-        entries: Array<DeletedInventoryItemData>,
+        entries: DeletedInventoryItem[],
         onReloadRequest: Function,
         onItemRestore: Function,
         onErrorResponse: Function
     }
 
     constructor(props: {
-        entries: Array<DeletedInventoryItemData>,
+        entries: DeletedInventoryItem[],
         onReloadRequest: Function,
         onItemRestore: Function,
         onErrorResponse: Function
@@ -527,7 +511,7 @@ export class DeletedInventoryTable extends React.Component {
                             <tbody>
                                 {
                                     this.props.entries.map((item) => {
-                                        return <DeletedInventoryItem data={item} key={item.id}
+                                        return <DeletedInventoryItemView data={item} key={item.id}
                                             onDelete={(id: number) => this.props.onItemRestore(id)}
                                             onErrorResponse={(response: any) => this.props.onErrorResponse(response)}/>
                                     })
@@ -548,8 +532,8 @@ export class DeletedInventoryTable extends React.Component {
     }
 }
 
-class DeletedInventoryItem extends React.Component {
-    props: {data: DeletedInventoryItemData, onDelete: Function, onErrorResponse: Function}
+class DeletedInventoryItemView extends React.Component {
+    props: {data: DeletedInventoryItem, onDelete: Function, onErrorResponse: Function}
 
     render() {
         return (

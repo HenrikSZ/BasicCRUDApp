@@ -1,6 +1,6 @@
 import ShipmentController, { IAccessShipmentItemParameters, IAccessShipmentParameters } from "../controllers/ShipmentController.js"
 import { FastifyInstance, FastifyPluginOptions } from "fastify"
-import { ICreateShipment, IUpdateShipment, IUpdateShipmentItem } from "../models/ShipmentModel.js"
+import { ICreateShipment, IUpdateShipment, IUpdateShipmentItem } from "../../types/shipments"
 
 
 const createShipmentBodySchema = {

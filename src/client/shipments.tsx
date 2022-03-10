@@ -4,40 +4,22 @@ import "./index.css"
 
 import { BackButton, ConfirmationButton, DeleteButton, DropdownButton, EditButton, ExportButton, MinusButton, PlusButton, ReloadButton, RibbonButton, SaveButton } from "./buttons"
 import { Section } from "./wrappers"
-import { InventoryItemData } from "./items"
+import { InventoryItem, MappedInventoryItem } from "../types/items"
 import ReactTooltip from "react-tooltip"
 import { ShipmentAPI } from "./api/shipments"
 import { ItemAPI } from "./api/items"
+import { ICreateShipment, Shipment } from "../types/shipments"
 
 
 enum ShipmentViewMode {
     NORMAL
 }
 
-interface MutableShipmentData {
-    name: string,
-    source: string,
-    destination: string,
-    items: { id: number, count: number }[]
-}
-
-interface MappedInventoryItemData extends InventoryItemData {
-    assigned_count: number
-}
-
-interface ShipmentData {
-    id: number,
-    name: string,
-    source: string,
-    destination: string,
-    items: MappedInventoryItemData[]
-}
-
 
 export class ShipmentView extends React.Component {
     state: {
         mode: ShipmentViewMode,
-        entries: ShipmentData[],
+        entries: Shipment[],
     }
     props: {
         onErrorResponse: Function
@@ -103,7 +85,7 @@ export class ShipmentView extends React.Component {
     componentDidUpdate(prevProps: Readonly<{}>,
             prevState: Readonly<{
                 mode: ShipmentViewMode,
-                entries: InventoryItemData[],
+                entries: InventoryItem[],
             }>
         ) {
         if (prevState.mode != this.state.mode) {
@@ -199,7 +181,7 @@ export class ShipmentView extends React.Component {
 
 
 class ShipmentTable extends React.Component {
-    props: { entries: ShipmentData[],
+    props: { entries: Shipment[],
         onReloadRequest: Function,
         onShipmentDelete: Function,
         onShipmentUpdate: Function,
@@ -225,7 +207,7 @@ class ShipmentTable extends React.Component {
                         <div className="mt-4">
                             {
                                 this.props.entries.map(shipment =>
-                                    <Shipment data={shipment} key={shipment.id}
+                                    <SingleShipmentView data={shipment} key={shipment.id}
                                         onDelete={(id: number) => this.props.onShipmentDelete(id)}
                                         onUpdate={(id: number, modifications: any) =>
                                             this.props.onShipmentUpdate(id, modifications)}
@@ -263,7 +245,7 @@ enum ShipmentHeaderMode {
 
 class ShipmentHeader extends React.Component {
     props: {
-        data: ShipmentData,
+        data: Shipment,
         onExpand: Function,
         onRetract: Function,
         onDelete: Function,
@@ -280,7 +262,7 @@ class ShipmentHeader extends React.Component {
     }
 
     constructor(props: {
-        data: ShipmentData,
+        data: Shipment,
         onExpand: Function,
         onRetract: Function,
         onDelete: Function,
@@ -410,8 +392,8 @@ class ShipmentHeader extends React.Component {
     }
 }
 
-class Shipment extends React.Component {
-    props: {    data: ShipmentData,
+class SingleShipmentView extends React.Component {
+    props: {    data: Shipment,
                 onDelete: Function,
                 onUpdate: Function,
                 onErrorResponse: Function,
@@ -421,7 +403,7 @@ class Shipment extends React.Component {
     state: { dropdownCss: string }
 
     constructor(props: {
-                data: ShipmentData,
+                data: Shipment,
                 onDelete: Function,
                 onErrorResponse: Function,
                 onItemDelete: Function
@@ -459,7 +441,7 @@ class Shipment extends React.Component {
                         <tbody>
                             {
                                 (this.props.data.items.map(item =>
-                                    <ShipmentItem shipmentId={this.props.data.id}
+                                    <ShipmentItemView shipmentId={this.props.data.id}
                                         data={item} key={item.id}
                                         onDelete={(itemId: number) =>
                                             this.props.onItemDelete(this.props.data.id, itemId)}
@@ -497,9 +479,9 @@ enum ShipmentItemMode {
     EDIT = 1
 }
 
-class ShipmentItem extends React.Component {
+class ShipmentItemView extends React.Component {
     props: {   
-                data: MappedInventoryItemData,
+                data: MappedInventoryItem,
                 shipmentId: number,
                 onDelete: Function,
                 onUpdate: Function,
@@ -511,7 +493,7 @@ class ShipmentItem extends React.Component {
     }
 
     constructor(props: {
-            data: MappedInventoryItemData,
+            data: MappedInventoryItem,
             shipmentId: number,
             onDelete: Function,
             onErrorResponse: Function }) {
@@ -616,7 +598,7 @@ class ShipmentItem extends React.Component {
 
 class ShipmentCreator extends React.Component {
     props: { onErrorResponse: Function, onItemCreate: Function }
-    state: { newValues: MutableShipmentData }
+    state: { newValues: ICreateShipment }
     currentUiKey: number
     uiKeys: number[]
 
@@ -703,7 +685,7 @@ class ShipmentCreator extends React.Component {
                                 return <ShipmentItemPicker
                                             onErrorResponse={(response: any) =>
                                                 this.props.onErrorResponse(response)}
-                                            onItemSet={(newItem: InventoryItemData) =>
+                                            onItemSet={(newItem: InventoryItem) =>
                                                 this.setItemType(index, newItem.id)}
                                             onCountSet ={(newCount: number) =>
                                                     this.setItemCount(index, newCount)}
@@ -781,7 +763,7 @@ class ShipmentItemPicker extends React.Component {
                 onCountSet: Function,
                 onRemove: Function,
                 item: { id: number, count: number} }
-    item: InventoryItemData
+    item: InventoryItem
     state: { count: number }
 
     constructor(props: { onErrorResponse: Function,
@@ -804,7 +786,7 @@ class ShipmentItemPicker extends React.Component {
                 </td>
                 <td className="pt-1 pb-1">
                     <ItemPicker onErrorResponse={(response: any) => this.props.onErrorResponse(response)}
-                        onSelect={(item: InventoryItemData) => this.props.onItemSet(item)}/>
+                        onSelect={(item: InventoryItem) => this.props.onItemSet(item)}/>
                  </td>
                 <td className="inline-block pt-1 pb-1">
                         <input className="border-2 rounded-lg border-gray-700 w-32"
@@ -820,7 +802,7 @@ class ShipmentItemPicker extends React.Component {
 
 class ItemPicker extends React.Component {
     props: { onErrorResponse: Function, onSelect: Function }
-    state: { selectableItems: InventoryItemData[], itemName: string }
+    state: { selectableItems: InventoryItem[], itemName: string }
 
     constructor(props: { onErrorResponse: Function, onSelect: Function }) {
         super(props)
@@ -845,7 +827,7 @@ class ItemPicker extends React.Component {
                                 this.state.selectableItems.map(item => {
                                     return (
                                         <SelectableItem item={item} key={item.id}
-                                            onSelect={(item: InventoryItemData) => this.onSelect(item)}/>
+                                            onSelect={(item: InventoryItem) => this.onSelect(item)}/>
                                     )
                                 })
                             }
@@ -886,7 +868,7 @@ class ItemPicker extends React.Component {
         })
     }
 
-    onSelect(item: InventoryItemData) {
+    onSelect(item: InventoryItem) {
         let state = {...this.state}
         state.selectableItems = []
         state.itemName = item.name
@@ -898,7 +880,7 @@ class ItemPicker extends React.Component {
 
 
 class SelectableItem extends React.Component {
-    props: { item: InventoryItemData, onSelect: Function }
+    props: { item: InventoryItem, onSelect: Function }
 
     render() {
         return  (
