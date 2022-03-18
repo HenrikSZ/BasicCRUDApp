@@ -10,7 +10,7 @@ export class ItemAPI {
         )
     }
     
-    static getItems() {
+    static async getItems() {
         return fetch("/items")
     }
 

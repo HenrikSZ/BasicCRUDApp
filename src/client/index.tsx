@@ -6,7 +6,8 @@ import "./index.css"
 import { ItemView } from "./items"
 import { ShipmentView } from "./shipments"
 import { SideRibbonButton } from "./buttons"
-
+import { Provider } from "react-redux"
+import { store } from "./store"
 
 
 if(module.hot) {
@@ -73,7 +74,7 @@ class App extends React.Component {
                         }
                         {
                             (this.state.mode == AppMode.INVENTORY) ? (
-                                <ItemView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
+                                <ItemView/>
                             ) : (
                                 <ShipmentView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
                             )
@@ -130,4 +131,8 @@ class ErrorBox extends React.Component {
 }
 
 
-ReactDOM.render(<App />, document.getElementById("app"))
+ReactDOM.render(
+    <Provider store={store}>
+        <App />
+    </Provider>,
+    document.getElementById("app"))
