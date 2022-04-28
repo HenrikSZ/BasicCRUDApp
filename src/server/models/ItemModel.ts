@@ -87,9 +87,12 @@ export default class ItemModel {
     /**
      * Reads items whose names are LIKE %name%
      * 
-     * @param name parts of the name that should be searched for.
+     * @param values parts of the name that should be searched for.
      */
     async getItemLike(values: ILikeItem): Promise<InventoryItem[]> {
+        if (values.name.length == 0) {
+            return Promise.resolve([])
+        }
         try {
             const stmt = "SELECT items.id, items.name, AVAIL_ITEMS_COUNT(items.id) "
                 + "FROM items WHERE name LIKE ? LIMIT 10"

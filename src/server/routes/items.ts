@@ -63,7 +63,6 @@ const getItemLikemBodySchema = {
     properties: {
         name: {
             type: "string",
-            minLength: 1,
             maxLength: 64
         },
     }

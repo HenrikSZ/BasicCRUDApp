@@ -248,43 +248,6 @@ const InventoryItemView = (props: {data: InventoryItem}) => {
                 </tr>
             )
     }
-/*
-    saveEdits() {
-        let modified = false
-
-        if (this.modifications.name !== this.state.data.name
-            || this.modifications.count_change !== 0) {
-            modified = true
-        }
-
-        if (modified) {
-            ItemAPI.updateItem(this.props.data.id, this.modifications)
-            .then((response: any) => {
-                if (response.ok) {
-                    let state = {...this.state}
-                    state.mode = InventoryItemMode.NORMAL
-                    state.data.name = this.modifications.name
-                    state.data.count += this.modifications.count_change
-
-                    this.setState(state)
-                } else {
-                    this.props.onErrorResponse(response)
-                }
-            })
-        } else {
-            this.switchToMode(InventoryItemMode.NORMAL)
-        }
-    }
-
-    deleteItem() {
-        ItemAPI.deleteItem(this.state.data.id, this.deletion_comment)
-        .then((response: any) => {
-            if (response.ok)
-                this.props.onDelete(this.state.data.id)
-            else
-                this.props.onErrorResponse(response)
-        })
-    }*/
 }
 
 

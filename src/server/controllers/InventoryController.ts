@@ -164,7 +164,7 @@ export default class InventoryController {
      * request body
      *
      * @param req the request from Fastify
-     * @param res the reponse from Fastify
+     * @param rep the reponse from Fastify
      */
     async deleteInventoryItem(
             req: FastifyRequest<{Params: IAccessItemParameters, Body: ICreateDeletion}>,

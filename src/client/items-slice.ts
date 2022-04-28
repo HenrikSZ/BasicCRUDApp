@@ -1,15 +1,18 @@
 import { FullTagDescription } from '@reduxjs/toolkit/dist/query/endpointDefinitions'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { info } from 'console'
 
 import { DeletedInventoryItem, ICreateItem, InventoryItem, IUpdateItem } from "../types/items"
+import { ICreateShipment, IUpdateShipmentItem, Shipment } from '../types/shipments'
 
 export const api = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: "/" }),
     endpoints: builder => ({
         createItem: builder.mutation<InventoryItem, ICreateItem>({
-            query: () => ({
+            query: newItem => ({
                 url: `items/item/new`,
-                method: "POST"
+                method: "POST",
+                body: newItem,
             }),
             invalidatesTags: ["Items" as unknown as FullTagDescription<never>],
         }),
@@ -20,6 +23,9 @@ export const api = createApi({
         getDeletedItems: builder.query<DeletedInventoryItem[], void>({
             query: () => `items/deleted`,
             providesTags: () => ["DeletedItems" as unknown as FullTagDescription<never>]
+        }),
+        getItemLike: builder.query<InventoryItem[], string>({
+            query: name => `items/item/like/${name}`,
         }),
         updateItem: builder.mutation<InventoryItem,
                 { item: InventoryItem, modifications: IUpdateItem}>({
@@ -46,12 +52,40 @@ export const api = createApi({
             }),
             invalidatesTags: ["Items" as unknown as FullTagDescription<never>,
                 "DeletedItems" as unknown as FullTagDescription<never>],
+        }),
+
+        createShipment: builder.mutation<void, ICreateShipment>({
+            query: shipment => ({
+                url: 'shipments/shipment/new',
+                method: "PUT",
+                body: shipment
+            }),
+            invalidatesTags: ["Shipments" as unknown as FullTagDescription<never>]
+        }),
+
+        getAllShipments: builder.query<Shipment[], void>({
+            query: () => `shipments`,
+            providesTags: () => ["Shipments" as unknown as FullTagDescription<never>]
+        }),
+
+        updateShipmentItem: builder.mutation<void, {shipmentId: number,
+            itemId: number, modifications: IUpdateShipmentItem}>({
+            query: info => ({
+                url:`shipments/shipment/existing/${info.shipmentId}/${info.itemId}`,
+                body: info.modifications,
+            }),
+            invalidatesTags: [
+                "Shipments" as unknown as FullTagDescription<never>
+            ]
         })
     })
 })
 
 
 export const { useCreateItemMutation, useGetAllItemsQuery,
-    useGetDeletedItemsQuery, useUpdateItemMutation,
+    useGetDeletedItemsQuery, useGetItemLikeQuery, useUpdateItemMutation,
     useDeleteItemMutation,
-    useRestoreItemMutation } = api
+    useRestoreItemMutation,
+    useGetAllShipmentsQuery,
+    useCreateShipmentMutation,
+    useUpdateShipmentItemMutation } = api

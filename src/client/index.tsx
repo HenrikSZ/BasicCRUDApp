@@ -76,7 +76,7 @@ class App extends React.Component {
                             (this.state.mode == AppMode.INVENTORY) ? (
                                 <ItemView/>
                             ) : (
-                                <ShipmentView onErrorResponse={(response: any) => this.onErrorResponse(response)}/>
+                                <ShipmentView/>
                             )
                         }
                     </div>
