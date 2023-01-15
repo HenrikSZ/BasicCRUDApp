@@ -7,7 +7,7 @@
     "csv-stringify": "^6.0.5",
     "csv-stringify-as-promised": "^3.0.1",
     "dotenv": "^11.0.0",
-    "fastify": "^3.27.2",
+    "fastify": "^3.29.4",
     "fastify-error": "^1.0.0",
     "fastify-static": "^4.5.0",
     "mysql2": "^2.3.3",
