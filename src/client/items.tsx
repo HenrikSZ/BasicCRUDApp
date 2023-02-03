@@ -153,7 +153,7 @@ const InventoryTable = () => {
                         <div className="border-t-2 border-gray-500 w-full text-center italic">
                             no entries
                         </div>
-                    ) : null
+                    ) : <></>
                 }
             </Section>
         </React.StrictMode>

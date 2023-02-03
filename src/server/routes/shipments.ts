@@ -115,7 +115,7 @@ export default function(fastify: FastifyInstance, opts: FastifyPluginOptions, do
     )
 
     fastify.get<{Params: IAccessShipmentParameters}>(
-        "/shipment/existing/:shipmentId", {
+        "/shipments/shipment/existing/:shipmentId", {
             handler: (req, rep) => contr.getShipment(req, rep),
             schema: {
                 params: shipmentAccessParamsSchema
@@ -144,7 +144,7 @@ export default function(fastify: FastifyInstance, opts: FastifyPluginOptions, do
 
 
     fastify.put<{Params: IAccessShipmentItemParameters, Body: IUpdateShipmentItem}>(
-        "/shipment/existing/:shipment_id/:item_id", {
+        "/shipments/shipment/existing/:shipment_id/:item_id", {
             handler: (req, rep) => contr.updateShipmentItem(req, rep),
             schema: {
                 params: shipmentItemAccessParamsSchema,

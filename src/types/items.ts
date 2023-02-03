@@ -18,7 +18,6 @@ export interface ILikeItem {
     name: string
 }
 
-
 export interface InventoryItem extends RowDataPacket {
     name: string,
     count: number
@@ -34,6 +33,11 @@ export interface MappedInventoryItem extends InventoryItem {
     assigned_count: number
 }
 
+
+export interface AssignedInventoryItem {
+    id: number;
+    count: number;
+}
 
 export interface DeletedInventoryItem extends InventoryItem {
     comment: string

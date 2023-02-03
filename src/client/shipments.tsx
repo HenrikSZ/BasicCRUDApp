@@ -2,14 +2,18 @@ import React, { ChangeEvent, useState } from "react"
 
 import "./index.css"
 
-import { BackButton, ConfirmationButton, DeleteButton, DropdownButton, EditButton, ExportButton, MinusButton, PlusButton, ReloadButton, RibbonButton, SaveButton } from "./buttons"
+import { BackButton, ConfirmationButton, DeleteButton, DropdownButton,
+    EditButton, ExportButton, MinusButton, PlusButton, RibbonButton,
+    SaveButton } from "./buttons"
 import { Section } from "./wrappers"
-import { InventoryItem, MappedInventoryItem } from "../types/items"
-import ReactTooltip from "react-tooltip"
-import { ShipmentAPI } from "./api/shipments"
-import { ItemAPI } from "./api/items"
-import { ICreateShipment, IUpdateShipment, IUpdateShipmentItem, Shipment } from "../types/shipments"
-import { useCreateShipmentMutation, useGetAllShipmentsQuery, useGetDeletedItemsQuery, useGetItemLikeQuery, useUpdateShipmentItemMutation } from "./items-slice"
+import { AssignedInventoryItem, InventoryItem, MappedInventoryItem }
+    from "../types/items"
+import { IUpdateShipment, IUpdateShipmentItem, Shipment }
+    from "../types/shipments"
+import { useCreateShipmentMutation, useDeleteShipmentItemMutation,
+    useDeleteShipmentMutation, useGetAllShipmentsQuery, useGetItemLikeQuery,
+    useUpdateShipmentItemMutation, useUpdateShipmentMutation }
+    from "./items-slice"
 
 
 enum ShipmentViewMode {
@@ -87,6 +91,10 @@ enum ShipmentHeaderMode {
 
 function ShipmentHeader(props: {data: Shipment, onExpand: Function, onRetract: Function}) {
     const [mode, setMode] = useState(ShipmentHeaderMode.NORMAL)
+    const [deleteShipment, deleteShipmentResult]
+        = useDeleteShipmentMutation()
+    const [updateShipment, updateShipmentItem]
+        = useUpdateShipmentMutation()
 
     const modifications: IUpdateShipment = {
         name: props.data.name,
@@ -126,7 +134,9 @@ function ShipmentHeader(props: {data: Shipment, onExpand: Function, onRetract: F
                         <BackButton onClick={() => setMode(ShipmentHeaderMode.NORMAL)}/>
                     </div>
                     <div>
-                        <SaveButton onClick={() => this.saveEdits()}/>
+                        <SaveButton onClick={() => updateShipment({
+                            shipmentId: props.data.id,
+                            modifications: modifications })}/>
                     </div>
                 </div>
             )
@@ -146,7 +156,7 @@ function ShipmentHeader(props: {data: Shipment, onExpand: Function, onRetract: F
                         <EditButton onClick={() => setMode(ShipmentHeaderMode.EDIT)}/>
                     </div>
                     <div>
-                        <DeleteButton onClick={() => this.deleteShipment()}/>
+                        <DeleteButton onClick={() => deleteShipment({ shipmentId: props.data.id })}/>
                     </div>
                 </div>
             )
@@ -176,7 +186,7 @@ function SingleShipmentView(props: {data: Shipment}) {
                     </thead>
                     <tbody>
                         {
-                            (props.data.items.map(item =>
+                            (props.data.items?.map(item =>
                                 <ShipmentItemView shipmentId={props.data.id}
                                     data={item} key={item.id}/>
                             ))
@@ -198,6 +208,8 @@ function ShipmentItemView(props: {data: MappedInventoryItem, shipmentId: number}
     const [mode, setMode] = useState(ShipmentItemMode.NORMAL)
     const [updateShipmentItem, updateShipmentItemResult]
         = useUpdateShipmentItemMutation()
+    const [deleteShipmentItem, deleteShipmentItemResult]
+        = useDeleteShipmentItemMutation()
     
     let modifications: IUpdateShipmentItem = {
         assigned_count: props.data.assigned_count
@@ -220,11 +232,14 @@ function ShipmentItemView(props: {data: MappedInventoryItem, shipmentId: number}
                         <BackButton onClick={() => setMode(ShipmentItemMode.NORMAL)}/>
                     </td>
                     <td>
-                        <SaveButton onClick={() => updateShipmentItem({
-                            modifications: modifications,
-                            shipmentId: props.shipmentId,
-                            itemId: props.data.id
-                        })}/>
+                        <SaveButton onClick={() => {
+                            updateShipmentItem({
+                                modifications: modifications,
+                                shipmentId: props.shipmentId,
+                                itemId: props.data.id
+                            })
+                            setMode(ShipmentItemMode.NORMAL)
+                        }}/>
                     </td>
                 </tr>
             )
@@ -238,10 +253,13 @@ function ShipmentItemView(props: {data: MappedInventoryItem, shipmentId: number}
                         {props.data.assigned_count}
                     </td>
                     <td className="border-2 border-gray-700 p-2">
-                        <EditButton onClick={() => this.switchToMode(ShipmentItemMode.EDIT)}/>
+                        <EditButton onClick={() => setMode(ShipmentItemMode.EDIT)}/>
                     </td>
                     <td className="border-2 border-gray-700 p-2">
-                        <DeleteButton onClick={() => this.deleteShipmentItem()}/>
+                        <DeleteButton onClick={() => deleteShipmentItem({
+                            shipmentId: props.shipmentId,
+                            itemId: props.data.id
+                        })}/>
                     </td>
                 </tr>
             )
@@ -252,11 +270,11 @@ function ShipmentItemView(props: {data: MappedInventoryItem, shipmentId: number}
 function ShipmentCreator() {
     const [createShipment, result] = useCreateShipmentMutation()
     const [currentUiKey, setCurrentUiKey] = useState(-1)
-    const [uiKeys, setUiKeys] = useState([])
+    const [uiKeys, setUiKeys] = useState<number[]>([])
     const [newName, setNewName] = useState("")
     const [newSource, setNewSource] = useState("")
     const [newDestination, setNewDestination] = useState("")
-    const [newItems, setNewItems] = useState([])
+    const [newItems, setNewItems] = useState<{ id: number, count: number }[]>([])
 
     return (
         <Section>
@@ -323,15 +341,15 @@ function ShipmentCreator() {
                 </thead>
                 <tbody>
                     {
-                        newItems.map((item: InventoryItem, index: number) => {
+                        newItems.map((item: AssignedInventoryItem, index: number) => {
                             return <ShipmentItemPicker key={uiKeys[index]}
-                                    item={item} onRemove={() => {
+                                        item={item} onRemove={() => {
                                 let modifiedNewitems = newItems.slice()
                                 modifiedNewitems.splice(index)
 
                                 setNewItems(modifiedNewitems)
                             }}
-                            onItemSet={(selectedItem: InventoryItem) => {
+                            onItemSet={(selectedItem: AssignedInventoryItem) => {
                                 let modifiedNewItems = newItems.slice()
 
                                 let item = {...modifiedNewItems[index]}
@@ -379,7 +397,7 @@ function ShipmentCreator() {
 
 
 const ShipmentItemPicker = (props:
-    { item: InventoryItem, onRemove: Function, onItemSet: Function, onCountSet: Function }) => {
+    { item: AssignedInventoryItem, onRemove: Function, onItemSet: Function, onCountSet: Function }) => {
     return (
         <tr>
             <td>
@@ -387,7 +405,7 @@ const ShipmentItemPicker = (props:
             </td>
             <td className="pt-1 pb-1">
                 <ItemPicker
-                    onSelect={(item: InventoryItem) => props.onItemSet(item)}/>
+                    onSelect={(item: AssignedInventoryItem) => props.onItemSet(item)}/>
                 </td>
             <td className="inline-block pt-1 pb-1">
                 <input className="border-2 rounded-lg border-gray-700 w-32"
@@ -414,7 +432,7 @@ const ItemPicker = (props: { onSelect: Function }) => {
                     setItemName(evt.target.value)
                 }}/>
             {
-                (visible && selectableItems?.data?.length > 0) ? (
+                (visible && (selectableItems?.data?.length ?? 0) > 0) ? (
                     <div className="absolute z-10 bg-white border-2 border-gray-700 w-48">
                         {
                             selectableItems?.data?.map(item => {
