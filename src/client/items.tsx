@@ -12,7 +12,7 @@ import { ConfirmationButton,
     SaveButton} from "./buttons"
 import { Section } from "./wrappers"
 import { InventoryItem, DeletedInventoryItem, IUpdateItem, ICreateItem }
-    from  "../types/items"
+    from  "../server/types/items"
 import { useCreateItemMutation, useDeleteItemMutation, useGetAllItemsQuery, useGetDeletedItemsQuery, useRestoreItemMutation, useUpdateItemMutation } from "./items-slice"
 
 

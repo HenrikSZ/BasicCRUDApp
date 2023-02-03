@@ -5,9 +5,9 @@
 
 import { RowDataPacket, OkPacket } from "mysql2"
 import { Pool } from "mysql2/promise"
-import { MappedInventoryItem } from "../../types/items.js"
+import { MappedInventoryItem } from "../types/items.js"
 import { Shipment, ICreateShipment, IUpdateShipment, IUpdateShipmentItem }
-    from "../../types/shipments"
+    from "../types/shipments"
 
 import { stringify } from "csv-stringify/sync"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"

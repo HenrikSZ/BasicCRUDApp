@@ -8,7 +8,7 @@ import dbPromise from "../db.js"
 import { handleDbError } from "../errors.js"
 import ExternalItemAssignmentModel from "./ExternalItemAssignmentModel.js"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
-import { ICreateItem, IUpdateItem, InventoryItem, DeletedInventoryItem, ILikeItem } from "../../types/items"
+import { ICreateItem, IUpdateItem, InventoryItem, DeletedInventoryItem, ILikeItem } from "../types/items"
 
 
 export default class ItemModel {

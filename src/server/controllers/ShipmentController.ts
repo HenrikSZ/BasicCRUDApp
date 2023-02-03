@@ -5,7 +5,7 @@
 import { FastifyRequest, FastifyReply } from "fastify"
 
 import ShipmentModel from "../models/ShipmentModel.js"
-import { ICreateShipment, IUpdateShipmentItem } from "../../types/shipments"
+import { ICreateShipment, IUpdateShipmentItem } from "../types/shipments"
 import ItemAssignmentModel from "../models/ItemAssignmentModel.js"
 import { FieldError } from "../errors.js"
 

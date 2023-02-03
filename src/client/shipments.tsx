@@ -7,9 +7,9 @@ import { BackButton, ConfirmationButton, DeleteButton, DropdownButton,
     SaveButton } from "./buttons"
 import { Section } from "./wrappers"
 import { AssignedInventoryItem, InventoryItem, MappedInventoryItem }
-    from "../types/items"
+    from "../server/types/items"
 import { IUpdateShipment, IUpdateShipmentItem, Shipment }
-    from "../types/shipments"
+    from "../server/types/shipments"
 import { useCreateShipmentMutation, useDeleteShipmentItemMutation,
     useDeleteShipmentMutation, useGetAllShipmentsQuery, useGetItemLikeQuery,
     useUpdateShipmentItemMutation, useUpdateShipmentMutation }

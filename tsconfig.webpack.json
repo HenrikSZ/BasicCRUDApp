@@ -13,7 +13,8 @@
         "paths": {
             "*": [
                 "node_modules/*"
-            ]
+            ],
+            "@server/*": ["../server/*"],
         }
     },
     "include": [

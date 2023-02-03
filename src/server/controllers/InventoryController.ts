@@ -7,7 +7,7 @@ import { stringify } from "csv-stringify/sync"
 
 import DeletionModel, { ICreateDeletion } from "../models/DeletionModel.js"
 import ItemModel from "../models/ItemModel.js"
-import { ICreateItem, ILikeItem, IUpdateItem } from "../../types/items"
+import { ICreateItem, ILikeItem, IUpdateItem } from "../types/items"
 import { FieldError } from "../errors.js"
 
 

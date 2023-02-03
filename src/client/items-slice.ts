@@ -1,8 +1,8 @@
 import { FullTagDescription } from '@reduxjs/toolkit/dist/query/endpointDefinitions'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 
-import { DeletedInventoryItem, ICreateItem, InventoryItem, IUpdateItem } from "../types/items"
-import { ICreateShipment, IUpdateShipment, IUpdateShipmentItem, Shipment } from '../types/shipments'
+import { DeletedInventoryItem, ICreateItem, InventoryItem, IUpdateItem } from "../server/types/items"
+import { ICreateShipment, IUpdateShipment, IUpdateShipmentItem, Shipment } from "../server/types/shipments"
 
 export const api = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: "/" }),
