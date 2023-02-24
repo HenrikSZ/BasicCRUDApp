@@ -36,8 +36,8 @@ export function handleError(error: Error, req: FastifyRequest, rep: FastifyReply
         })
     } else {
         rep.status(500).send({ 
-            name: "UnknownError",
-            message: "Please contact the admininstrator"
+            name: error.name,
+            message: error.message
         })
     }
 }

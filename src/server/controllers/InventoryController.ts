@@ -6,7 +6,8 @@ import { FastifyReply, FastifyRequest } from "fastify"
 import { stringify } from "csv-stringify/sync"
 
 import DeletionModel, { ICreateDeletion } from "../models/DeletionModel.js"
-import ItemModel, { ICreateItem, ILikeItem, IUpdateItem } from "../models/ItemModel.js"
+import ItemModel from "../models/ItemModel.js"
+import { ICreateItem, ILikeItem, IUpdateItem } from "../types/items"
 import { FieldError } from "../errors.js"
 
 
@@ -163,7 +164,7 @@ export default class InventoryController {
      * request body
      *
      * @param req the request from Fastify
-     * @param res the reponse from Fastify
+     * @param rep the reponse from Fastify
      */
     async deleteInventoryItem(
             req: FastifyRequest<{Params: IAccessItemParameters, Body: ICreateDeletion}>,

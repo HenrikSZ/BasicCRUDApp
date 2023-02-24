@@ -5,43 +5,15 @@
 
 import { RowDataPacket, OkPacket } from "mysql2"
 import { Pool } from "mysql2/promise"
-import { InventoryItem } from "./ItemModel.js"
+import { MappedInventoryItem } from "../types/items.js"
+import { Shipment, ICreateShipment, IUpdateShipment, IUpdateShipmentItem }
+    from "../types/shipments"
 
 import { stringify } from "csv-stringify/sync"
 import ItemAssignmentModel from "./ItemAssignmentModel.js"
 import dbPromise from "../db.js"
 import { handleDbError } from "../errors.js"
  
-
-export interface ICreateShipment extends RowDataPacket {
-    name: string,
-    source: string,
-    destination: string,
-    items: { id: number, count: number }[]
-}
- 
-interface Shipment {
-    name: string,
-    source: string,
-    destination: string,
-    id: number,
-    items?: InventoryItem[]
-}
-
-export interface IUpdateShipment {
-    name?: string,
-    source?: string,
-    destination?: string,
-}
-
-export interface IUpdateShipmentItem {
-    assigned_count?: number
-}
-
-interface MappedInventoryItem extends InventoryItem {
-    shipment_id: number
-}
-
 
 export default class ShipmentModel {
     dbPromise: Pool
@@ -88,7 +60,7 @@ export default class ShipmentModel {
                     shipment_index++
                 }
 
-                shipments[shipment_index].items.push(item as InventoryItem)
+                shipments[shipment_index].items.push(item as MappedInventoryItem)
             }
 
             return shipments
@@ -124,7 +96,7 @@ export default class ShipmentModel {
 
             [results, fields] = await this.dbPromise.query(stmt, id)
             shipment.items = []
-            for (let item of results as InventoryItem[]) {
+            for (let item of results as MappedInventoryItem[]) {
                 shipment.items.push(item)
             }
 
