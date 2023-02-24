@@ -134,9 +134,12 @@ function ShipmentHeader(props: {data: Shipment, onExpand: Function, onRetract: F
                         <BackButton onClick={() => setMode(ShipmentHeaderMode.NORMAL)}/>
                     </div>
                     <div>
-                        <SaveButton onClick={() => updateShipment({
-                            shipmentId: props.data.id,
-                            modifications: modifications })}/>
+                        <SaveButton onClick={() => {
+                            updateShipment({
+                                shipmentId: props.data.id,
+                                modifications: modifications })
+                            setMode(ShipmentHeaderMode.NORMAL)
+                        }}/>
                     </div>
                 </div>
             )
